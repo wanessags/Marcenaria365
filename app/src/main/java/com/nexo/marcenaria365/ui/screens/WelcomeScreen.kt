@@ -20,13 +20,11 @@ import androidx.compose.ui.unit.sp
 import com.nexo.marcenaria365.R
 
 @Composable
-fun WelcomeScreen() {
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-
-        // Fotografia preenchendo toda a tela
+fun WelcomeScreen(
+    paginaAtual: Int = 0,
+    totalPaginas: Int = 2
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(R.drawable.background),
             contentDescription = null,
@@ -34,7 +32,6 @@ fun WelcomeScreen() {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Gradiente sutil sobre a imagem inteira
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -50,7 +47,6 @@ fun WelcomeScreen() {
                 )
         )
 
-        // Logo e descrição
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -62,7 +58,6 @@ fun WelcomeScreen() {
                 ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Image(
                 painter = painterResource(R.drawable.logo),
                 contentDescription = "Marcenaria 365",
@@ -83,7 +78,6 @@ fun WelcomeScreen() {
             )
         }
 
-        // Indicadores das futuras páginas
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -91,13 +85,13 @@ fun WelcomeScreen() {
             horizontalArrangement = Arrangement.spacedBy(9.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            repeat(4) { index ->
+            repeat(totalPaginas) { index ->
                 Box(
                     modifier = Modifier
-                        .size(if (index == 0) 9.dp else 8.dp)
+                        .size(if (index == paginaAtual) 9.dp else 8.dp)
                         .clip(CircleShape)
                         .background(
-                            if (index == 0) Color.White
+                            if (index == paginaAtual) Color.White
                             else Color.White.copy(alpha = 0.50f)
                         )
                 )
