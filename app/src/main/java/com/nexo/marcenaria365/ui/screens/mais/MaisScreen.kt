@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -29,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,21 +76,35 @@ fun MaisScreen(
 
         containerColor = FundoMais,
 
-        // Cabeçalho limpo: sem ícones laterais
+        // Cabeçalho com seta e título centralizado
         topBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(62.dp)
-                    .background(AzulMais),
-                contentAlignment = Alignment.Center
+                    .background(AzulMais)
             ) {
+                IconButton(
+                    onClick = onInicioClick,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 8.dp)
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Voltar ao início",
+                        tint = Color.White,
+                        modifier = Modifier.size(23.dp)
+                    )
+                }
+
                 Text(
                     text = "Mais",
                     color = Color.White,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    modifier = Modifier.align(Alignment.Center)
                 )
             }
         },
@@ -273,7 +287,7 @@ fun MaisScreen(
 
             Spacer(Modifier.height(25.dp))
 
-            // Botão sair
+            // Botão sair da conta
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -296,7 +310,8 @@ fun MaisScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Logout,
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.Logout,
                         contentDescription = null,
                         tint = VermelhoMais,
                         modifier = Modifier.size(18.dp)
@@ -317,7 +332,7 @@ fun MaisScreen(
         }
     }
 
-    // Aviso das opções ainda não implementadas
+    // Opções ainda não implementadas
     if (opcaoSelecionada != null) {
         AlertDialog(
             onDismissRequest = {
@@ -352,7 +367,7 @@ fun MaisScreen(
         )
     }
 
-    // Confirmar saída
+    // Confirmação para sair da conta
     if (confirmarSaida) {
         AlertDialog(
             onDismissRequest = {
@@ -379,8 +394,7 @@ fun MaisScreen(
                 ) {
                     Text(
                         text = "Sair",
-                        color = VermelhoMais,
-                        fontWeight = FontWeight.SemiBold
+                        color = VermelhoMais
                     )
                 }
             },
