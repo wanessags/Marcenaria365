@@ -19,6 +19,10 @@ fun OnboardingScreen() {
         mutableStateOf("onboarding")
     }
 
+    var nomeDemonstracao by rememberSaveable {
+        mutableStateOf("Mariana")
+    }
+
     val pagerState = rememberPagerState(
         initialPage = 0,
         pageCount = { 2 }
@@ -37,6 +41,10 @@ fun OnboardingScreen() {
                 },
                 onRegisterClick = {
                     telaAtual = "cadastro"
+                },
+                onDemoLogin = { nome ->
+                    nomeDemonstracao = nome
+                    telaAtual = "home"
                 }
             )
         }
@@ -56,13 +64,26 @@ fun OnboardingScreen() {
             )
         }
 
+        "home" -> {
+            BackHandler {
+                // Evita voltar ao login pelo botão físico
+                // durante a demonstração.
+            }
+
+            HomeScreen(
+                nomeUsuario = nomeDemonstracao,
+                onSair = {
+                    telaAtual = "login"
+                }
+            )
+        }
+
         else -> {
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { pagina ->
                 when (pagina) {
-
                     0 -> WelcomeScreen(
                         paginaAtual = pagerState.currentPage,
                         totalPaginas = 2
