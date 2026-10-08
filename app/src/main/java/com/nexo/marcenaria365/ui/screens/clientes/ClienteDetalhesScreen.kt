@@ -2,7 +2,6 @@
 package com.nexo.marcenaria365.ui.screens.clientes
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -43,6 +42,7 @@ fun ClienteDetalhesScreen(
     ) {
         Spacer(Modifier.height(12.dp))
 
+        // Cabeçalho
         ClienteCabecalho(
             titulo = "Detalhes do cliente",
             subtitulo = "Informações de cadastro e contato.",
@@ -51,6 +51,7 @@ fun ClienteDetalhesScreen(
 
         Spacer(Modifier.height(26.dp))
 
+        // Identificação do cliente
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -71,20 +72,28 @@ fun ClienteDetalhesScreen(
 
             Spacer(Modifier.height(9.dp))
 
-            ClienteStatus(ativo = cliente.ativo)
+            ClienteStatus(
+                ativo = cliente.ativo
+            )
         }
 
         Spacer(Modifier.height(28.dp))
 
-        ClienteTituloSecao("Informações de contato")
+        ClienteTituloSecao(
+            titulo = "Informações de contato"
+        )
 
         Spacer(Modifier.height(12.dp))
 
+        // Cartão de informações
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 0.dp
             )
         ) {
             Column(
@@ -119,6 +128,7 @@ fun ClienteDetalhesScreen(
 
         Spacer(Modifier.height(26.dp))
 
+        // AÇÃO PRINCIPAL: EDITAR CLIENTE
         Button(
             onClick = onEditar,
             modifier = Modifier
@@ -126,12 +136,14 @@ fun ClienteDetalhesScreen(
                 .height(52.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = ClienteCores.Azul
+                containerColor = ClienteCores.Azul,
+                contentColor = Color.White
             )
         ) {
             Icon(
-                Icons.Outlined.Edit,
+                imageVector = Icons.Outlined.Edit,
                 contentDescription = null,
+                tint = Color.White,
                 modifier = Modifier.size(18.dp)
             )
 
@@ -139,47 +151,62 @@ fun ClienteDetalhesScreen(
 
             Text(
                 text = "Editar cliente",
+                color = Color.White,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
 
         Spacer(Modifier.height(12.dp))
 
-        OutlinedButton(
+        // AÇÃO SECUNDÁRIA: EXCLUIR CLIENTE
+        // Sem borda, sem fundo e com destaque discreto
+        TextButton(
             onClick = {
                 confirmarExclusao = true
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
-            border = BorderStroke(
-                1.dp,
-                Color(0xFFE5C9C7)
-            ),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
+                .heightIn(min = 48.dp),
+            colors = ButtonDefaults.textButtonColors(
                 contentColor = ClienteCores.Vermelho
             )
         ) {
             Icon(
-                Icons.Outlined.DeleteOutline,
+                imageVector = Icons.Outlined.DeleteOutline,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                tint = ClienteCores.Vermelho,
+                modifier = Modifier.size(17.dp)
             )
 
-            Spacer(Modifier.width(9.dp))
+            Spacer(Modifier.width(8.dp))
 
-            Text("Excluir cliente")
+            Text(
+                text = "Excluir cliente",
+                color = ClienteCores.Vermelho,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
 
         Spacer(Modifier.height(28.dp))
     }
 
+    // Confirmação de exclusão
     if (confirmarExclusao) {
         AlertDialog(
             onDismissRequest = {
                 confirmarExclusao = false
             },
+
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.DeleteOutline,
+                    contentDescription = null,
+                    tint = ClienteCores.Vermelho
+                )
+            },
+
             title = {
                 Text(
                     text = "Excluir cliente?",
@@ -187,12 +214,16 @@ fun ClienteDetalhesScreen(
                     fontWeight = FontWeight.Bold
                 )
             },
+
             text = {
                 Text(
-                    "Deseja realmente excluir ${cliente.nome}? " +
-                            "Essa ação não poderá ser desfeita."
+                    text = "Deseja realmente excluir " +
+                            "${cliente.nome}? Essa ação " +
+                            "não poderá ser desfeita.",
+                    color = ClienteCores.Cinza
                 )
             },
+
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -201,12 +232,13 @@ fun ClienteDetalhesScreen(
                     }
                 ) {
                     Text(
-                        "Excluir",
+                        text = "Excluir",
                         color = ClienteCores.Vermelho,
                         fontWeight = FontWeight.Bold
                     )
                 }
             },
+
             dismissButton = {
                 TextButton(
                     onClick = {
@@ -214,11 +246,12 @@ fun ClienteDetalhesScreen(
                     }
                 ) {
                     Text(
-                        "Cancelar",
+                        text = "Cancelar",
                         color = ClienteCores.Azul
                     )
                 }
             },
+
             containerColor = Color.White,
             shape = RoundedCornerShape(18.dp)
         )
