@@ -44,10 +44,21 @@ fun LoginScreen(
     onRegisterClick: () -> Unit,
     onDemoLogin: (String) -> Unit
 ) {
-    var email by rememberSaveable { mutableStateOf("") }
-    var senha by rememberSaveable { mutableStateOf("") }
-    var senhaVisivel by rememberSaveable { mutableStateOf(false) }
-    var mensagem by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var senha by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var senhaVisivel by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var mensagem by rememberSaveable {
+        mutableStateOf("")
+    }
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
@@ -70,9 +81,11 @@ fun LoginScreen(
     ) {
         Spacer(Modifier.height(10.dp))
 
-        IconButton(onClick = onBackClick) {
+        IconButton(
+            onClick = onBackClick
+        ) {
             Icon(
-                Icons.Outlined.ArrowBack,
+                imageVector = Icons.Outlined.ArrowBack,
                 contentDescription = "Voltar",
                 tint = AzulLogin
             )
@@ -92,7 +105,7 @@ fun LoginScreen(
         Spacer(Modifier.height(6.dp))
 
         Text(
-            "Bem-vindo de volta!",
+            text = "Bem-vindo de volta!",
             color = CinzaLogin,
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
@@ -100,7 +113,7 @@ fun LoginScreen(
         )
 
         Text(
-            "Acesse sua conta para continuar.",
+            text = "Acesse sua conta para continuar.",
             color = CinzaLogin,
             fontSize = 15.sp,
             textAlign = TextAlign.Center,
@@ -109,6 +122,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(36.dp))
 
+        // Campo de e-mail
         OutlinedTextField(
             value = email,
             onValueChange = {
@@ -117,11 +131,14 @@ fun LoginScreen(
             },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
-                Text("E-mail", color = CinzaLogin)
+                Text(
+                    text = "E-mail",
+                    color = CinzaLogin
+                )
             },
             leadingIcon = {
                 Icon(
-                    Icons.Outlined.Email,
+                    imageVector = Icons.Outlined.Email,
                     contentDescription = null,
                     tint = CinzaLogin
                 )
@@ -136,6 +153,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        // Campo de senha
         OutlinedTextField(
             value = senha,
             onValueChange = {
@@ -144,34 +162,45 @@ fun LoginScreen(
             },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
-                Text("Senha", color = CinzaLogin)
+                Text(
+                    text = "Senha",
+                    color = CinzaLogin
+                )
             },
             leadingIcon = {
                 Icon(
-                    Icons.Outlined.Lock,
+                    imageVector = Icons.Outlined.Lock,
                     contentDescription = null,
                     tint = CinzaLogin
                 )
             },
             trailingIcon = {
                 IconButton(
-                    onClick = { senhaVisivel = !senhaVisivel }
+                    onClick = {
+                        senhaVisivel = !senhaVisivel
+                    }
                 ) {
                     Icon(
-                        imageVector = if (senhaVisivel)
+                        imageVector = if (senhaVisivel) {
                             Icons.Outlined.VisibilityOff
-                        else Icons.Outlined.Visibility,
-                        contentDescription = if (senhaVisivel)
+                        } else {
+                            Icons.Outlined.Visibility
+                        },
+                        contentDescription = if (senhaVisivel) {
                             "Ocultar senha"
-                        else "Mostrar senha",
+                        } else {
+                            "Mostrar senha"
+                        },
                         tint = CinzaLogin
                     )
                 }
             },
             singleLine = true,
-            visualTransformation = if (senhaVisivel)
+            visualTransformation = if (senhaVisivel) {
                 VisualTransformation.None
-            else PasswordVisualTransformation(),
+            } else {
+                PasswordVisualTransformation()
+            },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
             ),
@@ -181,6 +210,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        // Recuperação de senha
         Text(
             text = "Esqueceu sua senha?",
             fontSize = 12.sp,
@@ -189,25 +219,30 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    mensagem = "Recuperação de senha: aguardando API."
+                    mensagem =
+                        "A recuperação de senha ainda não está disponível."
                 }
         )
 
         Spacer(Modifier.height(25.dp))
 
+        // Botão Entrar
         Button(
             onClick = {
                 mensagem = when {
-                    email.isBlank() || senha.isBlank() ->
+                    email.isBlank() || senha.isBlank() -> {
                         "Preencha o e-mail e a senha."
+                    }
 
                     !Patterns.EMAIL_ADDRESS
-                        .matcher(email.trim()).matches() ->
+                        .matcher(email.trim())
+                        .matches() -> {
                         "Digite um e-mail válido."
+                    }
 
                     else -> {
-                        // Apenas demonstração.
-                        // Não autentica nem envia credenciais à API.
+                        // Mantém a navegação atual.
+                        // A autenticação será integrada posteriormente.
                         senha = ""
                         onDemoLogin("Mariana")
                         ""
@@ -224,24 +259,17 @@ fun LoginScreen(
             )
         ) {
             Text(
-                "Entrar",
+                text = "Entrar",
+                color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
 
-        Spacer(Modifier.height(10.dp))
-
-        Text(
-            text = "Acesso demonstrativo · Sem autenticação real",
-            fontSize = 11.sp,
-            color = CinzaLogin,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
+        // Mensagens de validação e orientação
         if (mensagem.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
+
             Text(
                 text = mensagem,
                 fontSize = 13.sp,
@@ -253,6 +281,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(90.dp))
 
+        // Acesso à tela de cadastro
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -261,13 +290,13 @@ fun LoginScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Ainda não possui conta? ",
+                text = "Ainda não possui conta? ",
                 fontSize = 12.sp,
                 color = CinzaLogin
             )
 
             Text(
-                "Cadastre-se",
+                text = "Cadastre-se",
                 fontSize = 12.sp,
                 color = CobreLogin,
                 fontWeight = FontWeight.Medium,
