@@ -9,16 +9,12 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-
-// Telas de clientes
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteCadastroScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteDetalhesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteEdicaoScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
-
-// Telas de serviços
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
 import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
@@ -26,7 +22,6 @@ import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen() {
-
     var telaAtual by rememberSaveable {
         mutableStateOf("onboarding")
     }
@@ -39,14 +34,16 @@ fun OnboardingScreen() {
         mutableStateOf<Long?>(null)
     }
 
-    // Lista compartilhada entre Clientes e Serviços
+    var servicoVindoClienteId by rememberSaveable {
+        mutableStateOf<Long?>(null)
+    }
+
     val clientes = remember {
         mutableStateListOf<ClienteUi>().apply {
             addAll(clientesIniciais())
         }
     }
 
-    // Lista de serviços compartilhada com o Dashboard
     val servicos = remember {
         mutableStateListOf<ServicoUi>().apply {
             addAll(servicosIniciais())
@@ -62,9 +59,29 @@ fun OnboardingScreen() {
         it.id == clienteSelecionadoId
     }
 
-    when (telaAtual) {
+    // Uma única função é usada nas duas formas
+    // de acessar os detalhes de um serviço.
+    val excluirServico: (Long) -> Unit = { id ->
+        servicos.removeAll {
+            it.id == id
+        }
+    }
 
-        // LOGIN
+    val adicionarServico: (ServicoUi) -> Unit = { novo ->
+        servicos.add(novo)
+    }
+
+    val atualizarServico: (ServicoUi) -> Unit = { atualizado ->
+        val indice = servicos.indexOfFirst {
+            it.id == atualizado.id
+        }
+
+        if (indice >= 0) {
+            servicos[indice] = atualizado
+        }
+    }
+
+    when (telaAtual) {
         "login" -> {
             BackHandler {
                 telaAtual = "onboarding"
@@ -84,7 +101,6 @@ fun OnboardingScreen() {
             )
         }
 
-        // CADASTRO DE USUÁRIO
         "cadastro_usuario" -> {
             BackHandler {
                 telaAtual = "login"
@@ -100,7 +116,6 @@ fun OnboardingScreen() {
             )
         }
 
-        // DASHBOARD
         "home" -> {
             HomeScreen(
                 nomeUsuario = nomeUsuario,
@@ -117,10 +132,10 @@ fun OnboardingScreen() {
             )
         }
 
-        // LISTA DE CLIENTES
         "clientes" -> {
             ClientesScreen(
                 clientes = clientes,
+                servicos = servicos,
                 onInicioClick = {
                     telaAtual = "home"
                 },
@@ -134,7 +149,6 @@ fun OnboardingScreen() {
             )
         }
 
-        // CADASTRAR CLIENTE
         "cliente_cadastro" -> {
             ClienteCadastroScreen(
                 onVoltar = {
@@ -153,11 +167,11 @@ fun OnboardingScreen() {
             )
         }
 
-        // DETALHES DO CLIENTE
         "cliente_detalhes" -> {
             if (clienteSelecionado != null) {
                 ClienteDetalhesScreen(
                     cliente = clienteSelecionado,
+                    servicos = servicos,
                     onVoltar = {
                         telaAtual = "clientes"
                     },
@@ -165,12 +179,22 @@ fun OnboardingScreen() {
                         telaAtual = "cliente_edicao"
                     },
                     onExcluir = { id ->
-                        clientes.removeAll {
-                            it.id == id
+                        val possuiServicos = servicos.any {
+                            it.clienteId == id
                         }
 
-                        clienteSelecionadoId = null
-                        telaAtual = "clientes"
+                        if (!possuiServicos) {
+                            clientes.removeAll {
+                                it.id == id
+                            }
+
+                            clienteSelecionadoId = null
+                            telaAtual = "clientes"
+                        }
+                    },
+                    onAbrirServico = { servico ->
+                        servicoVindoClienteId = servico.id
+                        telaAtual = "servico_cliente"
                     }
                 )
             } else {
@@ -180,7 +204,6 @@ fun OnboardingScreen() {
             }
         }
 
-        // EDITAR CLIENTE
         "cliente_edicao" -> {
             if (clienteSelecionado != null) {
                 ClienteEdicaoScreen(
@@ -207,37 +230,43 @@ fun OnboardingScreen() {
             }
         }
 
-        // NOVO MÓDULO DE SERVIÇOS
         "servicos" -> {
             ServicosFlowScreen(
                 clientes = clientes,
                 servicos = servicos,
-
-                onAdicionarServico = { novoServico ->
-                    servicos.add(novoServico)
-                },
-
-                onAtualizarServico = { atualizado ->
-                    val indice = servicos.indexOfFirst {
-                        it.id == atualizado.id
-                    }
-
-                    if (indice >= 0) {
-                        servicos[indice] = atualizado
-                    }
-                },
-
+                onAdicionarServico = adicionarServico,
+                onAtualizarServico = atualizarServico,
+                onExcluirServico = excluirServico,
                 onInicioClick = {
                     telaAtual = "home"
                 },
-
                 onClientesClick = {
                     telaAtual = "clientes"
                 }
             )
         }
 
-        // ABERTURA E PRIVACIDADE
+        "servico_cliente" -> {
+            ServicosFlowScreen(
+                clientes = clientes,
+                servicos = servicos,
+                initialServicoId = servicoVindoClienteId,
+                onAdicionarServico = adicionarServico,
+                onAtualizarServico = atualizarServico,
+                onExcluirServico = excluirServico,
+                onInicioClick = {
+                    telaAtual = "home"
+                },
+                onClientesClick = {
+                    telaAtual = "clientes"
+                },
+                onVoltarDoServicoInicial = {
+                    servicoVindoClienteId = null
+                    telaAtual = "cliente_detalhes"
+                }
+            )
+        }
+
         else -> {
             HorizontalPager(
                 state = pagerState,

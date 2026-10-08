@@ -15,25 +15,33 @@ fun ServicosFlowScreen(
     servicos: List<ServicoUi>,
     onAdicionarServico: (ServicoUi) -> Unit,
     onAtualizarServico: (ServicoUi) -> Unit,
+    onExcluirServico: (Long) -> Unit,
     onInicioClick: () -> Unit,
-    onClientesClick: () -> Unit
+    onClientesClick: () -> Unit,
+    initialServicoId: Long? = null,
+    onVoltarDoServicoInicial: () -> Unit = onInicioClick
 ) {
-    var tela by rememberSaveable {
-        mutableStateOf("lista")
+    var tela by rememberSaveable(initialServicoId) {
+        mutableStateOf(
+            if (initialServicoId == null) {
+                "lista"
+            } else {
+                "detalhes"
+            }
+        )
     }
 
-    var servicoSelecionadoId by rememberSaveable {
-        mutableStateOf<Long?>(null)
+    var servicoSelecionadoId by rememberSaveable(initialServicoId) {
+        mutableStateOf(initialServicoId)
     }
 
-    // Orçamentos associados aos serviços
     val orcamentos = remember {
         mutableStateListOf<OrcamentoUi>().apply {
             addAll(orcamentosIniciais())
         }
     }
 
-    val servicoSelecionado = servicos.find {
+    val selecionado = servicos.find {
         it.id == servicoSelecionadoId
     }
 
@@ -42,8 +50,6 @@ fun ServicosFlowScreen(
     }
 
     when (tela) {
-
-        // NOVO SERVIÇO
         "novo" -> {
             NovoServicoScreen(
                 clientes = clientes,
@@ -51,12 +57,11 @@ fun ServicosFlowScreen(
                     tela = "lista"
                 },
                 onSalvar = { novo ->
-                    val proximoId = (
-                            (servicos.maxOfOrNull { it.id } ?: 0L) + 1L
-                            )
+                    val novoId =
+                        (servicos.maxOfOrNull { it.id } ?: 0L) + 1L
 
                     onAdicionarServico(
-                        novo.copy(id = proximoId)
+                        novo.copy(id = novoId)
                     )
 
                     tela = "lista"
@@ -64,17 +69,18 @@ fun ServicosFlowScreen(
             )
         }
 
-        // DETALHES DO SERVIÇO
         "detalhes" -> {
-            if (servicoSelecionado != null) {
+            if (selecionado != null) {
                 DetalhesServicoScreen(
-                    servico = servicoSelecionado,
+                    servico = selecionado,
                     orcamento = orcamentoSelecionado,
-
                     onVoltar = {
-                        tela = "lista"
+                        if (initialServicoId != null) {
+                            onVoltarDoServicoInicial()
+                        } else {
+                            tela = "lista"
+                        }
                     },
-
                     onAbrirOrcamento = {
                         tela = if (orcamentoSelecionado == null) {
                             "novo_orcamento"
@@ -82,49 +88,61 @@ fun ServicosFlowScreen(
                             "ver_orcamento"
                         }
                     },
-
                     onRegistrarRecebimento = { valor ->
-                        val atualizado = servicoSelecionado.copy(
-                            valorRecebido =
-                                servicoSelecionado.valorRecebido + valor
+                        onAtualizarServico(
+                            selecionado.copy(
+                                valorRecebido =
+                                    selecionado.valorRecebido + valor
+                            )
                         )
+                    },
+                    onExcluirServico = { id ->
+                        // Exclui o orçamento associado ao serviço.
+                        orcamentos.removeAll {
+                            it.servicoId == id
+                        }
 
-                        onAtualizarServico(atualizado)
+                        // A lista principal de serviços é atualizada
+                        // pelo OnboardingScreen.
+                        onExcluirServico(id)
+
+                        servicoSelecionadoId = null
+
+                        if (initialServicoId != null) {
+                            onVoltarDoServicoInicial()
+                        } else {
+                            tela = "lista"
+                        }
                     }
                 )
             } else {
                 LaunchedEffect(Unit) {
-                    tela = "lista"
+                    if (initialServicoId != null) {
+                        onVoltarDoServicoInicial()
+                    } else {
+                        tela = "lista"
+                    }
                 }
             }
         }
 
-        // CADASTRAR ORÇAMENTO
         "novo_orcamento" -> {
-            if (servicoSelecionado != null) {
+            if (selecionado != null) {
                 NovoOrcamentoScreen(
-                    servico = servicoSelecionado,
-
+                    servico = selecionado,
                     onVoltar = {
                         tela = "detalhes"
                     },
-
-                    onSalvar = { novoOrcamento ->
-                        // Evita dois orçamentos ativos no mesmo
-                        // serviço nesta primeira versão.
+                    onSalvar = { novo ->
                         orcamentos.removeAll {
-                            it.servicoId == novoOrcamento.servicoId
+                            it.servicoId == novo.servicoId
                         }
 
-                        val proximoId = (
-                                (orcamentos.maxOfOrNull { it.id }
-                                    ?: 0L) + 1L
-                                )
+                        val novoId =
+                            (orcamentos.maxOfOrNull { it.id } ?: 0L) + 1L
 
                         orcamentos.add(
-                            novoOrcamento.copy(
-                                id = proximoId
-                            )
+                            novo.copy(id = novoId)
                         )
 
                         tela = "ver_orcamento"
@@ -137,21 +155,17 @@ fun ServicosFlowScreen(
             }
         }
 
-        // VISUALIZAR ORÇAMENTO
         "ver_orcamento" -> {
             if (orcamentoSelecionado != null) {
                 OrcamentoScreen(
                     orcamento = orcamentoSelecionado,
-
                     onVoltar = {
                         tela = "detalhes"
                     },
-
                     onExcluir = { id ->
                         orcamentos.removeAll {
                             it.id == id
                         }
-
                         tela = "detalhes"
                     }
                 )
@@ -162,19 +176,14 @@ fun ServicosFlowScreen(
             }
         }
 
-        // LISTA DE SERVIÇOS
         else -> {
             ServicosScreen(
                 servicos = servicos,
-
                 onInicioClick = onInicioClick,
-
                 onClientesClick = onClientesClick,
-
                 onNovoServicoClick = {
                     tela = "novo"
                 },
-
                 onServicoClick = { servico ->
                     servicoSelecionadoId = servico.id
                     tela = "detalhes"
