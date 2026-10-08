@@ -2,362 +2,237 @@
 package com.nexo.marcenaria365.ui.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
-import com.nexo.marcenaria365.ui.screens.caixa.CaixaScreen
+private val FundoPolitica = Color(0xFFFAF6F0)
+private val AzulPolitica = Color(0xFF193447)
+private val CinzaPolitica = Color(0xFF929292)
+private val CobrePolitica = Color(0xFFBD906E)
 
-import com.nexo.marcenaria365.ui.screens.clientes.ClienteCadastroScreen
-import com.nexo.marcenaria365.ui.screens.clientes.ClienteDetalhesScreen
-import com.nexo.marcenaria365.ui.screens.clientes.ClienteEdicaoScreen
-import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
-import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
-import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
-
-import com.nexo.marcenaria365.ui.screens.mais.MaisScreen
-
-import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
-import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
-import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OnboardingScreen() {
+fun PoliticaPrivacidadeScreen(
+    onVoltar: () -> Unit
+) {
+    BackHandler(onBack = onVoltar)
 
-    var telaAtual by rememberSaveable {
-        mutableStateOf("onboarding")
-    }
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
 
-    var nomeUsuario by rememberSaveable {
-        mutableStateOf("Mariana")
-    }
+        containerColor = FundoPolitica,
 
-    var clienteSelecionadoId by rememberSaveable {
-        mutableStateOf<Long?>(null)
-    }
-
-    var servicoVindoClienteId by rememberSaveable {
-        mutableStateOf<Long?>(null)
-    }
-
-    val clientes = remember {
-        mutableStateListOf<ClienteUi>().apply {
-            addAll(clientesIniciais())
-        }
-    }
-
-    val servicos = remember {
-        mutableStateListOf<ServicoUi>().apply {
-            addAll(servicosIniciais())
-        }
-    }
-
-    val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { 2 }
-    )
-
-    val clienteSelecionado = clientes.find {
-        it.id == clienteSelecionadoId
-    }
-
-    val excluirServico: (Long) -> Unit = { id ->
-        servicos.removeAll {
-            it.id == id
-        }
-    }
-
-    val adicionarServico: (ServicoUi) -> Unit = { novo ->
-        servicos.add(novo)
-    }
-
-    val atualizarServico: (ServicoUi) -> Unit = { atualizado ->
-        val indice = servicos.indexOfFirst {
-            it.id == atualizado.id
-        }
-
-        if (indice >= 0) {
-            servicos[indice] = atualizado
-        }
-    }
-
-    when (telaAtual) {
-
-        "login" -> {
-            BackHandler {
-                telaAtual = "onboarding"
-            }
-
-            LoginScreen(
-                onBackClick = {
-                    telaAtual = "onboarding"
-                },
-                onRegisterClick = {
-                    telaAtual = "cadastro_usuario"
-                },
-                onDemoLogin = { nome ->
-                    nomeUsuario = nome
-                    telaAtual = "home"
-                }
-            )
-        }
-
-        "cadastro_usuario" -> {
-            BackHandler {
-                telaAtual = "login"
-            }
-
-            RegisterScreen(
-                onBackClick = {
-                    telaAtual = "login"
-                },
-                onLoginClick = {
-                    telaAtual = "login"
-                }
-            )
-        }
-
-        "home" -> {
-            HomeScreen(
-                nomeUsuario = nomeUsuario,
-                quantidadeClientes = clientes.size,
-                onClientesClick = {
-                    telaAtual = "clientes"
-                },
-                onServicosClick = {
-                    telaAtual = "servicos"
-                },
-                onCaixaClick = {
-                    telaAtual = "caixa"
-                },
-                onMaisClick = {
-                    telaAtual = "mais"
-                },
-                onSair = {
-                    telaAtual = "login"
-                }
-            )
-        }
-
-        "caixa" -> {
-            CaixaScreen(
-                onVoltar = {
-                    telaAtual = "home"
-                }
-            )
-        }
-
-        "clientes" -> {
-            ClientesScreen(
-                clientes = clientes,
-                servicos = servicos,
-                onInicioClick = {
-                    telaAtual = "home"
-                },
-                onNovoClienteClick = {
-                    telaAtual = "cliente_cadastro"
-                },
-                onClienteClick = { cliente ->
-                    clienteSelecionadoId = cliente.id
-                    telaAtual = "cliente_detalhes"
-                },
-                onServicosClick = {
-                    telaAtual = "servicos"
-                },
-                onMaisClick = {
-                    telaAtual = "mais"
-                }
-            )
-        }
-
-        "cliente_cadastro" -> {
-            ClienteCadastroScreen(
-                onVoltar = {
-                    telaAtual = "clientes"
-                },
-                onSalvar = { novoCliente ->
-                    val novoId =
-                        (clientes.maxOfOrNull { it.id } ?: 0L) + 1L
-
-                    clientes.add(
-                        novoCliente.copy(id = novoId)
+        // Cabeçalho azul com seta de voltar
+        topBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(62.dp)
+                    .background(AzulPolitica)
+            ) {
+                IconButton(
+                    onClick = onVoltar,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 7.dp)
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Voltar",
+                        tint = Color.White,
+                        modifier = Modifier.size(23.dp)
                     )
-
-                    telaAtual = "clientes"
                 }
-            )
-        }
 
-        "cliente_detalhes" -> {
-            if (clienteSelecionado != null) {
-                ClienteDetalhesScreen(
-                    cliente = clienteSelecionado,
-                    servicos = servicos,
-                    onVoltar = {
-                        telaAtual = "clientes"
-                    },
-                    onEditar = {
-                        telaAtual = "cliente_edicao"
-                    },
-                    onExcluir = { id ->
-                        val possuiServicos = servicos.any {
-                            it.clienteId == id
-                        }
-
-                        if (!possuiServicos) {
-                            clientes.removeAll {
-                                it.id == id
-                            }
-
-                            clienteSelecionadoId = null
-                            telaAtual = "clientes"
-                        }
-                    },
-                    onAbrirServico = { servico ->
-                        servicoVindoClienteId = servico.id
-                        telaAtual = "servico_cliente"
-                    }
+                Text(
+                    text = "Política de Privacidade",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 54.dp)
                 )
-            } else {
-                LaunchedEffect(Unit) {
-                    telaAtual = "clientes"
+            }
+        },
+
+        // Botão fixo na parte inferior
+        bottomBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(FundoPolitica)
+                    .padding(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = 12.dp,
+                        bottom = 16.dp
+                    )
+            ) {
+                Button(
+                    onClick = onVoltar,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(11.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AzulPolitica,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "Entendi",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
+    ) { paddingValues ->
 
-        "cliente_edicao" -> {
-            if (clienteSelecionado != null) {
-                ClienteEdicaoScreen(
-                    cliente = clienteSelecionado,
-                    onVoltar = {
-                        telaAtual = "cliente_detalhes"
-                    },
-                    onSalvar = { atualizado ->
-                        val indice = clientes.indexOfFirst {
-                            it.id == atualizado.id
-                        }
+        // Conteúdo rolável
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 25.dp)
+        ) {
+            Spacer(Modifier.height(26.dp))
 
-                        if (indice >= 0) {
-                            clientes[indice] = atualizado
-                        }
-
-                        telaAtual = "cliente_detalhes"
-                    }
-                )
-            } else {
-                LaunchedEffect(Unit) {
-                    telaAtual = "clientes"
-                }
-            }
-        }
-
-        "servicos" -> {
-            ServicosFlowScreen(
-                clientes = clientes,
-                servicos = servicos,
-                onAdicionarServico = adicionarServico,
-                onAtualizarServico = atualizarServico,
-                onExcluirServico = excluirServico,
-                onInicioClick = {
-                    telaAtual = "home"
-                },
-                onClientesClick = {
-                    telaAtual = "clientes"
-                }
+            SecaoPolitica(
+                titulo = "1. Coleta de informações",
+                descricao = "O Marcenaria 365 permite cadastrar " +
+                        "informações como nome e contato de clientes, " +
+                        "descrições de serviços, orçamentos e " +
+                        "movimentações financeiras. Os dados " +
+                        "informados devem ser necessários à " +
+                        "organização das atividades da marcenaria."
             )
-        }
 
-        "servico_cliente" -> {
-            ServicosFlowScreen(
-                clientes = clientes,
-                servicos = servicos,
-                initialServicoId = servicoVindoClienteId,
-                onAdicionarServico = adicionarServico,
-                onAtualizarServico = atualizarServico,
-                onExcluirServico = excluirServico,
-                onInicioClick = {
-                    telaAtual = "home"
-                },
-                onClientesClick = {
-                    telaAtual = "clientes"
-                },
-                onVoltarDoServicoInicial = {
-                    servicoVindoClienteId = null
-                    telaAtual = "cliente_detalhes"
-                }
+            SecaoPolitica(
+                titulo = "2. Uso dos dados",
+                descricao = "As informações cadastradas são " +
+                        "utilizadas nas funcionalidades do aplicativo, " +
+                        "como organização de clientes, acompanhamento " +
+                        "de serviços, elaboração de orçamentos e " +
+                        "controle de recebimentos e despesas."
             )
-        }
 
-        "mais" -> {
-            MaisScreen(
-                nomeUsuario = nomeUsuario,
-                emailUsuario = "",
-                onInicioClick = {
-                    telaAtual = "home"
-                },
-                onClientesClick = {
-                    telaAtual = "clientes"
-                },
-                onServicosClick = {
-                    telaAtual = "servicos"
-                },
-                onPoliticaClick = {
-                    telaAtual = "politica_mais"
-                },
-                onSair = {
-                    telaAtual = "login"
-                }
+            SecaoPolitica(
+                titulo = "3. Compartilhamento",
+                descricao = "O compartilhamento de informações " +
+                        "depende das ações realizadas pelo usuário. " +
+                        "Por exemplo, ao escolher enviar um orçamento " +
+                        "por outro aplicativo, o usuário decide com " +
+                        "quem compartilhar seu conteúdo."
             )
-        }
 
-        // Política consultada depois do login.
-        "politica_mais" -> {
-            PoliticaPrivacidadeScreen(
-                onVoltar = {
-                    telaAtual = "mais"
-                }
+            SecaoPolitica(
+                titulo = "4. Armazenamento e segurança",
+                descricao = "O Marcenaria 365 está em desenvolvimento. " +
+                        "Nesta versão, parte dos registros utiliza " +
+                        "dados fictícios e armazenamento temporário. " +
+                        "O armazenamento permanente, a autenticação " +
+                        "e os controles de segurança deverão ser " +
+                        "avaliados e implementados antes do uso " +
+                        "com informações reais."
             )
-        }
 
-        // Política lida antes do login.
-        "politica_entrada" -> {
-            PoliticaPrivacidadeScreen(
-                onVoltar = {
-                    telaAtual = "onboarding"
-                }
+            SecaoPolitica(
+                titulo = "5. Seus direitos",
+                descricao = "A Lei Geral de Proteção de Dados " +
+                        "Pessoais (LGPD) estabelece direitos " +
+                        "relacionados ao tratamento de dados pessoais, " +
+                        "incluindo acesso, correção e exclusão nas " +
+                        "hipóteses previstas em lei. Os procedimentos " +
+                        "para atender solicitações deverão ser " +
+                        "definidos antes da disponibilização do " +
+                        "aplicativo para uso real."
             )
-        }
 
-        else -> {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { pagina ->
-                when (pagina) {
-                    0 -> {
-                        WelcomeScreen(
-                            paginaAtual = pagerState.currentPage,
-                            totalPaginas = 2
-                        )
-                    }
+            SecaoPolitica(
+                titulo = "6. Contato",
+                descricao = "Em caso de dúvidas sobre o tratamento " +
+                        "de dados, o usuário deverá consultar o " +
+                        "responsável pelo aplicativo. Um canal " +
+                        "oficial de atendimento ainda será definido."
+            )
 
-                    1 -> {
-                        PrivacyScreen(
-                            onAgreeClick = {
-                                telaAtual = "login"
-                            },
-                            onReadPolicy = {
-                                telaAtual = "politica_entrada"
-                            }
-                        )
-                    }
-                }
-            }
+            Spacer(Modifier.height(7.dp))
+
+            Text(
+                text = "Informações importantes",
+                color = CobrePolitica,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(Modifier.height(9.dp))
+
+            Text(
+                text = "Este documento apresenta informações " +
+                        "preliminares sobre o projeto acadêmico " +
+                        "Marcenaria 365. O conteúdo e as práticas " +
+                        "de tratamento de dados deverão ser " +
+                        "revisados antes do uso com dados pessoais reais.",
+                color = CinzaPolitica,
+                fontSize = 11.sp,
+                lineHeight = 17.sp
+            )
+
+            Spacer(Modifier.height(28.dp))
         }
+    }
+}
+
+@Composable
+private fun SecaoPolitica(
+    titulo: String,
+    descricao: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 26.dp)
+    ) {
+        Text(
+            text = titulo,
+            color = AzulPolitica,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(9.dp))
+
+        Text(
+            text = descricao,
+            color = CinzaPolitica,
+            fontSize = 12.sp,
+            lineHeight = 18.sp
+        )
     }
 }
