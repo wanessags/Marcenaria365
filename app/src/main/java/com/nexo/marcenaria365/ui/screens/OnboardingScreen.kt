@@ -2,21 +2,21 @@
 package com.nexo.marcenaria365.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.nexo.marcenaria365.ui.screens.clientes.ClienteCadastroScreen
+import com.nexo.marcenaria365.ui.screens.clientes.ClienteDetalhesScreen
+import com.nexo.marcenaria365.ui.screens.clientes.ClienteEdicaoScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen() {
 
@@ -26,6 +26,10 @@ fun OnboardingScreen() {
 
     var nomeUsuario by rememberSaveable {
         mutableStateOf("Mariana")
+    }
+
+    var clienteSelecionadoId by rememberSaveable {
+        mutableStateOf<Long?>(null)
     }
 
     val clientes = remember {
@@ -39,6 +43,10 @@ fun OnboardingScreen() {
         pageCount = { 2 }
     )
 
+    val clienteSelecionado = clientes.find {
+        it.id == clienteSelecionadoId
+    }
+
     when (telaAtual) {
 
         "login" -> {
@@ -51,7 +59,7 @@ fun OnboardingScreen() {
                     telaAtual = "onboarding"
                 },
                 onRegisterClick = {
-                    telaAtual = "cadastro"
+                    telaAtual = "cadastro_usuario"
                 },
                 onDemoLogin = { nome ->
                     nomeUsuario = nome
@@ -60,7 +68,7 @@ fun OnboardingScreen() {
             )
         }
 
-        "cadastro" -> {
+        "cadastro_usuario" -> {
             BackHandler {
                 telaAtual = "login"
             }
@@ -76,10 +84,6 @@ fun OnboardingScreen() {
         }
 
         "home" -> {
-            BackHandler {
-                // A saída é feita pelo menu Mais.
-            }
-
             HomeScreen(
                 nomeUsuario = nomeUsuario,
                 quantidadeClientes = clientes.size,
@@ -93,27 +97,87 @@ fun OnboardingScreen() {
         }
 
         "clientes" -> {
-            BackHandler {
-                telaAtual = "home"
-            }
-
             ClientesScreen(
                 clientes = clientes,
-                onAdicionarCliente = { novoCliente ->
-                    clientes.add(novoCliente)
-                },
-                onAtualizarCliente = { clienteAtualizado ->
-                    val indice = clientes.indexOfFirst {
-                        it.id == clienteAtualizado.id
-                    }
-                    if (indice >= 0) {
-                        clientes[indice] = clienteAtualizado
-                    }
-                },
                 onInicioClick = {
                     telaAtual = "home"
+                },
+                onNovoClienteClick = {
+                    telaAtual = "cliente_cadastro"
+                },
+                onClienteClick = { cliente ->
+                    clienteSelecionadoId = cliente.id
+                    telaAtual = "cliente_detalhes"
                 }
             )
+        }
+
+        "cliente_cadastro" -> {
+            ClienteCadastroScreen(
+                onVoltar = {
+                    telaAtual = "clientes"
+                },
+                onSalvar = { novoCliente ->
+                    val novoId = (
+                            (clientes.maxOfOrNull { it.id } ?: 0L) + 1L
+                            )
+
+                    clientes.add(
+                        novoCliente.copy(id = novoId)
+                    )
+
+                    telaAtual = "clientes"
+                }
+            )
+        }
+
+        "cliente_detalhes" -> {
+            if (clienteSelecionado != null) {
+                ClienteDetalhesScreen(
+                    cliente = clienteSelecionado,
+                    onVoltar = {
+                        telaAtual = "clientes"
+                    },
+                    onEditar = {
+                        telaAtual = "cliente_edicao"
+                    },
+                    onExcluir = { id ->
+                        clientes.removeAll { it.id == id }
+                        clienteSelecionadoId = null
+                        telaAtual = "clientes"
+                    }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    telaAtual = "clientes"
+                }
+            }
+        }
+
+        "cliente_edicao" -> {
+            if (clienteSelecionado != null) {
+                ClienteEdicaoScreen(
+                    cliente = clienteSelecionado,
+                    onVoltar = {
+                        telaAtual = "cliente_detalhes"
+                    },
+                    onSalvar = { atualizado ->
+                        val indice = clientes.indexOfFirst {
+                            it.id == atualizado.id
+                        }
+
+                        if (indice >= 0) {
+                            clientes[indice] = atualizado
+                        }
+
+                        telaAtual = "cliente_detalhes"
+                    }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    telaAtual = "clientes"
+                }
+            }
         }
 
         else -> {
