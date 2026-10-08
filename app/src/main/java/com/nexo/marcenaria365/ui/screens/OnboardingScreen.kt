@@ -9,12 +9,19 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+
+// Telas de clientes
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteCadastroScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteDetalhesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteEdicaoScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
+
+// Telas de serviços
+import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
+import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
+import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -32,9 +39,17 @@ fun OnboardingScreen() {
         mutableStateOf<Long?>(null)
     }
 
+    // Lista compartilhada entre Clientes e Serviços
     val clientes = remember {
         mutableStateListOf<ClienteUi>().apply {
             addAll(clientesIniciais())
+        }
+    }
+
+    // Lista de serviços compartilhada com o Dashboard
+    val servicos = remember {
+        mutableStateListOf<ServicoUi>().apply {
+            addAll(servicosIniciais())
         }
     }
 
@@ -49,6 +64,7 @@ fun OnboardingScreen() {
 
     when (telaAtual) {
 
+        // LOGIN
         "login" -> {
             BackHandler {
                 telaAtual = "onboarding"
@@ -68,6 +84,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // CADASTRO DE USUÁRIO
         "cadastro_usuario" -> {
             BackHandler {
                 telaAtual = "login"
@@ -83,6 +100,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // DASHBOARD
         "home" -> {
             HomeScreen(
                 nomeUsuario = nomeUsuario,
@@ -90,12 +108,16 @@ fun OnboardingScreen() {
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
+                onServicosClick = {
+                    telaAtual = "servicos"
+                },
                 onSair = {
                     telaAtual = "login"
                 }
             )
         }
 
+        // LISTA DE CLIENTES
         "clientes" -> {
             ClientesScreen(
                 clientes = clientes,
@@ -112,15 +134,15 @@ fun OnboardingScreen() {
             )
         }
 
+        // CADASTRAR CLIENTE
         "cliente_cadastro" -> {
             ClienteCadastroScreen(
                 onVoltar = {
                     telaAtual = "clientes"
                 },
                 onSalvar = { novoCliente ->
-                    val novoId = (
-                            (clientes.maxOfOrNull { it.id } ?: 0L) + 1L
-                            )
+                    val novoId =
+                        (clientes.maxOfOrNull { it.id } ?: 0L) + 1L
 
                     clientes.add(
                         novoCliente.copy(id = novoId)
@@ -131,6 +153,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // DETALHES DO CLIENTE
         "cliente_detalhes" -> {
             if (clienteSelecionado != null) {
                 ClienteDetalhesScreen(
@@ -142,7 +165,10 @@ fun OnboardingScreen() {
                         telaAtual = "cliente_edicao"
                     },
                     onExcluir = { id ->
-                        clientes.removeAll { it.id == id }
+                        clientes.removeAll {
+                            it.id == id
+                        }
+
                         clienteSelecionadoId = null
                         telaAtual = "clientes"
                     }
@@ -154,6 +180,7 @@ fun OnboardingScreen() {
             }
         }
 
+        // EDITAR CLIENTE
         "cliente_edicao" -> {
             if (clienteSelecionado != null) {
                 ClienteEdicaoScreen(
@@ -180,6 +207,37 @@ fun OnboardingScreen() {
             }
         }
 
+        // NOVO MÓDULO DE SERVIÇOS
+        "servicos" -> {
+            ServicosFlowScreen(
+                clientes = clientes,
+                servicos = servicos,
+
+                onAdicionarServico = { novoServico ->
+                    servicos.add(novoServico)
+                },
+
+                onAtualizarServico = { atualizado ->
+                    val indice = servicos.indexOfFirst {
+                        it.id == atualizado.id
+                    }
+
+                    if (indice >= 0) {
+                        servicos[indice] = atualizado
+                    }
+                },
+
+                onInicioClick = {
+                    telaAtual = "home"
+                },
+
+                onClientesClick = {
+                    telaAtual = "clientes"
+                }
+            )
+        }
+
+        // ABERTURA E PRIVACIDADE
         else -> {
             HorizontalPager(
                 state = pagerState,

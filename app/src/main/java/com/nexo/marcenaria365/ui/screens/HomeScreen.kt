@@ -77,16 +77,16 @@ private val resumoInicial = ResumoDashboard(
     ),
     entregas = listOf(
         EntregaResumo(
-            "Cozinha planejada",
-            "Ana Silva",
-            "15/10",
-            "Em produção"
+            titulo = "Cozinha planejada",
+            cliente = "Ana Silva",
+            prazo = "15/10",
+            status = "Em produção"
         ),
         EntregaResumo(
-            "Rack para sala",
-            "Bruno Souza",
-            "18/10",
-            "Em produção"
+            titulo = "Rack para sala",
+            cliente = "Bruno Souza",
+            prazo = "18/10",
+            status = "Em produção"
         )
     )
 )
@@ -96,13 +96,19 @@ fun HomeScreen(
     nomeUsuario: String,
     onSair: () -> Unit,
     onClientesClick: () -> Unit,
+    onServicosClick: () -> Unit,
     quantidadeClientes: Int = resumoInicial.clientes
 ) {
-    var mostrarSaida by remember { mutableStateOf(false) }
-    var mostrarFinanceiro by remember { mutableStateOf(false) }
-    var mostrarServicos by remember { mutableStateOf(false) }
+    var mostrarSaida by remember {
+        mutableStateOf(false)
+    }
 
-    val primeiroNome = nomeUsuario.trim()
+    var mostrarFinanceiro by remember {
+        mutableStateOf(false)
+    }
+
+    val primeiroNome = nomeUsuario
+        .trim()
         .substringBefore(" ")
         .ifBlank { "Usuário" }
 
@@ -121,7 +127,7 @@ fun HomeScreen(
             Spacer(Modifier.height(15.dp))
 
             Text(
-                "Olá, $primeiroNome!",
+                text = "Olá, $primeiroNome!",
                 color = AzulHome,
                 fontSize = 25.sp,
                 fontWeight = FontWeight.Bold
@@ -130,19 +136,20 @@ fun HomeScreen(
             Spacer(Modifier.height(4.dp))
 
             Text(
-                "Confira o resumo da sua marcenaria hoje.",
+                text = "Confira o resumo da sua marcenaria hoje.",
                 color = CinzaHome,
                 fontSize = 12.sp
             )
 
             Spacer(Modifier.height(13.dp))
 
+            // CARTEIRA
             Card(
+                modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
                 ),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(
@@ -150,9 +157,12 @@ fun HomeScreen(
                         vertical = 16.dp
                     )
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
-                            Icons.Outlined.AccountBalanceWallet,
+                            imageVector =
+                                Icons.Outlined.AccountBalanceWallet,
                             contentDescription = null,
                             tint = CobreHome,
                             modifier = Modifier.size(20.dp)
@@ -161,9 +171,9 @@ fun HomeScreen(
                         Spacer(Modifier.width(9.dp))
 
                         Text(
-                            "SALDO EM CAIXA",
-                            fontSize = 11.sp,
+                            text = "SALDO EM CAIXA",
                             color = CinzaHome,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -171,7 +181,7 @@ fun HomeScreen(
                     Spacer(Modifier.height(10.dp))
 
                     Text(
-                        resumoInicial.saldo,
+                        text = resumoInicial.saldo,
                         color = AzulHome,
                         fontSize = 29.sp,
                         fontWeight = FontWeight.Bold,
@@ -183,18 +193,21 @@ fun HomeScreen(
 
                     Row(
                         modifier = Modifier
-                            .clickable { mostrarFinanceiro = true }
+                            .clickable {
+                                mostrarFinanceiro = true
+                            }
                             .padding(vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "Ver detalhes",
+                            text = "Ver detalhes",
                             color = CobreHome,
                             fontSize = 12.sp
                         )
 
                         Icon(
-                            Icons.Outlined.ChevronRight,
+                            imageVector =
+                                Icons.Outlined.ChevronRight,
                             contentDescription = null,
                             tint = CobreHome,
                             modifier = Modifier.size(17.dp)
@@ -205,6 +218,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
+            // INDICADORES
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(9.dp)
@@ -236,6 +250,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
+            // GRÁFICO DE SERVIÇOS
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -243,12 +258,14 @@ fun HomeScreen(
                     containerColor = Color.White
                 )
             ) {
-                Column(Modifier.padding(14.dp)) {
+                Column(
+                    modifier = Modifier.padding(14.dp)
+                ) {
                     Text(
-                        "Serviços por status",
-                        fontWeight = FontWeight.Bold,
+                        text = "Serviços por status",
+                        color = AzulHome,
                         fontSize = 16.sp,
-                        color = AzulHome
+                        fontWeight = FontWeight.Bold
                     )
 
                     Spacer(Modifier.height(13.dp))
@@ -256,7 +273,8 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement =
+                            Arrangement.spacedBy(10.dp)
                     ) {
                         GraficoDashboard(
                             status = resumoInicial.status,
@@ -265,11 +283,13 @@ fun HomeScreen(
 
                         Column(
                             modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(13.dp)
+                            verticalArrangement =
+                                Arrangement.spacedBy(13.dp)
                         ) {
                             resumoInicial.status.forEach { item ->
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment =
+                                        Alignment.CenterVertically
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -290,7 +310,7 @@ fun HomeScreen(
                                     )
 
                                     Text(
-                                        item.quantidade.toString(),
+                                        text = item.quantidade.toString(),
                                         color = AzulHome,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold
@@ -304,6 +324,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
+            // PRÓXIMAS ENTREGAS
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -311,9 +332,11 @@ fun HomeScreen(
                 ),
                 shape = RoundedCornerShape(14.dp)
             ) {
-                Column(Modifier.padding(13.dp)) {
+                Column(
+                    modifier = Modifier.padding(13.dp)
+                ) {
                     Text(
-                        "Próximas entregas",
+                        text = "Próximas entregas",
                         color = AzulHome,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
@@ -332,11 +355,14 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFF7EBDC)),
+                                    .background(
+                                        Color(0xFFF7EBDC)
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    Icons.AutoMirrored.Outlined.Assignment,
+                                    imageVector =
+                                        Icons.AutoMirrored.Outlined.Assignment,
                                     contentDescription = null,
                                     tint = CobreHome,
                                     modifier = Modifier.size(18.dp)
@@ -345,9 +371,11 @@ fun HomeScreen(
 
                             Spacer(Modifier.width(9.dp))
 
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Text(
-                                    entrega.titulo,
+                                    text = entrega.titulo,
                                     color = AzulHome,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -356,14 +384,14 @@ fun HomeScreen(
                                 )
 
                                 Text(
-                                    "${entrega.cliente} · ${entrega.prazo}",
+                                    text = "${entrega.cliente} · ${entrega.prazo}",
                                     color = CinzaHome,
                                     fontSize = 10.sp
                                 )
                             }
 
                             Text(
-                                "● ${entrega.status}",
+                                text = "● ${entrega.status}",
                                 color = LaranjaHome,
                                 fontSize = 9.sp,
                                 maxLines = 1
@@ -376,6 +404,7 @@ fun HomeScreen(
             Spacer(Modifier.height(20.dp))
         }
 
+        // MENU INFERIOR
         NavigationBar(
             containerColor = Color.White,
             tonalElevation = 0.dp,
@@ -384,8 +413,15 @@ fun HomeScreen(
             NavigationBarItem(
                 selected = true,
                 onClick = {},
-                icon = { Icon(Icons.Outlined.Home, "Início") },
-                label = { Text("Início", fontSize = 10.sp) },
+                icon = {
+                    Icon(
+                        Icons.Outlined.Home,
+                        contentDescription = "Início"
+                    )
+                },
+                label = {
+                    Text("Início", fontSize = 10.sp)
+                },
                 colors = coresDashboard()
             )
 
@@ -393,87 +429,123 @@ fun HomeScreen(
                 selected = false,
                 onClick = onClientesClick,
                 icon = {
-                    Icon(Icons.Outlined.PeopleOutline, "Clientes")
+                    Icon(
+                        Icons.Outlined.PeopleOutline,
+                        contentDescription = "Clientes"
+                    )
                 },
-                label = { Text("Clientes", fontSize = 10.sp) },
+                label = {
+                    Text("Clientes", fontSize = 10.sp)
+                },
                 colors = coresDashboard()
             )
 
+            // SERVIÇOS AGORA ABRE A TELA REAL
             NavigationBarItem(
                 selected = false,
-                onClick = { mostrarServicos = true },
+                onClick = onServicosClick,
                 icon = {
                     Icon(
                         Icons.AutoMirrored.Outlined.Assignment,
-                        "Serviços"
+                        contentDescription = "Serviços"
                     )
                 },
-                label = { Text("Serviços", fontSize = 10.sp) },
+                label = {
+                    Text("Serviços", fontSize = 10.sp)
+                },
                 colors = coresDashboard()
             )
 
             NavigationBarItem(
                 selected = false,
-                onClick = { mostrarSaida = true },
-                icon = { Icon(Icons.Outlined.Menu, "Mais") },
-                label = { Text("Mais", fontSize = 10.sp) },
+                onClick = {
+                    mostrarSaida = true
+                },
+                icon = {
+                    Icon(
+                        Icons.Outlined.Menu,
+                        contentDescription = "Mais"
+                    )
+                },
+                label = {
+                    Text("Mais", fontSize = 10.sp)
+                },
                 colors = coresDashboard()
             )
         }
     }
 
+    // AVISO DA CARTEIRA
     if (mostrarFinanceiro) {
         AlertDialog(
-            onDismissRequest = { mostrarFinanceiro = false },
-            title = { Text("Saldo em caixa") },
+            onDismissRequest = {
+                mostrarFinanceiro = false
+            },
+            title = {
+                Text("Saldo em caixa")
+            },
             text = {
-                Text("Os detalhes da Carteira serão implementados em breve.")
+                Text(
+                    "Os detalhes da Carteira serão adicionados em breve."
+                )
             },
             confirmButton = {
-                TextButton(onClick = { mostrarFinanceiro = false }) {
-                    Text("Entendi", color = AzulHome)
+                TextButton(
+                    onClick = {
+                        mostrarFinanceiro = false
+                    }
+                ) {
+                    Text(
+                        text = "Entendi",
+                        color = AzulHome
+                    )
                 }
             }
         )
     }
 
-    if (mostrarServicos) {
-        AlertDialog(
-            onDismissRequest = { mostrarServicos = false },
-            title = { Text("Serviços") },
-            text = {
-                Text("Essa área será implementada nas próximas etapas.")
-            },
-            confirmButton = {
-                TextButton(onClick = { mostrarServicos = false }) {
-                    Text("Entendi", color = AzulHome)
-                }
-            }
-        )
-    }
-
+    // CONFIRMAÇÃO DE SAÍDA
     if (mostrarSaida) {
         AlertDialog(
-            onDismissRequest = { mostrarSaida = false },
-            title = { Text("Sair da conta") },
-            text = { Text("Deseja voltar para a tela de login?") },
+            onDismissRequest = {
+                mostrarSaida = false
+            },
+            title = {
+                Text("Sair da conta")
+            },
+            text = {
+                Text("Deseja voltar para a tela de login?")
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    mostrarSaida = false
-                    onSair()
-                }) {
-                    Text("Sair", color = AzulHome)
+                TextButton(
+                    onClick = {
+                        mostrarSaida = false
+                        onSair()
+                    }
+                ) {
+                    Text(
+                        "Sair",
+                        color = AzulHome
+                    )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarSaida = false }) {
-                    Text("Cancelar", color = CinzaHome)
+                TextButton(
+                    onClick = {
+                        mostrarSaida = false
+                    }
+                ) {
+                    Text(
+                        "Cancelar",
+                        color = CinzaHome
+                    )
                 }
             }
         )
     }
 }
 
+// CORES DO MENU
 @Composable
 private fun coresDashboard() =
     NavigationBarItemDefaults.colors(
@@ -484,6 +556,7 @@ private fun coresDashboard() =
         unselectedTextColor = CinzaHome
     )
 
+// CARTÃO DE INDICADOR
 @Composable
 private fun IndicadorDashboard(
     modifier: Modifier,
@@ -499,9 +572,11 @@ private fun IndicadorDashboard(
             containerColor = Color.White
         )
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
+        Column(
+            modifier = Modifier.padding(10.dp)
+        ) {
             Icon(
-                icone,
+                imageVector = icone,
                 contentDescription = null,
                 tint = cor,
                 modifier = Modifier.size(21.dp)
@@ -510,14 +585,14 @@ private fun IndicadorDashboard(
             Spacer(Modifier.height(5.dp))
 
             Text(
-                numero.toString(),
+                text = numero.toString(),
                 color = AzulHome,
                 fontSize = 21.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                descricao,
+                text = descricao,
                 color = CinzaHome,
                 fontSize = 10.sp,
                 lineHeight = 13.sp
@@ -526,53 +601,70 @@ private fun IndicadorDashboard(
     }
 }
 
+// GRÁFICO CIRCULAR
 @Composable
 private fun GraficoDashboard(
     status: List<StatusServico>,
     modifier: Modifier = Modifier
 ) {
-    val total = status.sumOf { it.quantidade }
+    val total = status.sumOf {
+        it.quantidade
+    }
 
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
             val espessura = 19.dp.toPx()
-            val margem = espessura / 2
+            val margem = espessura / 2f
             val diametro = size.minDimension - espessura
 
             var angulo = -90f
 
             status.forEach { item ->
-                val parte = if (total > 0)
+                val parte = if (total > 0) {
                     360f * item.quantidade / total
-                else 0f
+                } else {
+                    0f
+                }
 
                 drawArc(
                     color = item.cor,
                     startAngle = angulo,
                     sweepAngle = parte,
                     useCenter = false,
-                    topLeft = Offset(margem, margem),
-                    size = Size(diametro, diametro),
-                    style = Stroke(width = espessura)
+                    topLeft = Offset(
+                        margem,
+                        margem
+                    ),
+                    size = Size(
+                        diametro,
+                        diametro
+                    ),
+                    style = Stroke(
+                        width = espessura
+                    )
                 )
 
                 angulo += parte
             }
         }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
-                total.toString(),
+                text = total.toString(),
                 color = AzulHome,
                 fontWeight = FontWeight.Bold,
                 fontSize = 23.sp
             )
 
             Text(
-                "Total",
+                text = "Total",
                 color = CinzaHome,
                 fontSize = 10.sp
             )
