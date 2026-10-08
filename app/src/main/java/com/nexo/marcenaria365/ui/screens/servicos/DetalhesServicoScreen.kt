@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,13 +28,13 @@ import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.OrcamentoUi
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.formatarMoedaOrcamento
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.formatarNumeroOrcamento
 
-private val Fundo = Color(0xFFFAF6F0)
-private val Azul = Color(0xFF193447)
-private val Cobre = Color(0xFFBD906E)
-private val Cinza = Color(0xFF929292)
-private val Borda = Color(0xFFE9E3DD)
-private val Verde = Color(0xFF239B7A)
-private val Vermelho = Color(0xFFB34D4D)
+private val FundoDetalhes = Color(0xFFFAF6F0)
+private val AzulDetalhes = Color(0xFF193447)
+private val CobreDetalhes = Color(0xFFBD906E)
+private val CinzaDetalhes = Color(0xFF929292)
+private val BordaDetalhes = Color(0xFFE9E3DD)
+private val VerdeDetalhes = Color(0xFF239B7A)
+private val VermelhoDetalhes = Color(0xFFB34D4D)
 
 @Composable
 fun DetalhesServicoScreen(
@@ -42,13 +43,28 @@ fun DetalhesServicoScreen(
     onVoltar: () -> Unit,
     onAbrirOrcamento: () -> Unit,
     onRegistrarRecebimento: (Double) -> Unit,
-    onExcluirServico: (Long) -> Unit
+    onExcluirServico: (Long) -> Unit,
+    onEditarServico: () -> Unit = {}
 ) {
-    var aba by remember { mutableStateOf("Detalhes") }
-    var confirmarExclusao by remember { mutableStateOf(false) }
-    var mostrarRecebimento by remember { mutableStateOf(false) }
-    var valorRecebimento by remember { mutableStateOf("") }
-    var erro by remember { mutableStateOf("") }
+    var aba by remember {
+        mutableStateOf("Detalhes")
+    }
+
+    var confirmarExclusao by remember {
+        mutableStateOf(false)
+    }
+
+    var mostrarRecebimento by remember {
+        mutableStateOf(false)
+    }
+
+    var valorRecebimento by remember {
+        mutableStateOf("")
+    }
+
+    var erro by remember {
+        mutableStateOf("")
+    }
 
     val saldo = (
             servico.valorEstimado - servico.valorRecebido
@@ -62,20 +78,22 @@ fun DetalhesServicoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Fundo)
+            .background(FundoDetalhes)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
+        // CABEÇALHO COM BOTÃO DE EDIÇÃO
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(58.dp)
-                .background(Azul)
+                .background(AzulDetalhes)
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onVoltar) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    imageVector =
+                        Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Voltar",
                     tint = Color.White
                 )
@@ -86,11 +104,18 @@ fun DetalhesServicoScreen(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
                 color = Color.White,
-                fontSize = 19.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(Modifier.width(48.dp))
+            IconButton(onClick = onEditarServico) {
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = "Editar serviço",
+                    tint = Color.White,
+                    modifier = Modifier.size(21.dp)
+                )
+            }
         }
 
         Column(
@@ -101,10 +126,10 @@ fun DetalhesServicoScreen(
         ) {
             Spacer(Modifier.height(22.dp))
 
+            // FOTO, NOME, CLIENTE E STATUS
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Exibe a foto selecionada no cadastro.
                 FotoServico(
                     fotoUri = servico.fotoUri,
                     modifier = Modifier.size(82.dp)
@@ -117,7 +142,7 @@ fun DetalhesServicoScreen(
                 ) {
                     Text(
                         text = servico.titulo,
-                        color = Azul,
+                        color = AzulDetalhes,
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp
                     )
@@ -126,7 +151,7 @@ fun DetalhesServicoScreen(
 
                     Text(
                         text = servico.clienteNome,
-                        color = Cinza,
+                        color = CinzaDetalhes,
                         fontSize = 13.sp
                     )
 
@@ -143,9 +168,9 @@ fun DetalhesServicoScreen(
                         Text(
                             text = servico.status,
                             color = when (servico.status) {
-                                "Concluído" -> Verde
-                                "Em produção" -> Cobre
-                                else -> Azul
+                                "Concluído" -> VerdeDetalhes
+                                "Em produção" -> CobreDetalhes
+                                else -> AzulDetalhes
                             },
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
@@ -160,9 +185,11 @@ fun DetalhesServicoScreen(
 
             Spacer(Modifier.height(22.dp))
 
+            // ABAS
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                horizontalArrangement =
+                    Arrangement.spacedBy(5.dp)
             ) {
                 listOf(
                     "Detalhes",
@@ -188,7 +215,7 @@ fun DetalhesServicoScreen(
                     ) {
                         Text(
                             text = item,
-                            color = Azul,
+                            color = AzulDetalhes,
                             fontSize = 12.sp,
                             fontWeight = if (aba == item) {
                                 FontWeight.Bold
@@ -213,30 +240,35 @@ fun DetalhesServicoScreen(
                     ) {
                         Column(
                             modifier = Modifier.padding(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(15.dp)
+                            verticalArrangement =
+                                Arrangement.spacedBy(15.dp)
                         ) {
                             Text(
                                 text = "Informações gerais",
-                                color = Azul,
+                                color = AzulDetalhes,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
 
-                            CampoDetalhe(
+                            CampoDetalheServico(
                                 titulo = "Cliente",
                                 valor = servico.clienteNome
                             )
 
-                            HorizontalDivider(color = Borda)
+                            HorizontalDivider(
+                                color = BordaDetalhes
+                            )
 
-                            CampoDetalhe(
+                            CampoDetalheServico(
                                 titulo = "Prazo de entrega",
                                 valor = servico.entrega
                             )
 
-                            HorizontalDivider(color = Borda)
+                            HorizontalDivider(
+                                color = BordaDetalhes
+                            )
 
-                            CampoDetalhe(
+                            CampoDetalheServico(
                                 titulo = "Descrição",
                                 valor = servico.descricao
                             )
@@ -254,39 +286,44 @@ fun DetalhesServicoScreen(
                     ) {
                         Column(
                             modifier = Modifier.padding(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                            verticalArrangement =
+                                Arrangement.spacedBy(14.dp)
                         ) {
                             Text(
                                 text = "Financeiro",
-                                color = Azul,
+                                color = AzulDetalhes,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
 
-                            ResumoValor(
+                            ResumoValorServico(
                                 titulo = "Valor estimado",
                                 valor = moedaServico(
                                     servico.valorEstimado
                                 ),
-                                cor = Azul
+                                cor = AzulDetalhes
                             )
 
-                            HorizontalDivider(color = Borda)
+                            HorizontalDivider(
+                                color = BordaDetalhes
+                            )
 
-                            ResumoValor(
+                            ResumoValorServico(
                                 titulo = "Recebido",
                                 valor = moedaServico(
                                     servico.valorRecebido
                                 ),
-                                cor = Verde
+                                cor = VerdeDetalhes
                             )
 
-                            HorizontalDivider(color = Borda)
+                            HorizontalDivider(
+                                color = BordaDetalhes
+                            )
 
-                            ResumoValor(
+                            ResumoValorServico(
                                 titulo = "Saldo",
                                 valor = moedaServico(saldo),
-                                cor = Vermelho
+                                cor = VermelhoDetalhes
                             )
                         }
                     }
@@ -308,9 +345,10 @@ fun DetalhesServicoScreen(
                                 Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.ReceiptLong,
+                                imageVector =
+                                    Icons.Outlined.ReceiptLong,
                                 contentDescription = null,
-                                tint = Cobre,
+                                tint = CobreDetalhes,
                                 modifier = Modifier.size(35.dp)
                             )
 
@@ -319,7 +357,7 @@ fun DetalhesServicoScreen(
                             if (orcamento == null) {
                                 Text(
                                     text = "Nenhum orçamento cadastrado",
-                                    color = Azul,
+                                    color = AzulDetalhes,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center
@@ -330,7 +368,7 @@ fun DetalhesServicoScreen(
                                 Text(
                                     text = "Cadastre materiais, mão de obra " +
                                             "e condições de pagamento.",
-                                    color = Cinza,
+                                    color = CinzaDetalhes,
                                     fontSize = 12.sp,
                                     textAlign = TextAlign.Center
                                 )
@@ -341,7 +379,7 @@ fun DetalhesServicoScreen(
                                             orcamento.id
                                         )
                                     }",
-                                    color = Azul,
+                                    color = AzulDetalhes,
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -350,7 +388,7 @@ fun DetalhesServicoScreen(
 
                                 Text(
                                     text = orcamento.status,
-                                    color = Cobre,
+                                    color = CobreDetalhes,
                                     fontSize = 12.sp
                                 )
 
@@ -360,7 +398,7 @@ fun DetalhesServicoScreen(
                                     text = formatarMoedaOrcamento(
                                         orcamento.total
                                     ),
-                                    color = Azul,
+                                    color = AzulDetalhes,
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -375,7 +413,7 @@ fun DetalhesServicoScreen(
                                     .height(49.dp),
                                 shape = RoundedCornerShape(11.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Azul
+                                    containerColor = AzulDetalhes
                                 )
                             ) {
                                 Text(
@@ -405,7 +443,7 @@ fun DetalhesServicoScreen(
                         ) {
                             Text(
                                 text = "Histórico financeiro",
-                                color = Azul,
+                                color = AzulDetalhes,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -414,7 +452,7 @@ fun DetalhesServicoScreen(
 
                             Text(
                                 text = "Total recebido",
-                                color = Cinza,
+                                color = CinzaDetalhes,
                                 fontSize = 12.sp
                             )
 
@@ -424,7 +462,7 @@ fun DetalhesServicoScreen(
                                 text = moedaServico(
                                     servico.valorRecebido
                                 ),
-                                color = Verde,
+                                color = VerdeDetalhes,
                                 fontSize = 21.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -435,6 +473,7 @@ fun DetalhesServicoScreen(
 
             Spacer(Modifier.height(25.dp))
 
+            // RECEBIMENTOS
             Button(
                 onClick = {
                     valorRecebimento = ""
@@ -446,7 +485,7 @@ fun DetalhesServicoScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Azul,
+                    containerColor = AzulDetalhes,
                     contentColor = Color.White
                 )
             ) {
@@ -459,6 +498,7 @@ fun DetalhesServicoScreen(
 
             Spacer(Modifier.height(9.dp))
 
+            // EXCLUSÃO
             TextButton(
                 onClick = {
                     confirmarExclusao = true
@@ -467,13 +507,13 @@ fun DetalhesServicoScreen(
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Vermelho
+                    contentColor = VermelhoDetalhes
                 )
             ) {
                 Icon(
                     imageVector = Icons.Outlined.DeleteOutline,
                     contentDescription = null,
-                    tint = Vermelho,
+                    tint = VermelhoDetalhes,
                     modifier = Modifier.size(17.dp)
                 )
 
@@ -481,7 +521,7 @@ fun DetalhesServicoScreen(
 
                 Text(
                     text = "Excluir serviço",
-                    color = Vermelho,
+                    color = VermelhoDetalhes,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -491,6 +531,7 @@ fun DetalhesServicoScreen(
         }
     }
 
+    // CONFIRMAÇÃO DE EXCLUSÃO
     if (confirmarExclusao) {
         AlertDialog(
             onDismissRequest = {
@@ -499,7 +540,7 @@ fun DetalhesServicoScreen(
             title = {
                 Text(
                     text = "Excluir serviço?",
-                    color = Azul,
+                    color = AzulDetalhes,
                     fontWeight = FontWeight.Bold
                 )
             },
@@ -519,7 +560,7 @@ fun DetalhesServicoScreen(
                 ) {
                     Text(
                         text = "Excluir",
-                        color = Vermelho,
+                        color = VermelhoDetalhes,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -532,7 +573,7 @@ fun DetalhesServicoScreen(
                 ) {
                     Text(
                         text = "Cancelar",
-                        color = Azul
+                        color = AzulDetalhes
                     )
                 }
             },
@@ -541,6 +582,7 @@ fun DetalhesServicoScreen(
         )
     }
 
+    // REGISTRAR RECEBIMENTO
     if (mostrarRecebimento) {
         AlertDialog(
             onDismissRequest = {
@@ -549,7 +591,7 @@ fun DetalhesServicoScreen(
             title = {
                 Text(
                     text = "Registrar recebimento",
-                    color = Azul,
+                    color = AzulDetalhes,
                     fontWeight = FontWeight.Bold
                 )
             },
@@ -557,7 +599,7 @@ fun DetalhesServicoScreen(
                 Column {
                     Text(
                         text = "Saldo: ${moedaServico(saldo)}",
-                        color = Cinza,
+                        color = CinzaDetalhes,
                         fontSize = 12.sp
                     )
 
@@ -583,7 +625,7 @@ fun DetalhesServicoScreen(
 
                         Text(
                             text = erro,
-                            color = Vermelho,
+                            color = VermelhoDetalhes,
                             fontSize = 12.sp
                         )
                     }
@@ -617,7 +659,7 @@ fun DetalhesServicoScreen(
                 ) {
                     Text(
                         text = "Registrar",
-                        color = Azul
+                        color = AzulDetalhes
                     )
                 }
             },
@@ -629,7 +671,7 @@ fun DetalhesServicoScreen(
                 ) {
                     Text(
                         text = "Cancelar",
-                        color = Cinza
+                        color = CinzaDetalhes
                     )
                 }
             },
@@ -639,14 +681,14 @@ fun DetalhesServicoScreen(
 }
 
 @Composable
-private fun CampoDetalhe(
+private fun CampoDetalheServico(
     titulo: String,
     valor: String
 ) {
     Column {
         Text(
             text = titulo,
-            color = Azul,
+            color = AzulDetalhes,
             fontWeight = FontWeight.SemiBold,
             fontSize = 12.sp
         )
@@ -655,7 +697,7 @@ private fun CampoDetalhe(
 
         Text(
             text = valor,
-            color = Cinza,
+            color = CinzaDetalhes,
             fontSize = 13.sp,
             lineHeight = 18.sp
         )
@@ -663,7 +705,7 @@ private fun CampoDetalhe(
 }
 
 @Composable
-private fun ResumoValor(
+private fun ResumoValorServico(
     titulo: String,
     valor: String,
     cor: Color
@@ -675,7 +717,7 @@ private fun ResumoValor(
     ) {
         Text(
             text = titulo,
-            color = Cinza,
+            color = CinzaDetalhes,
             fontSize = 12.sp
         )
 

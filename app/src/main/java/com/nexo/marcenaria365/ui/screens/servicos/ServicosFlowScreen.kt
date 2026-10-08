@@ -32,9 +32,7 @@ fun ServicosFlowScreen(
         )
     }
 
-    var servicoSelecionadoId by rememberSaveable(
-        initialServicoId
-    ) {
+    var servicoSelecionadoId by rememberSaveable(initialServicoId) {
         mutableStateOf(initialServicoId)
     }
 
@@ -73,6 +71,27 @@ fun ServicosFlowScreen(
             )
         }
 
+        "editar" -> {
+            if (selecionado != null) {
+                EditarServicoScreen(
+                    servico = selecionado,
+
+                    onVoltar = {
+                        tela = "detalhes"
+                    },
+
+                    onSalvar = { atualizado ->
+                        onAtualizarServico(atualizado)
+                        tela = "detalhes"
+                    }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    tela = "lista"
+                }
+            }
+        }
+
         "detalhes" -> {
             if (selecionado != null) {
                 DetalhesServicoScreen(
@@ -85,6 +104,10 @@ fun ServicosFlowScreen(
                         } else {
                             tela = "lista"
                         }
+                    },
+
+                    onEditarServico = {
+                        tela = "editar"
                     },
 
                     onAbrirOrcamento = {
@@ -110,7 +133,6 @@ fun ServicosFlowScreen(
                         }
 
                         onExcluirServico(id)
-
                         servicoSelecionadoId = null
 
                         if (initialServicoId != null) {
@@ -191,12 +213,8 @@ fun ServicosFlowScreen(
         else -> {
             ServicosScreen(
                 servicos = servicos,
-
                 onInicioClick = onInicioClick,
-
                 onClientesClick = onClientesClick,
-
-                // Nova conexão com a aba Mais
                 onMaisClick = onMaisClick,
 
                 onNovoServicoClick = {
