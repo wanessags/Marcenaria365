@@ -27,34 +27,41 @@ import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
 @Composable
 fun OnboardingScreen() {
 
+    // Controle de navegação
     var telaAtual by rememberSaveable {
         mutableStateOf("onboarding")
     }
 
+    // Nome exibido no Dashboard
     var nomeUsuario by rememberSaveable {
         mutableStateOf("Mariana")
     }
 
+    // Cliente selecionado
     var clienteSelecionadoId by rememberSaveable {
         mutableStateOf<Long?>(null)
     }
 
+    // Serviço aberto pelos detalhes de um cliente
     var servicoVindoClienteId by rememberSaveable {
         mutableStateOf<Long?>(null)
     }
 
+    // Lista de clientes
     val clientes = remember {
         mutableStateListOf<ClienteUi>().apply {
             addAll(clientesIniciais())
         }
     }
 
+    // Lista de serviços
     val servicos = remember {
         mutableStateListOf<ServicoUi>().apply {
             addAll(servicosIniciais())
         }
     }
 
+    // Páginas de boas-vindas
     val pagerState = rememberPagerState(
         initialPage = 0,
         pageCount = { 2 }
@@ -64,16 +71,19 @@ fun OnboardingScreen() {
         it.id == clienteSelecionadoId
     }
 
+    // Função para excluir serviços
     val excluirServico: (Long) -> Unit = { id ->
         servicos.removeAll {
             it.id == id
         }
     }
 
+    // Função para adicionar serviços
     val adicionarServico: (ServicoUi) -> Unit = { novo ->
         servicos.add(novo)
     }
 
+    // Função para atualizar serviços
     val atualizarServico: (ServicoUi) -> Unit = { atualizado ->
         val indice = servicos.indexOfFirst {
             it.id == atualizado.id
@@ -122,24 +132,33 @@ fun OnboardingScreen() {
             )
         }
 
-        // INÍCIO
+        // DASHBOARD - INÍCIO
         "home" -> {
             HomeScreen(
                 nomeUsuario = nomeUsuario,
+
                 quantidadeClientes = clientes.size,
+
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
+
                 onServicosClick = {
                     telaAtual = "servicos"
                 },
+
+                // CORREÇÃO: ABRIR A TELA CAIXA
+                onCaixaClick = {
+                    telaAtual = "caixa"
+                },
+
                 onSair = {
                     telaAtual = "login"
                 }
             )
         }
 
-        // CAIXA
+        // CAIXA - RESUMO FINANCEIRO
         "caixa" -> {
             CaixaScreen(
                 onVoltar = {
@@ -153,12 +172,15 @@ fun OnboardingScreen() {
             ClientesScreen(
                 clientes = clientes,
                 servicos = servicos,
+
                 onInicioClick = {
                     telaAtual = "home"
                 },
+
                 onNovoClienteClick = {
                     telaAtual = "cliente_cadastro"
                 },
+
                 onClienteClick = { cliente ->
                     clienteSelecionadoId = cliente.id
                     telaAtual = "cliente_detalhes"
@@ -172,12 +194,15 @@ fun OnboardingScreen() {
                 onVoltar = {
                     telaAtual = "clientes"
                 },
+
                 onSalvar = { novoCliente ->
                     val novoId =
                         (clientes.maxOfOrNull { it.id } ?: 0L) + 1L
 
                     clientes.add(
-                        novoCliente.copy(id = novoId)
+                        novoCliente.copy(
+                            id = novoId
+                        )
                     )
 
                     telaAtual = "clientes"
@@ -191,13 +216,18 @@ fun OnboardingScreen() {
                 ClienteDetalhesScreen(
                     cliente = clienteSelecionado,
                     servicos = servicos,
+
                     onVoltar = {
                         telaAtual = "clientes"
                     },
+
                     onEditar = {
                         telaAtual = "cliente_edicao"
                     },
+
                     onExcluir = { id ->
+                        // Impede excluir clientes que possuem
+                        // serviços vinculados.
                         val possuiServicos = servicos.any {
                             it.clienteId == id
                         }
@@ -211,6 +241,7 @@ fun OnboardingScreen() {
                             telaAtual = "clientes"
                         }
                     },
+
                     onAbrirServico = { servico ->
                         servicoVindoClienteId = servico.id
                         telaAtual = "servico_cliente"
@@ -228,9 +259,11 @@ fun OnboardingScreen() {
             if (clienteSelecionado != null) {
                 ClienteEdicaoScreen(
                     cliente = clienteSelecionado,
+
                     onVoltar = {
                         telaAtual = "cliente_detalhes"
                     },
+
                     onSalvar = { atualizado ->
                         val indice = clientes.indexOfFirst {
                             it.id == atualizado.id
@@ -255,33 +288,45 @@ fun OnboardingScreen() {
             ServicosFlowScreen(
                 clientes = clientes,
                 servicos = servicos,
+
                 onAdicionarServico = adicionarServico,
+
                 onAtualizarServico = atualizarServico,
+
                 onExcluirServico = excluirServico,
+
                 onInicioClick = {
                     telaAtual = "home"
                 },
+
                 onClientesClick = {
                     telaAtual = "clientes"
                 }
             )
         }
 
-        // SERVIÇO ABERTO PELO CLIENTE
+        // SERVIÇO ABERTO A PARTIR DE UM CLIENTE
         "servico_cliente" -> {
             ServicosFlowScreen(
                 clientes = clientes,
                 servicos = servicos,
+
                 initialServicoId = servicoVindoClienteId,
+
                 onAdicionarServico = adicionarServico,
+
                 onAtualizarServico = atualizarServico,
+
                 onExcluirServico = excluirServico,
+
                 onInicioClick = {
                     telaAtual = "home"
                 },
+
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
+
                 onVoltarDoServicoInicial = {
                     servicoVindoClienteId = null
                     telaAtual = "cliente_detalhes"
@@ -289,23 +334,28 @@ fun OnboardingScreen() {
             )
         }
 
-        // BOAS-VINDAS E PRIVACIDADE
+        // BOAS-VINDAS E POLÍTICA DE PRIVACIDADE
         else -> {
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { pagina ->
                 when (pagina) {
-                    0 -> WelcomeScreen(
-                        paginaAtual = pagerState.currentPage,
-                        totalPaginas = 2
-                    )
 
-                    1 -> PrivacyScreen(
-                        onAgreeClick = {
-                            telaAtual = "login"
-                        }
-                    )
+                    0 -> {
+                        WelcomeScreen(
+                            paginaAtual = pagerState.currentPage,
+                            totalPaginas = 2
+                        )
+                    }
+
+                    1 -> {
+                        PrivacyScreen(
+                            onAgreeClick = {
+                                telaAtual = "login"
+                            }
+                        )
+                    }
                 }
             }
         }

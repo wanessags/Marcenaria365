@@ -70,10 +70,26 @@ private val resumoInicial = ResumoDashboard(
     emAndamento = 8,
     concluidos = 4,
     status = listOf(
-        StatusServico("Orçamentos", 4, LaranjaHome),
-        StatusServico("Produção", 4, CinzaGraficoHome),
-        StatusServico("Concluídos", 7, VerdeHome),
-        StatusServico("Pendentes", 1, VermelhoHome)
+        StatusServico(
+            "Orçamentos",
+            4,
+            LaranjaHome
+        ),
+        StatusServico(
+            "Produção",
+            4,
+            CinzaGraficoHome
+        ),
+        StatusServico(
+            "Concluídos",
+            7,
+            VerdeHome
+        ),
+        StatusServico(
+            "Pendentes",
+            1,
+            VermelhoHome
+        )
     ),
     entregas = listOf(
         EntregaResumo(
@@ -97,13 +113,10 @@ fun HomeScreen(
     onSair: () -> Unit,
     onClientesClick: () -> Unit,
     onServicosClick: () -> Unit,
+    onCaixaClick: () -> Unit,
     quantidadeClientes: Int = resumoInicial.clientes
 ) {
     var mostrarSaida by remember {
-        mutableStateOf(false)
-    }
-
-    var mostrarFinanceiro by remember {
         mutableStateOf(false)
     }
 
@@ -191,11 +204,10 @@ fun HomeScreen(
 
                     Spacer(Modifier.height(10.dp))
 
+                    // AGORA ABRE A TELA CAIXA
                     Row(
                         modifier = Modifier
-                            .clickable {
-                                mostrarFinanceiro = true
-                            }
+                            .clickable(onClick = onCaixaClick)
                             .padding(vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -440,7 +452,6 @@ fun HomeScreen(
                 colors = coresDashboard()
             )
 
-            // SERVIÇOS AGORA ABRE A TELA REAL
             NavigationBarItem(
                 selected = false,
                 onClick = onServicosClick,
@@ -473,35 +484,6 @@ fun HomeScreen(
                 colors = coresDashboard()
             )
         }
-    }
-
-    // AVISO DA CARTEIRA
-    if (mostrarFinanceiro) {
-        AlertDialog(
-            onDismissRequest = {
-                mostrarFinanceiro = false
-            },
-            title = {
-                Text("Saldo em caixa")
-            },
-            text = {
-                Text(
-                    "Os detalhes da Carteira serão adicionados em breve."
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarFinanceiro = false
-                    }
-                ) {
-                    Text(
-                        text = "Entendi",
-                        color = AzulHome
-                    )
-                }
-            }
-        )
     }
 
     // CONFIRMAÇÃO DE SAÍDA
@@ -545,7 +527,6 @@ fun HomeScreen(
     }
 }
 
-// CORES DO MENU
 @Composable
 private fun coresDashboard() =
     NavigationBarItemDefaults.colors(
@@ -556,7 +537,6 @@ private fun coresDashboard() =
         unselectedTextColor = CinzaHome
     )
 
-// CARTÃO DE INDICADOR
 @Composable
 private fun IndicadorDashboard(
     modifier: Modifier,
@@ -601,7 +581,6 @@ private fun IndicadorDashboard(
     }
 }
 
-// GRÁFICO CIRCULAR
 @Composable
 private fun GraficoDashboard(
     status: List<StatusServico>,
