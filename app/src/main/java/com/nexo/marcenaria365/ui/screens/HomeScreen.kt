@@ -137,6 +137,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(13.dp))
 
+            // CARTEIRA
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -209,6 +210,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
+            // INDICADORES CLICÁVEIS
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(9.dp)
@@ -218,7 +220,8 @@ fun HomeScreen(
                     icone = Icons.Outlined.PersonOutline,
                     numero = quantidadeClientes,
                     descricao = "Clientes\ncadastrados",
-                    cor = CobreHome
+                    cor = CobreHome,
+                    onClick = onClientesClick
                 )
 
                 IndicadorDashboard(
@@ -226,7 +229,8 @@ fun HomeScreen(
                     icone = Icons.AutoMirrored.Outlined.Assignment,
                     numero = resumoInicial.emAndamento,
                     descricao = "Serviços em\nandamento",
-                    cor = CobreHome
+                    cor = CobreHome,
+                    onClick = onServicosClick
                 )
 
                 IndicadorDashboard(
@@ -234,12 +238,14 @@ fun HomeScreen(
                     icone = Icons.Outlined.CheckCircleOutline,
                     numero = resumoInicial.concluidos,
                     descricao = "Serviços\nconcluídos",
-                    cor = VerdeHome
+                    cor = VerdeHome,
+                    onClick = onServicosClick
                 )
             }
 
             Spacer(Modifier.height(11.dp))
 
+            // GRÁFICO DE SERVIÇOS
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -313,6 +319,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
+            // PRÓXIMAS ENTREGAS
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -343,9 +350,7 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        Color(0xFFF7EBDC)
-                                    ),
+                                    .background(Color(0xFFF7EBDC)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -392,6 +397,7 @@ fun HomeScreen(
             Spacer(Modifier.height(20.dp))
         }
 
+        // MENU INFERIOR
         NavigationBar(
             containerColor = Color.White,
             tonalElevation = 0.dp,
@@ -461,32 +467,41 @@ private fun coresDashboard() =
         unselectedTextColor = CinzaHome
     )
 
+// CADA CAIXINHA AGORA RECEBE UM onClick
 @Composable
 private fun IndicadorDashboard(
     modifier: Modifier,
     icone: ImageVector,
     numero: Int,
     descricao: String,
-    cor: Color
+    cor: Color,
+    onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier.height(112.dp),
+        onClick = onClick,
+        modifier = modifier.height(120.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp
         )
     ) {
         Column(
-            modifier = Modifier.padding(10.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp)
         ) {
             Icon(
                 imageVector = icone,
                 contentDescription = null,
                 tint = cor,
-                modifier = Modifier.size(21.dp)
+                modifier = Modifier.size(20.dp)
             )
 
-            Spacer(Modifier.height(5.dp))
+            Spacer(Modifier.height(4.dp))
 
             Text(
                 text = numero.toString(),
@@ -499,8 +514,29 @@ private fun IndicadorDashboard(
                 text = descricao,
                 color = CinzaHome,
                 fontSize = 10.sp,
-                lineHeight = 13.sp
+                lineHeight = 12.sp,
+                maxLines = 2
             )
+
+            Spacer(Modifier.weight(1f))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Ver",
+                    color = CobreHome,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = CobreHome,
+                    modifier = Modifier.size(13.dp)
+                )
+            }
         }
     }
 }
