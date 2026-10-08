@@ -47,6 +47,7 @@ fun MaisScreen(
     onInicioClick: () -> Unit,
     onClientesClick: () -> Unit,
     onServicosClick: () -> Unit,
+    onPoliticaClick: () -> Unit,
     onSair: () -> Unit
 ) {
     var confirmarSaida by remember {
@@ -73,10 +74,8 @@ fun MaisScreen(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
-
         containerColor = FundoMais,
 
-        // Cabeçalho com seta e título centralizado
         topBar = {
             Box(
                 modifier = Modifier
@@ -109,7 +108,6 @@ fun MaisScreen(
             }
         },
 
-        // Barra inferior fixa
         bottomBar = {
             NavigationBar(
                 modifier = Modifier
@@ -148,7 +146,6 @@ fun MaisScreen(
             }
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -158,7 +155,6 @@ fun MaisScreen(
         ) {
             Spacer(Modifier.height(20.dp))
 
-            // Cartão do usuário
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -168,9 +164,6 @@ fun MaisScreen(
                 shape = RoundedCornerShape(15.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 0.dp
                 )
             ) {
                 Row(
@@ -202,9 +195,7 @@ fun MaisScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = nomeUsuario.ifBlank {
-                                "Meu perfil"
-                            },
+                            text = nomeUsuario.ifBlank { "Meu perfil" },
                             color = AzulMais,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
@@ -236,7 +227,6 @@ fun MaisScreen(
 
             Spacer(Modifier.height(22.dp))
 
-            // Opções do menu
             OpcaoMais(
                 titulo = "Perfil",
                 icone = Icons.Outlined.PersonOutline,
@@ -277,17 +267,15 @@ fun MaisScreen(
                 }
             )
 
+            // Abre a política real, não um aviso.
             OpcaoMais(
                 titulo = "Política de Privacidade",
                 icone = Icons.Outlined.Description,
-                onClick = {
-                    opcaoSelecionada = "Política de Privacidade"
-                }
+                onClick = onPoliticaClick
             )
 
             Spacer(Modifier.height(25.dp))
 
-            // Botão sair da conta
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -297,17 +285,14 @@ fun MaisScreen(
                 shape = RoundedCornerShape(11.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 0.dp
                 )
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(49.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector =
@@ -332,7 +317,6 @@ fun MaisScreen(
         }
     }
 
-    // Opções ainda não implementadas
     if (opcaoSelecionada != null) {
         AlertDialog(
             onDismissRequest = {
@@ -356,10 +340,7 @@ fun MaisScreen(
                         opcaoSelecionada = null
                     }
                 ) {
-                    Text(
-                        text = "Entendi",
-                        color = AzulMais
-                    )
+                    Text("Entendi", color = AzulMais)
                 }
             },
             containerColor = Color.White,
@@ -367,7 +348,6 @@ fun MaisScreen(
         )
     }
 
-    // Confirmação para sair da conta
     if (confirmarSaida) {
         AlertDialog(
             onDismissRequest = {
@@ -375,15 +355,13 @@ fun MaisScreen(
             },
             title = {
                 Text(
-                    text = "Sair da conta?",
+                    "Sair da conta?",
                     color = AzulMais,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Text(
-                    text = "Deseja voltar para a tela de login?"
-                )
+                Text("Deseja voltar para a tela de login?")
             },
             confirmButton = {
                 TextButton(
@@ -393,8 +371,9 @@ fun MaisScreen(
                     }
                 ) {
                     Text(
-                        text = "Sair",
-                        color = VermelhoMais
+                        "Sair",
+                        color = VermelhoMais,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             },
@@ -404,10 +383,7 @@ fun MaisScreen(
                         confirmarSaida = false
                     }
                 ) {
-                    Text(
-                        text = "Cancelar",
-                        color = AzulMais
-                    )
+                    Text("Cancelar", color = AzulMais)
                 }
             },
             containerColor = Color.White,
