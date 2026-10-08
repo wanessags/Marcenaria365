@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Home
@@ -27,11 +28,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Fundo = Color(0xFFFAF6F0)
-private val Azul = Color(0xFF193447)
-private val Cobre = Color(0xFFBD906E)
-private val Cinza = Color(0xFF929292)
-private val Borda = Color(0xFFE9E3DD)
+private val FundoServicos = Color(0xFFFAF6F0)
+private val AzulServicos = Color(0xFF193447)
+private val CobreServicos = Color(0xFFBD906E)
+private val CinzaServicos = Color(0xFF929292)
+private val BordaServicos = Color(0xFFE9E3DD)
+private val VerdeServicos = Color(0xFF27845D)
 
 @Composable
 fun ServicosScreen(
@@ -52,17 +54,25 @@ fun ServicosScreen(
 
     BackHandler(onBack = onInicioClick)
 
-    val filtrados = servicos.filter { servico ->
-        val corresponde = when (filtro) {
+    val servicosFiltrados = servicos.filter { servico ->
+        val correspondeFiltro = when (filtro) {
             "Em andamento" -> servico.status == "Em produção"
             "Orçamentos" -> servico.status == "Orçamento"
             "Concluídos" -> servico.status == "Concluído"
             else -> true
         }
 
-        corresponde && (
-                servico.titulo.contains(pesquisa, true) ||
-                        servico.clienteNome.contains(pesquisa, true)
+        val termo = pesquisa.trim()
+
+        correspondeFiltro && (
+                servico.titulo.contains(
+                    termo,
+                    ignoreCase = true
+                ) ||
+                        servico.clienteNome.contains(
+                            termo,
+                            ignoreCase = true
+                        )
                 )
     }
 
@@ -70,18 +80,18 @@ fun ServicosScreen(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
-        containerColor = Fundo,
+        containerColor = FundoServicos,
 
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNovoServicoClick,
-                containerColor = Azul,
+                containerColor = AzulServicos,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(15.dp)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Add,
-                    contentDescription = "Novo serviço"
+                    contentDescription = "Adicionar serviço"
                 )
             }
         },
@@ -89,7 +99,8 @@ fun ServicosScreen(
         bottomBar = {
             NavigationBar(
                 containerColor = Color.White,
-                tonalElevation = 0.dp
+                tonalElevation = 0.dp,
+                modifier = Modifier.height(75.dp)
             ) {
                 NavigationBarItem(
                     selected = false,
@@ -103,7 +114,7 @@ fun ServicosScreen(
                     label = {
                         Text("Início", fontSize = 10.sp)
                     },
-                    colors = coresNavegacao()
+                    colors = coresMenuServicos()
                 )
 
                 NavigationBarItem(
@@ -118,7 +129,7 @@ fun ServicosScreen(
                     label = {
                         Text("Clientes", fontSize = 10.sp)
                     },
-                    colors = coresNavegacao()
+                    colors = coresMenuServicos()
                 )
 
                 NavigationBarItem(
@@ -134,7 +145,7 @@ fun ServicosScreen(
                     label = {
                         Text("Serviços", fontSize = 10.sp)
                     },
-                    colors = coresNavegacao()
+                    colors = coresMenuServicos()
                 )
 
                 NavigationBarItem(
@@ -149,28 +160,59 @@ fun ServicosScreen(
                     label = {
                         Text("Mais", fontSize = 10.sp)
                     },
-                    colors = coresNavegacao()
+                    colors = coresMenuServicos()
                 )
             }
         }
-    ) { padding ->
+    ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(paddingValues)
         ) {
-            Spacer(Modifier.height(15.dp))
 
-            Text(
-                text = "Serviços",
-                color = Azul,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
+            // CABEÇALHO NO MESMO PADRÃO DE CLIENTES
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = 12.dp,
+                        end = 20.dp,
+                        top = 10.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onInicioClick) {
+                    Icon(
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Voltar ao início",
+                        tint = AzulServicos
+                    )
+                }
 
-            Spacer(Modifier.height(15.dp))
+                Column {
+                    Text(
+                        text = "Serviços",
+                        color = AzulServicos,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
 
+                    Spacer(Modifier.height(4.dp))
+
+                    Text(
+                        text = "Acompanhe seus projetos e entregas.",
+                        color = CinzaServicos,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(17.dp))
+
+            // PESQUISA
             OutlinedTextField(
                 value = pesquisa,
                 onValueChange = {
@@ -181,30 +223,31 @@ fun ServicosScreen(
                     .padding(horizontal = 20.dp),
                 placeholder = {
                     Text(
-                        text = "Buscar serviço...",
-                        fontSize = 13.sp,
-                        color = Cinza
+                        text = "Buscar por serviço ou cliente",
+                        color = CinzaServicos,
+                        fontSize = 13.sp
                     )
                 },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Search,
                         contentDescription = null,
-                        tint = Cinza
+                        tint = CinzaServicos
                     )
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFF0ECE7),
-                    unfocusedContainerColor = Color(0xFFF0ECE7),
-                    focusedBorderColor = Cobre,
-                    unfocusedBorderColor = Color.Transparent
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = CobreServicos,
+                    unfocusedBorderColor = BordaServicos
                 )
             )
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
+            // FILTROS
             val filtros = listOf(
                 "Todos" to servicos.size,
                 "Em andamento" to servicos.count {
@@ -219,8 +262,12 @@ fun ServicosScreen(
             )
 
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(
+                    horizontal = 20.dp
+                ),
+                horizontalArrangement =
+                    Arrangement.spacedBy(8.dp)
             ) {
                 items(filtros) { (nome, quantidade) ->
                     FilterChip(
@@ -231,121 +278,68 @@ fun ServicosScreen(
                         label = {
                             Text(
                                 text = "$nome ($quantidade)",
-                                fontSize = 12.sp
+                                fontSize = 11.sp
                             )
                         },
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFF6E8D8),
-                            selectedLabelColor = Azul
+                            containerColor = Color.Transparent,
+                            selectedContainerColor =
+                                Color(0xFFF4E6D8),
+                            selectedLabelColor = AzulServicos,
+                            labelColor = CinzaServicos
                         ),
                         border = FilterChipDefaults.filterChipBorder(
                             enabled = true,
                             selected = filtro == nome,
-                            borderColor = Borda,
-                            selectedBorderColor = Cobre
+                            borderColor = BordaServicos,
+                            selectedBorderColor = CobreServicos
                         )
                     )
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
-            if (filtrados.isEmpty()) {
+            // LISTA DE SERVIÇOS
+            if (servicosFiltrados.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 60.dp),
+                        .weight(1f)
+                        .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Nenhum serviço encontrado.",
-                        color = Cinza,
+                        color = CinzaServicos,
                         fontSize = 13.sp
                     )
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
                     contentPadding = PaddingValues(
                         start = 20.dp,
                         end = 20.dp,
-                        bottom = 95.dp
+                        bottom = 85.dp
                     )
                 ) {
                     items(
-                        items = filtrados,
+                        items = servicosFiltrados,
                         key = { it.id }
                     ) { servico ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onServicoClick(servico)
-                                }
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // FOTO REAL DO SERVIÇO
-                            // Se não houver foto, mostra o ícone de cadeira.
-                            FotoServico(
-                                fotoUri = servico.fotoUri,
-                                modifier = Modifier.size(76.dp)
-                            )
 
-                            Spacer(Modifier.width(14.dp))
-
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = servico.titulo,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Azul,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-
-                                Spacer(Modifier.height(5.dp))
-
-                                Text(
-                                    text = servico.clienteNome,
-                                    fontSize = 12.sp,
-                                    color = Cinza
-                                )
-
-                                Spacer(Modifier.height(4.dp))
-
-                                Text(
-                                    text = "Entrega: ${servico.entrega}",
-                                    fontSize = 11.sp,
-                                    color = Cinza
-                                )
-
-                                Spacer(Modifier.height(4.dp))
-
-                                Text(
-                                    text = servico.status,
-                                    fontSize = 11.sp,
-                                    color = when (servico.status) {
-                                        "Concluído" -> Color(0xFF239B7A)
-                                        "Em produção" -> Cobre
-                                        else -> Color(0xFFD49A4C)
-                                    }
-                                )
+                        LinhaServico(
+                            servico = servico,
+                            onClick = {
+                                onServicoClick(servico)
                             }
-
-                            Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
-                                contentDescription = "Ver detalhes",
-                                tint = Cinza,
-                                modifier = Modifier.size(19.dp)
-                            )
-                        }
+                        )
 
                         HorizontalDivider(
-                            color = Borda,
+                            color = BordaServicos,
                             thickness = 0.7.dp
                         )
                     }
@@ -355,12 +349,98 @@ fun ServicosScreen(
     }
 }
 
+// LINHA COMPACTA, SEM PERDER A FOTO
 @Composable
-private fun coresNavegacao() =
+private fun LinhaServico(
+    servico: ServicoUi,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        // FOTO CADASTRADA OU ÍCONE PADRÃO
+        FotoServico(
+            fotoUri = servico.fotoUri,
+            modifier = Modifier.size(52.dp)
+        )
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+
+            Text(
+                text = servico.titulo,
+                color = AzulServicos,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                text = "${servico.clienteNome} · ${servico.entrega}",
+                color = CinzaServicos,
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            // SELO DISCRETO DE STATUS
+            Surface(
+                modifier = Modifier.align(Alignment.Start),
+                color = when (servico.status) {
+                    "Concluído" -> Color(0xFFE5F4EC)
+                    "Em produção" -> Color(0xFFF6E8D8)
+                    "Orçamento" -> Color(0xFFFFF3E2)
+                    else -> Color(0xFFF1EEEE)
+                },
+                shape = RoundedCornerShape(5.dp)
+            ) {
+                Text(
+                    text = servico.status,
+                    color = when (servico.status) {
+                        "Concluído" -> VerdeServicos
+                        "Em produção" -> CobreServicos
+                        "Orçamento" -> Color(0xFFAF782C)
+                        else -> CinzaServicos
+                    },
+                    fontSize = 10.sp,
+                    lineHeight = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(
+                        horizontal = 7.dp,
+                        vertical = 3.dp
+                    )
+                )
+            }
+        }
+
+        Spacer(Modifier.width(7.dp))
+
+        Icon(
+            imageVector = Icons.Outlined.ChevronRight,
+            contentDescription = "Abrir detalhes do serviço",
+            tint = CinzaServicos,
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+// CORES DO MENU INFERIOR
+@Composable
+private fun coresMenuServicos() =
     NavigationBarItemDefaults.colors(
-        selectedIconColor = Azul,
-        selectedTextColor = Azul,
-        indicatorColor = Fundo,
-        unselectedIconColor = Cinza,
-        unselectedTextColor = Cinza
+        selectedIconColor = AzulServicos,
+        selectedTextColor = AzulServicos,
+        indicatorColor = Color(0xFFF1E8DE),
+        unselectedIconColor = CinzaServicos,
+        unselectedTextColor = CinzaServicos
     )
