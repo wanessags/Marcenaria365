@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Phone
@@ -52,7 +53,13 @@ fun ClienteEdicaoScreen(
         mutableStateOf("")
     }
 
-    BackHandler(onBack = onVoltar)
+    var mostrarConfirmacao by remember {
+        mutableStateOf(false)
+    }
+
+    BackHandler(enabled = !mostrarConfirmacao) {
+        onVoltar()
+    }
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedTextColor = ClienteCores.Azul,
@@ -77,7 +84,6 @@ fun ClienteEdicaoScreen(
     ) {
         Spacer(Modifier.height(12.dp))
 
-        // Cabeçalho no mesmo padrão do cadastro
         ClienteCabecalho(
             titulo = "Editar cliente",
             subtitulo = "Atualize os dados de contato.",
@@ -92,7 +98,6 @@ fun ClienteEdicaoScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Cartão do formulário
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -135,8 +140,8 @@ fun ClienteEdicaoScreen(
                     shape = RoundedCornerShape(10.dp),
                     colors = coresCampo,
                     textStyle = TextStyle(
-                        color = ClienteCores.Azul,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        color = ClienteCores.Azul
                     )
                 )
 
@@ -168,8 +173,8 @@ fun ClienteEdicaoScreen(
                     shape = RoundedCornerShape(10.dp),
                     colors = coresCampo,
                     textStyle = TextStyle(
-                        color = ClienteCores.Azul,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        color = ClienteCores.Azul
                     )
                 )
 
@@ -201,8 +206,8 @@ fun ClienteEdicaoScreen(
                     shape = RoundedCornerShape(10.dp),
                     colors = coresCampo,
                     textStyle = TextStyle(
-                        color = ClienteCores.Azul,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        color = ClienteCores.Azul
                     )
                 )
             }
@@ -212,8 +217,8 @@ fun ClienteEdicaoScreen(
 
         Text(
             text = "* Campos obrigatórios",
-            color = ClienteCores.Cinza,
             fontSize = 11.sp,
+            color = ClienteCores.Cinza,
             modifier = Modifier.padding(start = 4.dp)
         )
 
@@ -225,15 +230,11 @@ fun ClienteEdicaoScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Cartão de situação
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.White
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 0.dp
             )
         ) {
             Row(
@@ -247,9 +248,9 @@ fun ClienteEdicaoScreen(
                 ) {
                     Text(
                         text = "Cliente ativo",
-                        color = ClienteCores.Azul,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = ClienteCores.Azul
                     )
 
                     Spacer(Modifier.height(5.dp))
@@ -260,9 +261,9 @@ fun ClienteEdicaoScreen(
                         } else {
                             "Cliente marcado como inativo."
                         },
-                        color = ClienteCores.Cinza,
                         fontSize = 11.sp,
-                        lineHeight = 16.sp
+                        lineHeight = 16.sp,
+                        color = ClienteCores.Cinza
                     )
                 }
 
@@ -270,7 +271,9 @@ fun ClienteEdicaoScreen(
 
                 Switch(
                     checked = ativo,
-                    onCheckedChange = { ativo = it },
+                    onCheckedChange = {
+                        ativo = it
+                    },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = ClienteCores.Azul,
@@ -294,7 +297,6 @@ fun ClienteEdicaoScreen(
 
         Spacer(Modifier.height(26.dp))
 
-        // AÇÃO PRINCIPAL: SALVAR ALTERAÇÕES
         Button(
             onClick = {
                 val numeros = telefone.filter { it.isDigit() }
@@ -317,14 +319,7 @@ fun ClienteEdicaoScreen(
                     }
 
                     else -> {
-                        onSalvar(
-                            cliente.copy(
-                                nome = nome.trim(),
-                                telefone = telefone.trim(),
-                                email = emailLimpo,
-                                ativo = ativo
-                            )
-                        )
+                        mostrarConfirmacao = true
                         ""
                     }
                 }
@@ -348,7 +343,6 @@ fun ClienteEdicaoScreen(
 
         Spacer(Modifier.height(10.dp))
 
-        // AÇÃO SECUNDÁRIA: CANCELAR
         OutlinedButton(
             onClick = onVoltar,
             modifier = Modifier
@@ -356,8 +350,8 @@ fun ClienteEdicaoScreen(
                 .height(48.dp),
             shape = RoundedCornerShape(11.dp),
             border = BorderStroke(
-                width = 1.dp,
-                color = ClienteCores.Borda
+                1.dp,
+                ClienteCores.Borda
             ),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.Transparent,
@@ -373,5 +367,71 @@ fun ClienteEdicaoScreen(
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+
+    // Confirmação antes de salvar
+    if (mostrarConfirmacao) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarConfirmacao = false
+            },
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.CheckCircleOutline,
+                    contentDescription = null,
+                    tint = ClienteCores.Verde
+                )
+            },
+            title = {
+                Text(
+                    text = "Salvar alterações?",
+                    color = ClienteCores.Azul,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Deseja salvar as alterações realizadas " +
+                            "no cadastro deste cliente?",
+                    color = ClienteCores.Cinza
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarConfirmacao = false
+
+                        onSalvar(
+                            cliente.copy(
+                                nome = nome.trim(),
+                                telefone = telefone.trim(),
+                                email = email.trim(),
+                                ativo = ativo
+                            )
+                        )
+                    }
+                ) {
+                    Text(
+                        text = "Confirmar",
+                        color = ClienteCores.Azul,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        mostrarConfirmacao = false
+                    }
+                ) {
+                    Text(
+                        text = "Cancelar",
+                        color = ClienteCores.Cinza
+                    )
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(18.dp)
+        )
     }
 }
