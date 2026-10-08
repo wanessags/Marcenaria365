@@ -16,11 +16,13 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,8 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.util.Calendar
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 private val Azul = Color(0xFF193447)
@@ -51,17 +53,32 @@ fun CaixaScreen(
         }
     }
 
-    var periodo by remember { mutableIntStateOf(0) }
-    var menuPeriodoAberto by remember { mutableStateOf(false) }
-    var mostrarTodas by remember { mutableStateOf(false) }
-    var mostrarCadastro by remember { mutableStateOf(false) }
+    var periodo by rememberSaveable {
+        mutableIntStateOf(0)
+    }
 
-    val calendarioAtual = remember { Calendar.getInstance() }
+    var menuPeriodoAberto by remember {
+        mutableStateOf(false)
+    }
+
+    var mostrarTodas by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var mostrarCadastro by remember {
+        mutableStateOf(false)
+    }
+
+    // "Todas", "Entradas" ou "Saídas"
+    var visualizacao by rememberSaveable {
+        mutableStateOf("Todas")
+    }
 
     val periodos = remember {
         (0..5).map { deslocamento ->
             val calendario = Calendar.getInstance()
             calendario.add(Calendar.MONTH, -deslocamento)
+
             Triple(
                 calendario.get(Calendar.YEAR),
                 calendario.get(Calendar.MONTH) + 1,
@@ -103,22 +120,48 @@ fun CaixaScreen(
 
     val saldo = entradas - saidas
 
-    val exibidas = if (mostrarTodas) {
-        filtradas
-    } else {
-        filtradas.take(4)
+    val movimentacoesSelecionadas = when (visualizacao) {
+        "Entradas" -> filtradas.filter {
+            it.tipo == TipoMovimentacao.ENTRADA
+        }
+
+        "Saídas" -> filtradas.filter {
+            it.tipo == TipoMovimentacao.SAIDA
+        }
+
+        else -> filtradas
     }
 
-    BackHandler(onBack = onVoltar)
+    val exibidas = when {
+        visualizacao != "Todas" -> movimentacoesSelecionadas
+        mostrarTodas -> movimentacoesSelecionadas
+        else -> movimentacoesSelecionadas.take(4)
+    }
+
+    fun voltarTela() {
+        if (visualizacao != "Todas" || mostrarTodas) {
+            visualizacao = "Todas"
+            mostrarTodas = false
+        } else {
+            onVoltar()
+        }
+    }
+
+    BackHandler {
+        voltarTela()
+    }
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
         containerColor = Fundo,
+
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { mostrarCadastro = true },
+                onClick = {
+                    mostrarCadastro = true
+                },
                 containerColor = Azul,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(15.dp)
@@ -129,6 +172,7 @@ fun CaixaScreen(
                 )
             }
         },
+
         topBar = {
             Row(
                 modifier = Modifier
@@ -138,16 +182,25 @@ fun CaixaScreen(
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onVoltar) {
+                IconButton(onClick = { voltarTela() }) {
                     Icon(
-                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Voltar",
                         tint = Color.White
                     )
                 }
 
                 Text(
-                    text = "Caixa",
+                    text = when (visualizacao) {
+                        "Entradas" -> "Entradas"
+                        "Saídas" -> "Saídas"
+                        else -> if (mostrarTodas) {
+                            "Movimentações"
+                        } else {
+                            "Caixa"
+                        }
+                    },
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     color = Color.White,
@@ -159,6 +212,7 @@ fun CaixaScreen(
             }
         }
     ) { padding ->
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -170,195 +224,253 @@ fun CaixaScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(17.dp)
         ) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Resumo financeiro",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Azul
-                    )
 
-                    Box {
-                        TextButton(
-                            onClick = { menuPeriodoAberto = true }
-                        ) {
-                            Text(
-                                periodos[periodo].third,
-                                fontSize = 11.sp,
-                                color = Cinza
-                            )
-                            Spacer(Modifier.width(3.dp))
-                            Icon(
-                                Icons.Outlined.CalendarMonth,
-                                contentDescription = null,
-                                tint = Cinza,
-                                modifier = Modifier.size(15.dp)
-                            )
-                        }
+            // RESUMO FINANCEIRO: VISÍVEL NA TELA PRINCIPAL
+            if (visualizacao == "Todas" && !mostrarTodas) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Resumo financeiro",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Azul
+                        )
 
-                        DropdownMenu(
-                            expanded = menuPeriodoAberto,
-                            onDismissRequest = {
+                        SeletorPeriodoCaixa(
+                            titulo = periodos[periodo].third,
+                            aberto = menuPeriodoAberto,
+                            periodos = periodos.map { it.third },
+                            onAbrir = {
+                                menuPeriodoAberto = true
+                            },
+                            onFechar = {
+                                menuPeriodoAberto = false
+                            },
+                            onSelecionar = { indice ->
+                                periodo = indice
                                 menuPeriodoAberto = false
                             }
+                        )
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
+                    ) {
+                        ResumoCaixaCard(
+                            titulo = "Entradas",
+                            valor = entradas,
+                            cor = Verde,
+                            fundo = Color(0xFFE2F3EC),
+                            entrada = true,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                visualizacao = "Entradas"
+                            }
+                        )
+
+                        ResumoCaixaCard(
+                            titulo = "Saídas",
+                            valor = saidas,
+                            cor = Laranja,
+                            fundo = Color(0xFFF8E8D7),
+                            entrada = false,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                visualizacao = "Saídas"
+                            }
+                        )
+
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(142.dp),
+                            shape = RoundedCornerShape(11.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFEFEFED)
+                            )
                         ) {
-                            periodos.forEachIndexed { indice, item ->
-                                DropdownMenuItem(
-                                    text = { Text(item.third) },
-                                    onClick = {
-                                        periodo = indice
-                                        mostrarTodas = false
-                                        menuPeriodoAberto = false
-                                    }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 5.dp),
+                                horizontalAlignment =
+                                    Alignment.CenterHorizontally,
+                                verticalArrangement =
+                                    Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Wallet,
+                                    contentDescription = null,
+                                    tint = Azul,
+                                    modifier = Modifier.size(25.dp)
+                                )
+
+                                Spacer(Modifier.height(12.dp))
+
+                                Text(
+                                    text = "Saldo",
+                                    fontSize = 11.sp,
+                                    color = Azul
+                                )
+
+                                Spacer(Modifier.height(9.dp))
+
+                                Text(
+                                    text = moedaCaixa(saldo),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Azul,
+                                    maxLines = 2,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 15.sp
                                 )
                             }
                         }
                     }
                 }
+
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Color(0xFFF8E8D7),
+                                RoundedCornerShape(11.dp)
+                            )
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = null,
+                            tint = Laranja,
+                            modifier = Modifier.size(20.dp)
+                        )
+
+                        Spacer(Modifier.width(12.dp))
+
+                        Text(
+                            text = "Toque em Entradas ou Saídas " +
+                                    "para consultar as movimentações " +
+                                    "separadamente.",
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp,
+                            color = Color(0xFF988A80)
+                        )
+                    }
+                }
             }
 
+            // CABEÇALHO DAS MOVIMENTAÇÕES
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement =
+                Column(
+                    verticalArrangement =
                         Arrangement.spacedBy(8.dp)
                 ) {
-                    ResumoCaixaCard(
-                        titulo = "Entradas",
-                        valor = entradas,
-                        cor = Verde,
-                        fundo = Color(0xFFE2F3EC),
-                        entrada = true,
-                        modifier = Modifier.weight(1f)
-                    )
 
-                    ResumoCaixaCard(
-                        titulo = "Saídas",
-                        valor = saidas,
-                        cor = Laranja,
-                        fundo = Color(0xFFF8E8D7),
-                        entrada = false,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(142.dp),
-                        shape = RoundedCornerShape(11.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFEFEFED)
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 5.dp),
-                            horizontalAlignment =
-                                Alignment.CenterHorizontally,
-                            verticalArrangement =
-                                Arrangement.Center
+                        Text(
+                            text = when (visualizacao) {
+                                "Entradas" -> "Entradas recebidas"
+                                "Saídas" -> "Saídas registradas"
+                                else -> if (mostrarTodas) {
+                                    "Todas as movimentações"
+                                } else {
+                                    "Últimas movimentações"
+                                }
+                            },
+                            color = Azul,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        if (
+                            visualizacao == "Todas" &&
+                            !mostrarTodas &&
+                            filtradas.size > 4
                         ) {
-                            Icon(
-                                Icons.Outlined.Wallet,
-                                contentDescription = null,
-                                tint = Azul,
-                                modifier = Modifier.size(25.dp)
-                            )
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Text(
-                                "Saldo",
-                                fontSize = 11.sp,
-                                color = Azul
-                            )
-
-                            Spacer(Modifier.height(9.dp))
-
-                            Text(
-                                moedaCaixa(saldo),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Azul,
-                                maxLines = 2,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 15.sp
-                            )
+                            TextButton(
+                                onClick = {
+                                    mostrarTodas = true
+                                }
+                            ) {
+                                Text(
+                                    text = "Ver todas",
+                                    color = Color(0xFF428DBD),
+                                    fontSize = 11.sp
+                                )
+                            }
                         }
                     }
-                }
-            }
 
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Color(0xFFF8E8D7),
-                            RoundedCornerShape(11.dp)
-                        )
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Outlined.Info,
-                        contentDescription = null,
-                        tint = Laranja,
-                        modifier = Modifier.size(20.dp)
-                    )
-
-                    Spacer(Modifier.width(12.dp))
-
-                    Text(
-                        text = "Acompanhe suas entradas e saídas " +
-                                "para manter as finanças sempre em dia.",
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp,
-                        color = Color(0xFF988A80)
-                    )
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Últimas movimentações",
-                        color = Azul,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp
-                    )
-
-                    if (filtradas.size > 4) {
+                    // MOSTRA TOTAL QUANDO ESTIVER EM UMA CATEGORIA
+                    if (visualizacao != "Todas") {
                         Text(
-                            text = if (mostrarTodas) {
-                                "Ver menos"
+                            text = if (visualizacao == "Entradas") {
+                                "Total recebido: ${moedaCaixa(entradas)}"
                             } else {
-                                "Ver todas"
+                                "Total gasto: ${moedaCaixa(saidas)}"
                             },
-                            modifier = Modifier.clickable {
-                                mostrarTodas = !mostrarTodas
+                            color = if (visualizacao == "Entradas") {
+                                Verde
+                            } else {
+                                Laranja
                             },
-                            color = Color(0xFF428DBD),
-                            fontSize = 11.sp
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    // NAS LISTAS FILTRADAS, O PERÍODO CONTINUA EDITÁVEL
+                    if (visualizacao != "Todas" || mostrarTodas) {
+                        SeletorPeriodoCaixa(
+                            titulo = periodos[periodo].third,
+                            aberto = menuPeriodoAberto,
+                            periodos = periodos.map { it.third },
+                            onAbrir = {
+                                menuPeriodoAberto = true
+                            },
+                            onFechar = {
+                                menuPeriodoAberto = false
+                            },
+                            onSelecionar = { indice ->
+                                periodo = indice
+                                menuPeriodoAberto = false
+                            }
                         )
                     }
                 }
             }
 
+            // MOVIMENTAÇÕES FILTRADAS
             if (exibidas.isEmpty()) {
                 item {
                     Text(
-                        text = "Nenhuma movimentação neste período.",
+                        text = when (visualizacao) {
+                            "Entradas" ->
+                                "Nenhuma entrada neste período."
+
+                            "Saídas" ->
+                                "Nenhuma saída neste período."
+
+                            else ->
+                                "Nenhuma movimentação neste período."
+                        },
                         color = Cinza,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(
@@ -377,16 +489,20 @@ fun CaixaScreen(
         }
     }
 
+    // CADASTRAR ENTRADA OU SAÍDA
     if (mostrarCadastro) {
         CadastroMovimentacaoDialog(
-            onCancelar = { mostrarCadastro = false },
+            onCancelar = {
+                mostrarCadastro = false
+            },
             onSalvar = { titulo, descricao, valor, tipo ->
                 val hoje = Calendar.getInstance()
 
                 movimentacoes.add(
                     MovimentacaoUi(
-                        id = (movimentacoes.maxOfOrNull { it.id }
-                            ?: 0L) + 1L,
+                        id = (movimentacoes.maxOfOrNull {
+                            it.id
+                        } ?: 0L) + 1L,
                         titulo = titulo,
                         descricao = descricao,
                         valor = valor,
@@ -399,8 +515,64 @@ fun CaixaScreen(
 
                 periodo = 0
                 mostrarCadastro = false
+
+                // MOSTRA A CATEGORIA DO REGISTRO ADICIONADO
+                visualizacao = if (
+                    tipo == TipoMovimentacao.ENTRADA
+                ) {
+                    "Entradas"
+                } else {
+                    "Saídas"
+                }
             }
         )
+    }
+}
+
+@Composable
+private fun SeletorPeriodoCaixa(
+    titulo: String,
+    aberto: Boolean,
+    periodos: List<String>,
+    onAbrir: () -> Unit,
+    onFechar: () -> Unit,
+    onSelecionar: (Int) -> Unit
+) {
+    Box {
+        TextButton(
+            onClick = onAbrir
+        ) {
+            Text(
+                text = titulo,
+                fontSize = 11.sp,
+                color = Cinza
+            )
+
+            Spacer(Modifier.width(3.dp))
+
+            Icon(
+                imageVector = Icons.Outlined.CalendarMonth,
+                contentDescription = "Selecionar período",
+                tint = Cinza,
+                modifier = Modifier.size(15.dp)
+            )
+        }
+
+        DropdownMenu(
+            expanded = aberto,
+            onDismissRequest = onFechar
+        ) {
+            periodos.forEachIndexed { indice, nome ->
+                DropdownMenuItem(
+                    text = {
+                        Text(nome)
+                    },
+                    onClick = {
+                        onSelecionar(indice)
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -411,10 +583,13 @@ private fun ResumoCaixaCard(
     cor: Color,
     fundo: Color,
     entrada: Boolean,
-    modifier: Modifier
+    modifier: Modifier,
+    onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier.height(142.dp),
+        modifier = modifier
+            .height(142.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(11.dp),
         colors = CardDefaults.cardColors(
             containerColor = fundo
@@ -438,7 +613,7 @@ private fun ResumoCaixaCard(
                 modifier = Modifier.size(25.dp)
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(9.dp))
 
             Text(
                 text = titulo,
@@ -446,7 +621,7 @@ private fun ResumoCaixaCard(
                 fontSize = 11.sp
             )
 
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(7.dp))
 
             Text(
                 text = moedaCaixa(valor),
@@ -456,6 +631,15 @@ private fun ResumoCaixaCard(
                 maxLines = 2,
                 lineHeight = 15.sp,
                 textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(5.dp))
+
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = "Ver $titulo",
+                tint = cor,
+                modifier = Modifier.size(15.dp)
             )
         }
     }
@@ -468,7 +652,11 @@ private fun LinhaMovimentacao(
     val entrada =
         movimentacao.tipo == TipoMovimentacao.ENTRADA
 
-    val cor = if (entrada) Verde else Color(0xFFF0A72C)
+    val cor = if (entrada) {
+        Verde
+    } else {
+        Color(0xFFF0A72C)
+    }
 
     Row(
         modifier = Modifier
@@ -552,23 +740,35 @@ private fun CadastroMovimentacaoDialog(
         mutableStateOf(TipoMovimentacao.ENTRADA)
     }
 
-    var titulo by remember { mutableStateOf("") }
-    var descricao by remember { mutableStateOf("") }
-    var valor by remember { mutableStateOf("") }
-    var erro by remember { mutableStateOf("") }
+    var titulo by remember {
+        mutableStateOf("")
+    }
+
+    var descricao by remember {
+        mutableStateOf("")
+    }
+
+    var valor by remember {
+        mutableStateOf("")
+    }
+
+    var erro by remember {
+        mutableStateOf("")
+    }
 
     AlertDialog(
         onDismissRequest = onCancelar,
         title = {
             Text(
-                "Registrar movimentação",
+                text = "Registrar movimentação",
                 color = Azul,
                 fontWeight = FontWeight.Bold
             )
         },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement =
+                    Arrangement.spacedBy(10.dp)
             ) {
                 SingleChoiceSegmentedButtonRow(
                     modifier = Modifier.fillMaxWidth()
@@ -577,9 +777,12 @@ private fun CadastroMovimentacaoDialog(
                         TipoMovimentacao.ENTRADA,
                         TipoMovimentacao.SAIDA
                     ).forEachIndexed { indice, opcao ->
+
                         SegmentedButton(
                             selected = tipo == opcao,
-                            onClick = { tipo = opcao },
+                            onClick = {
+                                tipo = opcao
+                            },
                             shape =
                                 SegmentedButtonDefaults.itemShape(
                                     indice,
@@ -587,7 +790,8 @@ private fun CadastroMovimentacaoDialog(
                                 ),
                             label = {
                                 Text(
-                                    if (opcao ==
+                                    if (
+                                        opcao ==
                                         TipoMovimentacao.ENTRADA
                                     ) {
                                         "Entrada"
@@ -602,8 +806,13 @@ private fun CadastroMovimentacaoDialog(
 
                 OutlinedTextField(
                     value = titulo,
-                    onValueChange = { titulo = it },
-                    label = { Text("Título") },
+                    onValueChange = {
+                        titulo = it
+                        erro = ""
+                    },
+                    label = {
+                        Text("Título")
+                    },
                     placeholder = {
                         Text(
                             if (tipo == TipoMovimentacao.ENTRADA) {
@@ -619,12 +828,16 @@ private fun CadastroMovimentacaoDialog(
 
                 OutlinedTextField(
                     value = descricao,
-                    onValueChange = { descricao = it },
+                    onValueChange = {
+                        descricao = it
+                    },
                     label = {
                         Text("Descrição / Serviço")
                     },
                     placeholder = {
-                        Text("Ex.: Ana Silva · Cozinha planejada")
+                        Text(
+                            "Ex.: Ana Silva · Cozinha planejada"
+                        )
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -635,8 +848,12 @@ private fun CadastroMovimentacaoDialog(
                         valor = it
                         erro = ""
                     },
-                    label = { Text("Valor (R$)") },
-                    placeholder = { Text("Ex.: 1500,00") },
+                    label = {
+                        Text("Valor (R$)")
+                    },
+                    placeholder = {
+                        Text("Ex.: 1500,00")
+                    },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Decimal
                     ),
@@ -693,7 +910,7 @@ private fun CadastroMovimentacaoDialog(
                 }
             ) {
                 Text(
-                    "Salvar",
+                    text = "Salvar",
                     color = Azul,
                     fontWeight = FontWeight.Bold
                 )
@@ -701,7 +918,10 @@ private fun CadastroMovimentacaoDialog(
         },
         dismissButton = {
             TextButton(onClick = onCancelar) {
-                Text("Cancelar", color = Cinza)
+                Text(
+                    text = "Cancelar",
+                    color = Cinza
+                )
             }
         },
         containerColor = Color.White,

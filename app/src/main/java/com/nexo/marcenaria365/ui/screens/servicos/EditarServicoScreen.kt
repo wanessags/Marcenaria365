@@ -595,7 +595,7 @@ fun EditarServicoScreen(
                 )
             ) {
                 Text(
-                    text = "Salvar alterações",
+                    text = "Salvar",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
