@@ -70,10 +70,26 @@ private val resumoInicial = ResumoDashboard(
     emAndamento = 8,
     concluidos = 4,
     status = listOf(
-        StatusServico("Orçamentos", 4, LaranjaHome),
-        StatusServico("Produção", 4, CinzaGraficoHome),
-        StatusServico("Concluídos", 7, VerdeHome),
-        StatusServico("Pendentes", 1, VermelhoHome)
+        StatusServico(
+            nome = "Orçamentos",
+            quantidade = 4,
+            cor = LaranjaHome
+        ),
+        StatusServico(
+            nome = "Produção",
+            quantidade = 4,
+            cor = CinzaGraficoHome
+        ),
+        StatusServico(
+            nome = "Concluídos",
+            quantidade = 7,
+            cor = VerdeHome
+        ),
+        StatusServico(
+            nome = "Pendentes",
+            quantidade = 1,
+            cor = VermelhoHome
+        )
     ),
     entregas = listOf(
         EntregaResumo(
@@ -112,6 +128,8 @@ fun HomeScreen(
             .background(FundoHome)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
+
+        // CONTEÚDO PRINCIPAL
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -137,7 +155,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(13.dp))
 
-            // CARTEIRA
+            // SALDO EM CAIXA
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -210,7 +228,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
-            // INDICADORES CLICÁVEIS
+            // INDICADORES CLICÁVEIS — SEM TEXTO EXTRA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(9.dp)
@@ -245,7 +263,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
-            // GRÁFICO DE SERVIÇOS
+            // GRÁFICO DE SERVIÇOS POR STATUS
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -407,7 +425,10 @@ fun HomeScreen(
                 selected = true,
                 onClick = {},
                 icon = {
-                    Icon(Icons.Outlined.Home, "Início")
+                    Icon(
+                        imageVector = Icons.Outlined.Home,
+                        contentDescription = "Início"
+                    )
                 },
                 label = {
                     Text("Início", fontSize = 10.sp)
@@ -419,7 +440,10 @@ fun HomeScreen(
                 selected = false,
                 onClick = onClientesClick,
                 icon = {
-                    Icon(Icons.Outlined.PeopleOutline, "Clientes")
+                    Icon(
+                        imageVector = Icons.Outlined.PeopleOutline,
+                        contentDescription = "Clientes"
+                    )
                 },
                 label = {
                     Text("Clientes", fontSize = 10.sp)
@@ -432,8 +456,9 @@ fun HomeScreen(
                 onClick = onServicosClick,
                 icon = {
                     Icon(
-                        Icons.AutoMirrored.Outlined.Assignment,
-                        "Serviços"
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.Assignment,
+                        contentDescription = "Serviços"
                     )
                 },
                 label = {
@@ -446,7 +471,10 @@ fun HomeScreen(
                 selected = false,
                 onClick = onMaisClick,
                 icon = {
-                    Icon(Icons.Outlined.Menu, "Mais")
+                    Icon(
+                        imageVector = Icons.Outlined.Menu,
+                        contentDescription = "Mais"
+                    )
                 },
                 label = {
                     Text("Mais", fontSize = 10.sp)
@@ -467,7 +495,7 @@ private fun coresDashboard() =
         unselectedTextColor = CinzaHome
     )
 
-// CADA CAIXINHA AGORA RECEBE UM onClick
+// CAIXINHA CLICÁVEL, SEM "VER" OU SETINHA
 @Composable
 private fun IndicadorDashboard(
     modifier: Modifier,
@@ -479,7 +507,7 @@ private fun IndicadorDashboard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(120.dp),
+        modifier = modifier.height(112.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -490,18 +518,16 @@ private fun IndicadorDashboard(
         )
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp)
+            modifier = Modifier.padding(10.dp)
         ) {
             Icon(
                 imageVector = icone,
                 contentDescription = null,
                 tint = cor,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(21.dp)
             )
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(5.dp))
 
             Text(
                 text = numero.toString(),
@@ -514,33 +540,14 @@ private fun IndicadorDashboard(
                 text = descricao,
                 color = CinzaHome,
                 fontSize = 10.sp,
-                lineHeight = 12.sp,
+                lineHeight = 13.sp,
                 maxLines = 2
             )
-
-            Spacer(Modifier.weight(1f))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Ver",
-                    color = CobreHome,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Icon(
-                    imageVector = Icons.Outlined.ChevronRight,
-                    contentDescription = null,
-                    tint = CobreHome,
-                    modifier = Modifier.size(13.dp)
-                )
-            }
         }
     }
 }
 
+// GRÁFICO DE ROSCA
 @Composable
 private fun GraficoDashboard(
     status: List<StatusServico>,
