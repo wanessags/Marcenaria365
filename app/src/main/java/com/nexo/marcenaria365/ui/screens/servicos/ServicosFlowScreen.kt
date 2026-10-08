@@ -18,6 +18,7 @@ fun ServicosFlowScreen(
     onExcluirServico: (Long) -> Unit,
     onInicioClick: () -> Unit,
     onClientesClick: () -> Unit,
+    onMaisClick: () -> Unit = {},
     initialServicoId: Long? = null,
     onVoltarDoServicoInicial: () -> Unit = onInicioClick
 ) {
@@ -31,7 +32,9 @@ fun ServicosFlowScreen(
         )
     }
 
-    var servicoSelecionadoId by rememberSaveable(initialServicoId) {
+    var servicoSelecionadoId by rememberSaveable(
+        initialServicoId
+    ) {
         mutableStateOf(initialServicoId)
     }
 
@@ -50,6 +53,7 @@ fun ServicosFlowScreen(
     }
 
     when (tela) {
+
         "novo" -> {
             NovoServicoScreen(
                 clientes = clientes,
@@ -74,6 +78,7 @@ fun ServicosFlowScreen(
                 DetalhesServicoScreen(
                     servico = selecionado,
                     orcamento = orcamentoSelecionado,
+
                     onVoltar = {
                         if (initialServicoId != null) {
                             onVoltarDoServicoInicial()
@@ -81,6 +86,7 @@ fun ServicosFlowScreen(
                             tela = "lista"
                         }
                     },
+
                     onAbrirOrcamento = {
                         tela = if (orcamentoSelecionado == null) {
                             "novo_orcamento"
@@ -88,6 +94,7 @@ fun ServicosFlowScreen(
                             "ver_orcamento"
                         }
                     },
+
                     onRegistrarRecebimento = { valor ->
                         onAtualizarServico(
                             selecionado.copy(
@@ -96,14 +103,12 @@ fun ServicosFlowScreen(
                             )
                         )
                     },
+
                     onExcluirServico = { id ->
-                        // Exclui o orçamento associado ao serviço.
                         orcamentos.removeAll {
                             it.servicoId == id
                         }
 
-                        // A lista principal de serviços é atualizada
-                        // pelo OnboardingScreen.
                         onExcluirServico(id)
 
                         servicoSelecionadoId = null
@@ -130,16 +135,20 @@ fun ServicosFlowScreen(
             if (selecionado != null) {
                 NovoOrcamentoScreen(
                     servico = selecionado,
+
                     onVoltar = {
                         tela = "detalhes"
                     },
+
                     onSalvar = { novo ->
                         orcamentos.removeAll {
                             it.servicoId == novo.servicoId
                         }
 
                         val novoId =
-                            (orcamentos.maxOfOrNull { it.id } ?: 0L) + 1L
+                            (orcamentos.maxOfOrNull {
+                                it.id
+                            } ?: 0L) + 1L
 
                         orcamentos.add(
                             novo.copy(id = novoId)
@@ -159,13 +168,16 @@ fun ServicosFlowScreen(
             if (orcamentoSelecionado != null) {
                 OrcamentoScreen(
                     orcamento = orcamentoSelecionado,
+
                     onVoltar = {
                         tela = "detalhes"
                     },
+
                     onExcluir = { id ->
                         orcamentos.removeAll {
                             it.id == id
                         }
+
                         tela = "detalhes"
                     }
                 )
@@ -179,11 +191,18 @@ fun ServicosFlowScreen(
         else -> {
             ServicosScreen(
                 servicos = servicos,
+
                 onInicioClick = onInicioClick,
+
                 onClientesClick = onClientesClick,
+
+                // Nova conexão com a aba Mais
+                onMaisClick = onMaisClick,
+
                 onNovoServicoClick = {
                     tela = "novo"
                 },
+
                 onServicoClick = { servico ->
                     servicoSelecionadoId = servico.id
                     tela = "detalhes"

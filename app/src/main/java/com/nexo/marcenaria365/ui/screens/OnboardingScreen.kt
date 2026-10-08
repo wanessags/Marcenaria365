@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
@@ -58,28 +58,19 @@ fun OnboardingScreen() {
 
     var nomeUsuario by rememberSaveable {
         mutableStateOf(
-            preferencias.getString(
-                "nome",
-                "Mariana"
-            ) ?: "Mariana"
+            preferencias.getString("nome", "Mariana") ?: "Mariana"
         )
     }
 
     var emailUsuario by rememberSaveable {
         mutableStateOf(
-            preferencias.getString(
-                "email",
-                ""
-            ) ?: ""
+            preferencias.getString("email", "") ?: ""
         )
     }
 
     var fotoUsuario by rememberSaveable {
         mutableStateOf(
-            preferencias.getString(
-                "foto",
-                null
-            )
+            preferencias.getString("foto", null)
         )
     }
 
@@ -331,11 +322,15 @@ fun OnboardingScreen() {
                 },
                 onClientesClick = {
                     telaAtual = "clientes"
+                },
+                // CORREÇÃO: botão Mais funciona em Serviços
+                onMaisClick = {
+                    telaAtual = "mais"
                 }
             )
         }
 
-        // SERVIÇO ABERTO PELO CLIENTE
+        // SERVIÇO ABERTO A PARTIR DO CLIENTE
         "servico_cliente" -> {
             ServicosFlowScreen(
                 clientes = clientes,
@@ -350,6 +345,9 @@ fun OnboardingScreen() {
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
+                onMaisClick = {
+                    telaAtual = "mais"
+                },
                 onVoltarDoServicoInicial = {
                     servicoVindoClienteId = null
                     telaAtual = "cliente_detalhes"
@@ -363,46 +361,37 @@ fun OnboardingScreen() {
                 nomeUsuario = nomeUsuario,
                 emailUsuario = emailUsuario,
                 fotoUsuario = fotoUsuario,
-
                 onPerfilClick = {
                     telaAtual = "meu_perfil"
                 },
-
                 onInicioClick = {
                     telaAtual = "home"
                 },
-
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
-
                 onServicosClick = {
                     telaAtual = "servicos"
                 },
-
                 onPoliticaClick = {
                     telaAtual = "politica_mais"
                 },
-
                 onSair = {
                     telaAtual = "login"
                 }
             )
         }
 
-        // NOVA TELA: MEU PERFIL
+        // MEU PERFIL
         "meu_perfil" -> {
             MeuPerfilScreen(
                 nomeAtual = nomeUsuario,
                 emailAtual = emailUsuario,
                 fotoAtual = fotoUsuario,
-
                 onVoltar = {
                     telaAtual = "mais"
                 },
-
                 onSalvar = { novoNome, novoEmail, novaFoto ->
-
                     preferencias.edit()
                         .putString("nome", novoNome)
                         .putString("email", novoEmail)
@@ -436,7 +425,7 @@ fun OnboardingScreen() {
             )
         }
 
-        // ABERTURA E ACEITE DE TERMOS
+        // ABERTURA E ACEITE DOS TERMOS
         else -> {
             HorizontalPager(
                 state = pagerState,
@@ -466,7 +455,7 @@ fun OnboardingScreen() {
     }
 }
 
-// POLÍTICA DE PRIVACIDADE INTEGRADA
+// TELA DE POLÍTICA INTEGRADA
 
 @Composable
 private fun TelaPoliticaIntegrada(

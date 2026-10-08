@@ -40,12 +40,17 @@ fun ServicosScreen(
     servicos: List<ServicoUi>,
     onInicioClick: () -> Unit,
     onClientesClick: () -> Unit,
+    onMaisClick: () -> Unit,
     onNovoServicoClick: () -> Unit,
     onServicoClick: (ServicoUi) -> Unit
 ) {
-    var pesquisa by rememberSaveable { mutableStateOf("") }
-    var filtro by rememberSaveable { mutableStateOf("Todos") }
-    var aviso by remember { mutableStateOf(false) }
+    var pesquisa by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var filtro by rememberSaveable {
+        mutableStateOf("Todos")
+    }
 
     BackHandler(onBack = onInicioClick)
 
@@ -68,6 +73,7 @@ fun ServicosScreen(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
         containerColor = Fundo,
+
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNovoServicoClick,
@@ -76,11 +82,12 @@ fun ServicosScreen(
                 shape = RoundedCornerShape(15.dp)
             ) {
                 Icon(
-                    Icons.Outlined.Add,
+                    imageVector = Icons.Outlined.Add,
                     contentDescription = "Novo serviço"
                 )
             }
         },
+
         bottomBar = {
             NavigationBar(
                 containerColor = Color.White,
@@ -89,36 +96,61 @@ fun ServicosScreen(
                 NavigationBarItem(
                     selected = false,
                     onClick = onInicioClick,
-                    icon = { Icon(Icons.Outlined.Home, "Início") },
-                    label = { Text("Início", fontSize = 10.sp) },
+                    icon = {
+                        Icon(
+                            Icons.Outlined.Home,
+                            contentDescription = "Início"
+                        )
+                    },
+                    label = {
+                        Text("Início", fontSize = 10.sp)
+                    },
                     colors = coresNavegacao()
                 )
+
                 NavigationBarItem(
                     selected = false,
                     onClick = onClientesClick,
                     icon = {
-                        Icon(Icons.Outlined.PeopleOutline, "Clientes")
+                        Icon(
+                            Icons.Outlined.PeopleOutline,
+                            contentDescription = "Clientes"
+                        )
                     },
-                    label = { Text("Clientes", fontSize = 10.sp) },
+                    label = {
+                        Text("Clientes", fontSize = 10.sp)
+                    },
                     colors = coresNavegacao()
                 )
+
                 NavigationBarItem(
                     selected = true,
                     onClick = {},
                     icon = {
                         Icon(
                             Icons.AutoMirrored.Outlined.Assignment,
-                            "Serviços"
+                            contentDescription = "Serviços"
                         )
                     },
-                    label = { Text("Serviços", fontSize = 10.sp) },
+                    label = {
+                        Text("Serviços", fontSize = 10.sp)
+                    },
                     colors = coresNavegacao()
                 )
+
+                // CORRIGIDO: abre a tela Mais
                 NavigationBarItem(
                     selected = false,
-                    onClick = { aviso = true },
-                    icon = { Icon(Icons.Outlined.Menu, "Mais") },
-                    label = { Text("Mais", fontSize = 10.sp) },
+                    onClick = onMaisClick,
+                    icon = {
+                        Icon(
+                            Icons.Outlined.Menu,
+                            contentDescription = "Mais"
+                        )
+                    },
+                    label = {
+                        Text("Mais", fontSize = 10.sp)
+                    },
                     colors = coresNavegacao()
                 )
             }
@@ -143,20 +175,22 @@ fun ServicosScreen(
 
             OutlinedTextField(
                 value = pesquisa,
-                onValueChange = { pesquisa = it },
+                onValueChange = {
+                    pesquisa = it
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 placeholder = {
                     Text(
-                        "Buscar serviço...",
+                        text = "Buscar serviço...",
                         fontSize = 13.sp,
                         color = Cinza
                     )
                 },
                 leadingIcon = {
                     Icon(
-                        Icons.Outlined.Search,
+                        imageVector = Icons.Outlined.Search,
                         contentDescription = null,
                         tint = Cinza
                     )
@@ -193,10 +227,12 @@ fun ServicosScreen(
                 items(filtros) { (nome, quantidade) ->
                     FilterChip(
                         selected = filtro == nome,
-                        onClick = { filtro = nome },
+                        onClick = {
+                            filtro = nome
+                        },
                         label = {
                             Text(
-                                "$nome ($quantidade)",
+                                text = "$nome ($quantidade)",
                                 fontSize = 12.sp
                             )
                         },
@@ -225,7 +261,7 @@ fun ServicosScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "Nenhum serviço encontrado.",
+                        text = "Nenhum serviço encontrado.",
                         color = Cinza,
                         fontSize = 13.sp
                     )
@@ -239,11 +275,16 @@ fun ServicosScreen(
                         bottom = 95.dp
                     )
                 ) {
-                    items(filtrados, key = { it.id }) { servico ->
+                    items(
+                        items = filtrados,
+                        key = { it.id }
+                    ) { servico ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onServicoClick(servico) }
+                                .clickable {
+                                    onServicoClick(servico)
+                                }
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -251,13 +292,13 @@ fun ServicosScreen(
                                 modifier = Modifier
                                     .size(76.dp)
                                     .background(
-                                        Color(0xFFEDE4DA),
-                                        RoundedCornerShape(9.dp)
+                                        color = Color(0xFFEDE4DA),
+                                        shape = RoundedCornerShape(9.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    Icons.Outlined.Chair,
+                                    imageVector = Icons.Outlined.Chair,
                                     contentDescription = null,
                                     tint = Cobre,
                                     modifier = Modifier.size(30.dp)
@@ -308,7 +349,7 @@ fun ServicosScreen(
                             }
 
                             Icon(
-                                Icons.Outlined.ChevronRight,
+                                imageVector = Icons.Outlined.ChevronRight,
                                 contentDescription = "Ver detalhes",
                                 tint = Cinza,
                                 modifier = Modifier.size(19.dp)
@@ -323,19 +364,6 @@ fun ServicosScreen(
                 }
             }
         }
-    }
-
-    if (aviso) {
-        AlertDialog(
-            onDismissRequest = { aviso = false },
-            title = { Text("Mais") },
-            text = { Text("Essa área ainda não está disponível.") },
-            confirmButton = {
-                TextButton(onClick = { aviso = false }) {
-                    Text("Entendi", color = Azul)
-                }
-            }
-        )
     }
 }
 
