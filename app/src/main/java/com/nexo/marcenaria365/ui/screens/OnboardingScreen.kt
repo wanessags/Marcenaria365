@@ -9,12 +9,16 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+
+import com.nexo.marcenaria365.ui.screens.caixa.CaixaScreen
+
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteCadastroScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteDetalhesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteEdicaoScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
+
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
 import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
@@ -22,6 +26,7 @@ import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen() {
+
     var telaAtual by rememberSaveable {
         mutableStateOf("onboarding")
     }
@@ -59,8 +64,6 @@ fun OnboardingScreen() {
         it.id == clienteSelecionadoId
     }
 
-    // Uma única função é usada nas duas formas
-    // de acessar os detalhes de um serviço.
     val excluirServico: (Long) -> Unit = { id ->
         servicos.removeAll {
             it.id == id
@@ -82,6 +85,8 @@ fun OnboardingScreen() {
     }
 
     when (telaAtual) {
+
+        // LOGIN
         "login" -> {
             BackHandler {
                 telaAtual = "onboarding"
@@ -101,6 +106,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // CADASTRO DO USUÁRIO
         "cadastro_usuario" -> {
             BackHandler {
                 telaAtual = "login"
@@ -116,6 +122,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // INÍCIO
         "home" -> {
             HomeScreen(
                 nomeUsuario = nomeUsuario,
@@ -132,6 +139,16 @@ fun OnboardingScreen() {
             )
         }
 
+        // CAIXA
+        "caixa" -> {
+            CaixaScreen(
+                onVoltar = {
+                    telaAtual = "home"
+                }
+            )
+        }
+
+        // LISTA DE CLIENTES
         "clientes" -> {
             ClientesScreen(
                 clientes = clientes,
@@ -149,6 +166,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // CADASTRAR CLIENTE
         "cliente_cadastro" -> {
             ClienteCadastroScreen(
                 onVoltar = {
@@ -167,6 +185,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // DETALHES DO CLIENTE
         "cliente_detalhes" -> {
             if (clienteSelecionado != null) {
                 ClienteDetalhesScreen(
@@ -204,6 +223,7 @@ fun OnboardingScreen() {
             }
         }
 
+        // EDITAR CLIENTE
         "cliente_edicao" -> {
             if (clienteSelecionado != null) {
                 ClienteEdicaoScreen(
@@ -230,6 +250,7 @@ fun OnboardingScreen() {
             }
         }
 
+        // SERVIÇOS
         "servicos" -> {
             ServicosFlowScreen(
                 clientes = clientes,
@@ -246,6 +267,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // SERVIÇO ABERTO PELO CLIENTE
         "servico_cliente" -> {
             ServicosFlowScreen(
                 clientes = clientes,
@@ -267,6 +289,7 @@ fun OnboardingScreen() {
             )
         }
 
+        // BOAS-VINDAS E PRIVACIDADE
         else -> {
             HorizontalPager(
                 state = pagerState,
