@@ -2,7 +2,6 @@
 package com.nexo.marcenaria365.ui.screens.servicos
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Chair
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Menu
@@ -98,7 +96,7 @@ fun ServicosScreen(
                     onClick = onInicioClick,
                     icon = {
                         Icon(
-                            Icons.Outlined.Home,
+                            imageVector = Icons.Outlined.Home,
                             contentDescription = "Início"
                         )
                     },
@@ -113,7 +111,7 @@ fun ServicosScreen(
                     onClick = onClientesClick,
                     icon = {
                         Icon(
-                            Icons.Outlined.PeopleOutline,
+                            imageVector = Icons.Outlined.PeopleOutline,
                             contentDescription = "Clientes"
                         )
                     },
@@ -128,7 +126,8 @@ fun ServicosScreen(
                     onClick = {},
                     icon = {
                         Icon(
-                            Icons.AutoMirrored.Outlined.Assignment,
+                            imageVector =
+                                Icons.AutoMirrored.Outlined.Assignment,
                             contentDescription = "Serviços"
                         )
                     },
@@ -138,13 +137,12 @@ fun ServicosScreen(
                     colors = coresNavegacao()
                 )
 
-                // CORRIGIDO: abre a tela Mais
                 NavigationBarItem(
                     selected = false,
                     onClick = onMaisClick,
                     icon = {
                         Icon(
-                            Icons.Outlined.Menu,
+                            imageVector = Icons.Outlined.Menu,
                             contentDescription = "Mais"
                         )
                     },
@@ -288,22 +286,12 @@ fun ServicosScreen(
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(76.dp)
-                                    .background(
-                                        color = Color(0xFFEDE4DA),
-                                        shape = RoundedCornerShape(9.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Chair,
-                                    contentDescription = null,
-                                    tint = Cobre,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
+                            // FOTO REAL DO SERVIÇO
+                            // Se não houver foto, mostra o ícone de cadeira.
+                            FotoServico(
+                                fotoUri = servico.fotoUri,
+                                modifier = Modifier.size(76.dp)
+                            )
 
                             Spacer(Modifier.width(14.dp))
 
