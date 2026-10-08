@@ -2,18 +2,18 @@
 package com.nexo.marcenaria365.ui.screens.clientes
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.PeopleOutline
-import androidx.compose.material.icons.outlined.PersonAddAlt1
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,299 +25,338 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
+
+private val FundoClientes = Color(0xFFFAF6F0)
+private val AzulClientes = Color(0xFF193447)
+private val CobreClientes = Color(0xFFBD906E)
+private val CinzaClientes = Color(0xFF929292)
+private val BordaClientes = Color(0xFFE9E3DD)
+private val VerdeClientes = Color(0xFF27845D)
 
 @Composable
 fun ClientesScreen(
     clientes: List<ClienteUi>,
+    servicos: List<ServicoUi> = emptyList(),
     onInicioClick: () -> Unit,
     onNovoClienteClick: () -> Unit,
     onClienteClick: (ClienteUi) -> Unit
 ) {
-    var busca by rememberSaveable { mutableStateOf("") }
-    var filtro by rememberSaveable { mutableStateOf("Todos") }
-    var mostrarAviso by remember { mutableStateOf(false) }
+    var busca by rememberSaveable {
+        mutableStateOf("")
+    }
 
-    BackHandler(onBack = onInicioClick)
+    var filtro by rememberSaveable {
+        mutableStateOf("Todos")
+    }
 
-    val filtrados = clientes.filter { cliente ->
-        val situacaoValida = when (filtro) {
+    val clientesFiltrados = clientes.filter { cliente ->
+        val correspondeStatus = when (filtro) {
             "Ativos" -> cliente.ativo
             "Inativos" -> !cliente.ativo
             else -> true
         }
 
-        val termo = busca.trim()
-
-        situacaoValida && (
-                cliente.nome.contains(termo, ignoreCase = true) ||
-                        cliente.telefone.contains(termo, ignoreCase = true)
+        correspondeStatus && (
+                cliente.nome.contains(busca.trim(), ignoreCase = true) ||
+                        cliente.telefone.contains(busca.trim(), ignoreCase = true)
                 )
     }
+
+    BackHandler(onBack = onInicioClick)
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
-        containerColor = ClienteCores.Fundo,
-
+        containerColor = FundoClientes,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNovoClienteClick,
-                containerColor = ClienteCores.Azul,
+                containerColor = AzulClientes,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(15.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.PersonAddAlt1,
+                    imageVector = Icons.Outlined.Add,
                     contentDescription = "Adicionar cliente"
                 )
             }
-        },
-
-        bottomBar = {
-            NavigationBar(
-                containerColor = Color.White,
-                tonalElevation = 0.dp
-            ) {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onInicioClick,
-                    icon = {
-                        Icon(Icons.Outlined.Home, "Início")
-                    },
-                    label = {
-                        Text("Início", fontSize = 10.sp)
-                    },
-                    colors = coresNavegacaoClientes()
-                )
-
-                NavigationBarItem(
-                    selected = true,
-                    onClick = {},
-                    icon = {
-                        Icon(
-                            Icons.Outlined.PeopleOutline,
-                            "Clientes"
-                        )
-                    },
-                    label = {
-                        Text("Clientes", fontSize = 10.sp)
-                    },
-                    colors = coresNavegacaoClientes()
-                )
-
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { mostrarAviso = true },
-                    icon = {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.Assignment,
-                            "Serviços"
-                        )
-                    },
-                    label = {
-                        Text("Serviços", fontSize = 10.sp)
-                    },
-                    colors = coresNavegacaoClientes()
-                )
-
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { mostrarAviso = true },
-                    icon = {
-                        Icon(Icons.Outlined.Menu, "Mais")
-                    },
-                    label = {
-                        Text("Mais", fontSize = 10.sp)
-                    },
-                    colors = coresNavegacaoClientes()
-                )
-            }
         }
-    ) { padding ->
+    ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp)
+                .padding(paddingValues)
         ) {
-            Spacer(Modifier.height(12.dp))
-
-            ClienteCabecalho(
-                titulo = "Clientes",
-                subtitulo = "Gerencie seus clientes e contatos.",
-                onVoltar = onInicioClick
-            )
-
-            Spacer(Modifier.height(22.dp))
-
-            OutlinedTextField(
-                value = busca,
-                onValueChange = { busca = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                placeholder = {
-                    Text(
-                        "Buscar por nome ou telefone",
-                        fontSize = 13.sp
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        Icons.Outlined.Search,
-                        contentDescription = null,
-                        tint = ClienteCores.Cinza
-                    )
-                },
-                shape = RoundedCornerShape(13.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = ClienteCores.Cobre,
-                    unfocusedBorderColor = ClienteCores.Borda
-                )
-            )
-
-            Spacer(Modifier.height(18.dp))
-
+            // Cabeçalho
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(AzulClientes)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                listOf(
-                    "Todos" to clientes.size,
-                    "Ativos" to clientes.count { it.ativo },
-                    "Inativos" to clientes.count { !it.ativo }
-                ).forEach { (nome, total) ->
-                    FilterChip(
-                        selected = filtro == nome,
-                        onClick = { filtro = nome },
-                        label = {
-                            Text(
-                                "$nome ($total)",
-                                fontSize = 11.sp
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor =
-                                Color(0xFFF4E6D8),
-                            selectedLabelColor = ClienteCores.Azul
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = filtro == nome,
-                            borderColor = ClienteCores.Borda,
-                            selectedBorderColor = ClienteCores.Cobre
-                        )
+                IconButton(onClick = onInicioClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Voltar",
+                        tint = Color.White
                     )
                 }
+
+                Text(
+                    text = "Clientes",
+                    modifier = Modifier.weight(1f),
+                    color = Color.White,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
-            Spacer(Modifier.height(14.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+            ) {
+                Spacer(Modifier.height(22.dp))
 
-            if (filtrados.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 56.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Nenhum cliente encontrado.",
-                        color = ClienteCores.Cinza,
-                        fontSize = 13.sp
+                Text(
+                    text = "Seus clientes",
+                    color = AzulClientes,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(5.dp))
+
+                Text(
+                    text = "Organize seus contatos e serviços.",
+                    color = CinzaClientes,
+                    fontSize = 12.sp
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                // Pesquisa
+                OutlinedTextField(
+                    value = busca,
+                    onValueChange = { busca = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = {
+                        Text(
+                            "Buscar cliente",
+                            color = CinzaClientes,
+                            fontSize = 13.sp
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Search,
+                            contentDescription = null,
+                            tint = CinzaClientes
+                        )
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = CobreClientes,
+                        unfocusedBorderColor = BordaClientes
                     )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 88.dp)
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                // Filtros
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(
-                        items = filtrados,
-                        key = { it.id }
-                    ) { cliente ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onClienteClick(cliente)
-                                }
-                                .padding(vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ClienteAvatar(
-                                nome = cliente.nome,
-                                tamanho = 48.dp
-                            )
-
-                            Spacer(Modifier.width(14.dp))
-
-                            Column(Modifier.weight(1f)) {
+                        listOf(
+                            "Todos" to clientes.size,
+                            "Ativos" to clientes.count { it.ativo },
+                            "Inativos" to clientes.count { !it.ativo }
+                        )
+                    ) { (nome, quantidade) ->
+                        FilterChip(
+                            selected = filtro == nome,
+                            onClick = { filtro = nome },
+                            label = {
                                 Text(
-                                    text = cliente.nome,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = ClienteCores.Azul,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    "$nome ($quantidade)",
+                                    fontSize = 11.sp
                                 )
+                            },
+                            shape = RoundedCornerShape(18.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFF4E6D8),
+                                selectedLabelColor = AzulClientes
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = filtro == nome,
+                                borderColor = BordaClientes,
+                                selectedBorderColor = CobreClientes
+                            )
+                        )
+                    }
+                }
 
-                                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(16.dp))
 
-                                Text(
-                                    text = cliente.telefone,
-                                    fontSize = 12.sp,
-                                    color = ClienteCores.Cinza
+                Text(
+                    text = "${clientesFiltrados.size} cliente(s)",
+                    color = CinzaClientes,
+                    fontSize = 11.sp
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                if (clientesFiltrados.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Nenhum cliente encontrado.",
+                            color = CinzaClientes,
+                            fontSize = 13.sp
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 90.dp)
+                    ) {
+                        items(
+                            items = clientesFiltrados,
+                            key = { it.id }
+                        ) { cliente ->
+
+                            val quantidadeServicos = servicos.count { servico ->
+                                servico.clienteId == cliente.id &&
+                                        servico.status != "Concluído" &&
+                                        servico.status != "Cancelado"
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onClienteClick(cliente)
+                                    }
+                                    .padding(vertical = 13.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Avatar
+                                Box(
+                                    modifier = Modifier
+                                        .size(45.dp)
+                                        .background(
+                                            Color(0xFFB98C69),
+                                            CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = cliente.nome
+                                            .split(" ")
+                                            .filter { it.isNotBlank() }
+                                            .take(2)
+                                            .mapNotNull { it.firstOrNull() }
+                                            .joinToString("")
+                                            .uppercase(),
+                                        color = Color.White,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+
+                                Spacer(Modifier.width(13.dp))
+
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Text(
+                                        text = cliente.nome,
+                                        color = AzulClientes,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    // Badge pequeno abaixo do nome
+                                    Surface(
+                                        modifier = Modifier.align(Alignment.Start),
+                                        color = if (cliente.ativo) {
+                                            Color(0xFFE5F4EC)
+                                        } else {
+                                            Color(0xFFF1EEEE)
+                                        },
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text(
+                                            text = if (cliente.ativo) {
+                                                "Ativo"
+                                            } else {
+                                                "Inativo"
+                                            },
+                                            color = if (cliente.ativo) {
+                                                VerdeClientes
+                                            } else {
+                                                CinzaClientes
+                                            },
+                                            fontSize = 9.sp,
+                                            lineHeight = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.padding(
+                                                horizontal = 5.dp,
+                                                vertical = 2.dp
+                                            )
+                                        )
+                                    }
+
+                                    Text(
+                                        text = cliente.telefone,
+                                        color = CinzaClientes,
+                                        fontSize = 12.sp
+                                    )
+
+                                    if (quantidadeServicos > 0) {
+                                        Text(
+                                            text = if (quantidadeServicos == 1) {
+                                                "1 serviço vinculado em aberto"
+                                            } else {
+                                                "$quantidadeServicos serviços vinculados em aberto"
+                                            },
+                                            color = CobreClientes,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+
+                                Icon(
+                                    imageVector = Icons.Outlined.ChevronRight,
+                                    contentDescription = "Abrir cliente",
+                                    tint = CinzaClientes,
+                                    modifier = Modifier.size(19.dp)
                                 )
                             }
 
-                            Icon(
-                                Icons.Outlined.ChevronRight,
-                                contentDescription = "Ver detalhes",
-                                tint = ClienteCores.Cinza
+                            HorizontalDivider(
+                                color = BordaClientes,
+                                thickness = 0.7.dp
                             )
                         }
-
-                        HorizontalDivider(
-                            thickness = 0.7.dp,
-                            color = ClienteCores.Borda
-                        )
                     }
                 }
             }
         }
     }
-
-    if (mostrarAviso) {
-        AlertDialog(
-            onDismissRequest = { mostrarAviso = false },
-            title = { Text("Em desenvolvimento") },
-            text = {
-                Text("Essa área será adicionada em breve.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { mostrarAviso = false }
-                ) {
-                    Text(
-                        "Entendi",
-                        color = ClienteCores.Azul
-                    )
-                }
-            }
-        )
-    }
 }
-
-@Composable
-private fun coresNavegacaoClientes() =
-    NavigationBarItemDefaults.colors(
-        selectedIconColor = ClienteCores.Azul,
-        selectedTextColor = ClienteCores.Azul,
-        indicatorColor = ClienteCores.Fundo,
-        unselectedIconColor = ClienteCores.Cinza,
-        unselectedTextColor = ClienteCores.Cinza
-    )
