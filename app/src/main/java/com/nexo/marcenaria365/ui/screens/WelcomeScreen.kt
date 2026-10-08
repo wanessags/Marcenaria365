@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,7 +26,10 @@ fun WelcomeScreen(
     paginaAtual: Int = 0,
     totalPaginas: Int = 2
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
         Image(
             painter = painterResource(R.drawable.background),
             contentDescription = null,
@@ -41,7 +46,7 @@ fun WelcomeScreen(
                             Color(0xFFF9F5F0).copy(alpha = 0.90f),
                             Color(0xFFF9F5F0).copy(alpha = 0.45f),
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.12f)
+                            Color.Black.copy(alpha = 0.24f)
                         )
                     )
                 )
@@ -73,28 +78,52 @@ fun WelcomeScreen(
                 text = "Seu trabalho organizado,\ndo orçamento ao recebimento.",
                 fontSize = 16.sp,
                 lineHeight = 23.sp,
-                textAlign = TextAlign.Center,
-                color = Color(0xFF193447)
+                color = Color(0xFF193447),
+                textAlign = TextAlign.Center
             )
         }
 
-        Row(
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 36.dp),
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(bottom = 38.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            repeat(totalPaginas) { index ->
-                Box(
-                    modifier = Modifier
-                        .size(if (index == paginaAtual) 9.dp else 8.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (index == paginaAtual) Color.White
-                            else Color.White.copy(alpha = 0.50f)
-                        )
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.22f))
+                    .padding(horizontal = 16.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    text = "Deslize para continuar",
+                    color = Color.White.copy(alpha = 0.90f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    textAlign = TextAlign.Center
                 )
+            }
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                repeat(totalPaginas) { index ->
+                    Box(
+                        modifier = Modifier
+                            .size(if (index == paginaAtual) 9.dp else 8.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (index == paginaAtual)
+                                    Color.White
+                                else
+                                    Color.White.copy(alpha = 0.50f)
+                            )
+                    )
+                }
             }
         }
     }

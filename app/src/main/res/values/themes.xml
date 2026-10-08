@@ -1,5 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Marcenaria365" parent="android:Theme.Material.Light.NoActionBar" />
+    <style
+        name="Theme.Marcenaria365"
+        parent="android:Theme.Material.Light.NoActionBar">
+
+        <item name="android:windowBackground">#FAF6F0</item>
+        <item name="android:statusBarColor">#FAF6F0</item>
+        <item name="android:navigationBarColor">#FAF6F0</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+    </style>
+
+    <style
+        name="Theme.Marcenaria365.Starting"
+        parent="Theme.SplashScreen">
+
+        <item name="windowSplashScreenBackground">#FAF6F0</item>
+
+        <item name="windowSplashScreenAnimatedIcon">
+            @drawable/logo_splash_ajustado
+        </item>
+
+        <item name="postSplashScreenTheme">
+            @style/Theme.Marcenaria365
+        </item>
+
+    </style>
+
 </resources>
