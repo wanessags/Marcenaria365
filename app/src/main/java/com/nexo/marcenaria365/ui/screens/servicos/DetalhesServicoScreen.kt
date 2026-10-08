@@ -13,68 +13,91 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Chair
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.input.KeyboardType
+import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.OrcamentoUi
+import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.formatarMoedaOrcamento
+import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.formatarNumeroOrcamento
 
-private val Fundo = Color(0xFFFAF6F0)
-private val Azul = Color(0xFF193447)
-private val Cobre = Color(0xFFBD906E)
-private val Cinza = Color(0xFF929292)
-private val Verde = Color(0xFF239B7A)
-private val Vermelho = Color(0xFFE26666)
+private val FundoServico = Color(0xFFFAF6F0)
+private val AzulServico = Color(0xFF193447)
+private val CobreServico = Color(0xFFBD906E)
+private val CinzaServico = Color(0xFF929292)
+private val VerdeServico = Color(0xFF239B7A)
+private val VermelhoServico = Color(0xFFE26666)
+private val BordaServico = Color(0xFFE9E3DD)
 
 @Composable
 fun DetalhesServicoScreen(
     servico: ServicoUi,
+    orcamento: OrcamentoUi?,
     onVoltar: () -> Unit,
+    onAbrirOrcamento: () -> Unit,
     onRegistrarRecebimento: (Double) -> Unit
 ) {
-    var aba by remember { mutableStateOf("Detalhes") }
-    var mostrarRecebimento by remember { mutableStateOf(false) }
-    var valorRecebimento by remember { mutableStateOf("") }
-    var erro by remember { mutableStateOf("") }
+    var aba by remember {
+        mutableStateOf("Detalhes")
+    }
 
-    val saldo = (servico.valorEstimado - servico.valorRecebido)
-        .coerceAtLeast(0.0)
+    var mostrarRecebimento by remember {
+        mutableStateOf(false)
+    }
 
-    BackHandler(onBack = onVoltar)
+    var valorRecebimento by remember {
+        mutableStateOf("")
+    }
+
+    var erro by remember {
+        mutableStateOf("")
+    }
+
+    val saldo = (
+            servico.valorEstimado - servico.valorRecebido
+            ).coerceAtLeast(0.0)
+
+    BackHandler(enabled = !mostrarRecebimento) {
+        onVoltar()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Fundo)
+            .background(FundoServico)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
+        // Cabeçalho
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(58.dp)
-                .background(Azul)
+                .background(AzulServico)
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onVoltar) {
                 Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    imageVector =
+                        Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Voltar",
                     tint = Color.White
                 )
             }
 
             Text(
-                "Detalhes do serviço",
+                text = "Detalhes do serviço",
                 modifier = Modifier.weight(1f),
                 color = Color.White,
-                fontWeight = FontWeight.Bold,
                 fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
@@ -89,12 +112,13 @@ fun DetalhesServicoScreen(
         ) {
             Spacer(Modifier.height(22.dp))
 
+            // Resumo do móvel
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(91.dp)
+                        .size(90.dp)
                         .background(
                             Color(0xFFEDE4DA),
                             RoundedCornerShape(12.dp)
@@ -102,29 +126,31 @@ fun DetalhesServicoScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Outlined.Chair,
+                        imageVector = Icons.Outlined.Chair,
                         contentDescription = null,
-                        tint = Cobre,
+                        tint = CobreServico,
                         modifier = Modifier.size(38.dp)
                     )
                 }
 
-                Spacer(Modifier.width(13.dp))
+                Spacer(Modifier.width(14.dp))
 
-                Column {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
-                        servico.titulo,
+                        text = servico.titulo,
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Azul
+                        color = AzulServico
                     )
 
                     Spacer(Modifier.height(5.dp))
 
                     Text(
-                        servico.clienteNome,
-                        color = Cinza,
-                        fontSize = 13.sp
+                        text = servico.clienteNome,
+                        fontSize = 13.sp,
+                        color = CinzaServico
                     )
 
                     Spacer(Modifier.height(8.dp))
@@ -138,14 +164,14 @@ fun DetalhesServicoScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            servico.status,
+                            text = servico.status,
+                            color = when (servico.status) {
+                                "Concluído" -> VerdeServico
+                                "Em produção" -> CobreServico
+                                else -> AzulServico
+                            },
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = when (servico.status) {
-                                "Concluído" -> Verde
-                                "Em produção" -> Cobre
-                                else -> Azul
-                            },
                             modifier = Modifier.padding(
                                 horizontal = 10.dp,
                                 vertical = 6.dp
@@ -155,81 +181,102 @@ fun DetalhesServicoScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(22.dp))
 
+            // Abas
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement =
+                    Arrangement.spacedBy(5.dp)
             ) {
-                listOf("Detalhes", "Orçamento", "Histórico")
-                    .forEach { item ->
-                        val selecionado = aba == item
+                listOf(
+                    "Detalhes",
+                    "Orçamento",
+                    "Histórico"
+                ).forEach { item ->
+                    val selecionado = aba == item
 
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(
-                                    if (selecionado) Color(0xFFF6E8D8)
-                                    else Color.Transparent,
-                                    RoundedCornerShape(20.dp)
-                                )
-                                .clickable { aba = item }
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                item,
-                                color = Azul,
-                                fontSize = 12.sp,
-                                fontWeight = if (selecionado) {
-                                    FontWeight.Bold
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                if (selecionado) {
+                                    Color(0xFFF6E8D8)
                                 } else {
-                                    FontWeight.Normal
-                                }
+                                    Color.Transparent
+                                },
+                                RoundedCornerShape(20.dp)
                             )
-                        }
+                            .clickable {
+                                aba = item
+                            }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = item,
+                            color = AzulServico,
+                            fontSize = 12.sp,
+                            fontWeight = if (selecionado) {
+                                FontWeight.Bold
+                            } else {
+                                FontWeight.Normal
+                            }
+                        )
                     }
+                }
             }
 
             Spacer(Modifier.height(20.dp))
 
             when (aba) {
+
+                // DETALHES DO SERVIÇO
                 "Detalhes" -> {
                     Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(15.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(15.dp)
+                        )
                     ) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp)
+                            modifier = Modifier.padding(18.dp)
                         ) {
                             Text(
-                                "Informações gerais",
-                                color = Azul,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
+                                text = "Informações gerais",
+                                color = AzulServico,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
                             )
 
                             Spacer(Modifier.height(23.dp))
 
-                            LinhaDetalhe(
+                            LinhaInformacaoServico(
                                 titulo = "Cliente",
                                 valor = servico.clienteNome
                             )
 
-                            Spacer(Modifier.height(28.dp))
+                            HorizontalDivider(
+                                modifier = Modifier.padding(
+                                    vertical = 18.dp
+                                ),
+                                color = BordaServico
+                            )
 
-                            LinhaDetalhe(
+                            LinhaInformacaoServico(
                                 titulo = "Prazo de entrega",
                                 valor = servico.entrega
                             )
 
-                            Spacer(Modifier.height(28.dp))
+                            HorizontalDivider(
+                                modifier = Modifier.padding(
+                                    vertical = 18.dp
+                                ),
+                                color = BordaServico
+                            )
 
-                            LinhaDetalhe(
+                            LinhaInformacaoServico(
                                 titulo = "Descrição",
                                 valor = servico.descricao
                             )
@@ -239,19 +286,18 @@ fun DetalhesServicoScreen(
                     Spacer(Modifier.height(18.dp))
 
                     Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(15.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(15.dp)
+                        )
                     ) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(17.dp)
+                            modifier = Modifier.padding(17.dp)
                         ) {
                             Text(
-                                "Financeiro",
-                                color = Azul,
+                                text = "Financeiro",
+                                color = AzulServico,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -260,125 +306,237 @@ fun DetalhesServicoScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement =
+                                    Arrangement.spacedBy(6.dp)
                             ) {
-                                InfoFinanceira(
-                                    "Total",
-                                    moedaServico(servico.valorEstimado),
-                                    Azul,
-                                    Modifier.weight(1f)
+                                InfoFinanceiraServico(
+                                    titulo = "Total",
+                                    valor = moedaServico(
+                                        servico.valorEstimado
+                                    ),
+                                    cor = AzulServico,
+                                    modifier = Modifier.weight(1f)
                                 )
 
-                                InfoFinanceira(
-                                    "Recebido",
-                                    moedaServico(servico.valorRecebido),
-                                    Verde,
-                                    Modifier.weight(1f)
+                                InfoFinanceiraServico(
+                                    titulo = "Recebido",
+                                    valor = moedaServico(
+                                        servico.valorRecebido
+                                    ),
+                                    cor = VerdeServico,
+                                    modifier = Modifier.weight(1f)
                                 )
 
-                                InfoFinanceira(
-                                    "Saldo",
-                                    moedaServico(saldo),
-                                    Vermelho,
-                                    Modifier.weight(1f)
+                                InfoFinanceiraServico(
+                                    titulo = "Saldo",
+                                    valor = moedaServico(saldo),
+                                    cor = VermelhoServico,
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }
                     }
                 }
 
+                // ORÇAMENTO VINCULADO AO SERVIÇO
                 "Orçamento" -> {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(15.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp)
+                    if (orcamento == null) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.White
+                            )
                         ) {
-                            Text(
-                                "Orçamento do serviço",
-                                color = Azul,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                horizontalAlignment =
+                                    Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector =
+                                        Icons.Outlined.ReceiptLong,
+                                    contentDescription = null,
+                                    tint = CobreServico,
+                                    modifier = Modifier.size(38.dp)
+                                )
+
+                                Spacer(Modifier.height(12.dp))
+
+                                Text(
+                                    text = "Nenhum orçamento cadastrado",
+                                    color = AzulServico,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(Modifier.height(8.dp))
+
+                                Text(
+                                    text = "Crie um orçamento com materiais, " +
+                                            "mão de obra e condições de pagamento.",
+                                    color = CinzaServico,
+                                    fontSize = 12.sp,
+                                    lineHeight = 18.sp,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(Modifier.height(22.dp))
+
+                                Button(
+                                    onClick = onAbrirOrcamento,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp),
+                                    shape = RoundedCornerShape(11.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AzulServico,
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Criar orçamento",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color.White
                             )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp)
+                            ) {
+                                Text(
+                                    text = "Orçamento #${
+                                        formatarNumeroOrcamento(
+                                            orcamento.id
+                                        )
+                                    }",
+                                    color = AzulServico,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
 
-                            Spacer(Modifier.height(20.dp))
+                                Spacer(Modifier.height(8.dp))
 
-                            Text("Descrição", color = Cinza, fontSize = 12.sp)
+                                Text(
+                                    text = orcamento.status,
+                                    color = CobreServico,
+                                    fontSize = 12.sp
+                                )
 
-                            Spacer(Modifier.height(5.dp))
+                                Spacer(Modifier.height(17.dp))
 
-                            Text(servico.descricao, color = Azul)
+                                HorizontalDivider(
+                                    color = BordaServico
+                                )
 
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 18.dp)
-                            )
+                                Spacer(Modifier.height(17.dp))
 
-                            Text(
-                                "Valor estimado",
-                                color = Cinza,
-                                fontSize = 12.sp
-                            )
+                                Text(
+                                    text = "Itens cadastrados",
+                                    color = CinzaServico,
+                                    fontSize = 12.sp
+                                )
 
-                            Spacer(Modifier.height(5.dp))
+                                Spacer(Modifier.height(6.dp))
 
-                            Text(
-                                moedaServico(servico.valorEstimado),
-                                color = Azul,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
+                                Text(
+                                    text = "${orcamento.itens.size} item(ns)",
+                                    color = AzulServico,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+
+                                Spacer(Modifier.height(16.dp))
+
+                                Text(
+                                    text = "Valor do orçamento",
+                                    color = CinzaServico,
+                                    fontSize = 12.sp
+                                )
+
+                                Spacer(Modifier.height(6.dp))
+
+                                Text(
+                                    text = formatarMoedaOrcamento(
+                                        orcamento.total
+                                    ),
+                                    color = AzulServico,
+                                    fontSize = 23.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(Modifier.height(20.dp))
+
+                                Button(
+                                    onClick = onAbrirOrcamento,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(49.dp),
+                                    shape = RoundedCornerShape(11.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = AzulServico,
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Ver orçamento",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
+                // HISTÓRICO
                 else -> {
                     Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(15.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(15.dp)
+                        )
                     ) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp)
+                            modifier = Modifier.padding(20.dp)
                         ) {
                             Text(
-                                "Histórico financeiro",
-                                color = Azul,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                text = "Histórico financeiro",
+                                color = AzulServico,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
                             )
 
-                            Spacer(Modifier.height(15.dp))
+                            Spacer(Modifier.height(16.dp))
 
                             Text(
-                                "Total recebido até o momento:",
-                                color = Cinza,
-                                fontSize = 13.sp
+                                text = "Total recebido",
+                                color = CinzaServico,
+                                fontSize = 12.sp
                             )
 
                             Spacer(Modifier.height(7.dp))
 
                             Text(
-                                moedaServico(servico.valorRecebido),
-                                color = Verde,
+                                text = moedaServico(
+                                    servico.valorRecebido
+                                ),
+                                color = VerdeServico,
                                 fontSize = 21.sp,
                                 fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Text(
-                                "O registro individual das movimentações será " +
-                                        "incluído na etapa da Carteira.",
-                                color = Cinza,
-                                fontSize = 12.sp
                             )
                         }
                     }
@@ -388,6 +546,7 @@ fun DetalhesServicoScreen(
             Spacer(Modifier.height(22.dp))
         }
 
+        // Registrar movimentação
         Button(
             onClick = {
                 valorRecebimento = ""
@@ -396,16 +555,19 @@ fun DetalhesServicoScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(
+                    horizontal = 20.dp,
+                    vertical = 12.dp
+                )
                 .height(53.dp),
-            shape = RoundedCornerShape(10.dp),
+            shape = RoundedCornerShape(11.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Azul,
+                containerColor = AzulServico,
                 contentColor = Color.White
             )
         ) {
             Text(
-                "Registrar movimentação",
+                text = "Registrar movimentação",
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
@@ -419,16 +581,18 @@ fun DetalhesServicoScreen(
             },
             title = {
                 Text(
-                    "Registrar recebimento",
-                    color = Azul,
+                    text = "Registrar recebimento",
+                    color = AzulServico,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Column {
                     Text(
-                        "Saldo disponível: ${moedaServico(saldo)}",
-                        color = Cinza,
+                        text = "Saldo disponível: ${
+                            moedaServico(saldo)
+                        }",
+                        color = CinzaServico,
                         fontSize = 13.sp
                     )
 
@@ -440,7 +604,9 @@ fun DetalhesServicoScreen(
                             valorRecebimento = it
                             erro = ""
                         },
-                        label = { Text("Valor recebido (R$)") },
+                        label = {
+                            Text("Valor recebido (R$)")
+                        },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Decimal
                         ),
@@ -451,8 +617,8 @@ fun DetalhesServicoScreen(
                         Spacer(Modifier.height(9.dp))
 
                         Text(
-                            erro,
-                            color = Vermelho,
+                            text = erro,
+                            color = VermelhoServico,
                             fontSize = 12.sp
                         )
                     }
@@ -464,14 +630,18 @@ fun DetalhesServicoScreen(
                         val valor = valorRecebimento
                             .replace(".", "")
                             .replace(",", ".")
+                            .replace("R$", "")
+                            .trim()
                             .toDoubleOrNull()
 
                         when {
-                            valor == null || valor <= 0.0 ->
+                            valor == null || valor <= 0.0 -> {
                                 erro = "Informe um valor válido."
+                            }
 
-                            valor > saldo ->
+                            valor > saldo -> {
                                 erro = "O valor não pode superar o saldo."
+                            }
 
                             else -> {
                                 onRegistrarRecebimento(valor)
@@ -480,14 +650,22 @@ fun DetalhesServicoScreen(
                         }
                     }
                 ) {
-                    Text("Registrar", color = Azul)
+                    Text(
+                        text = "Registrar",
+                        color = AzulServico
+                    )
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { mostrarRecebimento = false }
+                    onClick = {
+                        mostrarRecebimento = false
+                    }
                 ) {
-                    Text("Cancelar", color = Cinza)
+                    Text(
+                        text = "Cancelar",
+                        color = CinzaServico
+                    )
                 }
             },
             containerColor = Color.White
@@ -496,7 +674,7 @@ fun DetalhesServicoScreen(
 }
 
 @Composable
-private fun LinhaDetalhe(
+private fun LinhaInformacaoServico(
     titulo: String,
     valor: String
 ) {
@@ -504,10 +682,12 @@ private fun LinhaDetalhe(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(
-                titulo,
-                color = Azul,
+                text = titulo,
+                color = AzulServico,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -515,43 +695,45 @@ private fun LinhaDetalhe(
             Spacer(Modifier.height(7.dp))
 
             Text(
-                valor,
-                color = Cinza,
+                text = valor,
+                color = CinzaServico,
                 fontSize = 13.sp,
                 lineHeight = 18.sp
             )
         }
 
         Icon(
-            Icons.Outlined.ChevronRight,
+            imageVector = Icons.Outlined.ChevronRight,
             contentDescription = null,
-            tint = Cinza,
+            tint = CinzaServico,
             modifier = Modifier.size(18.dp)
         )
     }
 }
 
 @Composable
-private fun InfoFinanceira(
+private fun InfoFinanceiraServico(
     titulo: String,
     valor: String,
     cor: Color,
     modifier: Modifier
 ) {
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier
+    ) {
         Text(
-            titulo,
-            color = Cinza,
+            text = titulo,
+            color = CinzaServico,
             fontSize = 10.sp
         )
 
         Spacer(Modifier.height(8.dp))
 
         Text(
-            valor,
+            text = valor,
             color = cor,
-            fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
             maxLines = 2
         )
     }
