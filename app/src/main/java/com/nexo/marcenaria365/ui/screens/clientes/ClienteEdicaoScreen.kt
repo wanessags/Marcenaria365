@@ -20,6 +20,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -54,11 +55,15 @@ fun ClienteEdicaoScreen(
     BackHandler(onBack = onVoltar)
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = ClienteCores.Azul,
+        unfocusedTextColor = ClienteCores.Azul,
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         focusedBorderColor = ClienteCores.Cobre,
         unfocusedBorderColor = ClienteCores.Borda,
-        focusedLabelColor = ClienteCores.Azul
+        focusedLabelColor = ClienteCores.Azul,
+        unfocusedLabelColor = ClienteCores.Cinza,
+        cursorColor = ClienteCores.Cobre
     )
 
     Column(
@@ -72,28 +77,38 @@ fun ClienteEdicaoScreen(
     ) {
         Spacer(Modifier.height(12.dp))
 
+        // Cabeçalho no mesmo padrão do cadastro
         ClienteCabecalho(
             titulo = "Editar cliente",
-            subtitulo = "Atualize as informações do cadastro.",
+            subtitulo = "Atualize os dados de contato.",
             onVoltar = onVoltar
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(26.dp))
 
-        ClienteTituloSecao("Dados do cliente")
+        ClienteTituloSecao(
+            titulo = "Informações pessoais"
+        )
 
         Spacer(Modifier.height(12.dp))
 
+        // Cartão do formulário
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 0.dp
             )
         ) {
             Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(15.dp)
+                modifier = Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 18.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(
                     value = nome,
@@ -101,18 +116,28 @@ fun ClienteEdicaoScreen(
                         nome = it
                         erro = ""
                     },
-                    label = { Text("Nome completo *") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.PersonOutline,
-                            contentDescription = null,
-                            tint = ClienteCores.Cinza
+                    label = {
+                        Text(
+                            "Nome completo *",
+                            fontSize = 13.sp
                         )
                     },
-                    singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.PersonOutline,
+                            contentDescription = null,
+                            tint = ClienteCores.Cobre,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = coresCampo
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = coresCampo,
+                    textStyle = TextStyle(
+                        color = ClienteCores.Azul,
+                        fontSize = 14.sp
+                    )
                 )
 
                 OutlinedTextField(
@@ -121,21 +146,31 @@ fun ClienteEdicaoScreen(
                         telefone = it
                         erro = ""
                     },
-                    label = { Text("Telefone *") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.Phone,
-                            contentDescription = null,
-                            tint = ClienteCores.Cinza
+                    label = {
+                        Text(
+                            "Telefone *",
+                            fontSize = 13.sp
                         )
                     },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Phone,
+                            contentDescription = null,
+                            tint = ClienteCores.Cobre,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Phone
                     ),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = coresCampo
+                    shape = RoundedCornerShape(10.dp),
+                    colors = coresCampo,
+                    textStyle = TextStyle(
+                        color = ClienteCores.Azul,
+                        fontSize = 14.sp
+                    )
                 )
 
                 OutlinedTextField(
@@ -144,45 +179,72 @@ fun ClienteEdicaoScreen(
                         email = it
                         erro = ""
                     },
-                    label = { Text("E-mail (opcional)") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.Email,
-                            contentDescription = null,
-                            tint = ClienteCores.Cinza
+                    label = {
+                        Text(
+                            "E-mail (opcional)",
+                            fontSize = 13.sp
                         )
                     },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Email,
+                            contentDescription = null,
+                            tint = ClienteCores.Cobre,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Email
                     ),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = coresCampo
+                    shape = RoundedCornerShape(10.dp),
+                    colors = coresCampo,
+                    textStyle = TextStyle(
+                        color = ClienteCores.Azul,
+                        fontSize = 14.sp
+                    )
                 )
             }
         }
 
+        Spacer(Modifier.height(10.dp))
+
+        Text(
+            text = "* Campos obrigatórios",
+            color = ClienteCores.Cinza,
+            fontSize = 11.sp,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+
         Spacer(Modifier.height(22.dp))
 
-        ClienteTituloSecao("Situação do cliente")
+        ClienteTituloSecao(
+            titulo = "Situação do cliente"
+        )
 
         Spacer(Modifier.height(12.dp))
 
+        // Cartão de situação
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 0.dp
             )
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(18.dp),
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
                         text = "Cliente ativo",
                         color = ClienteCores.Azul,
@@ -199,22 +261,29 @@ fun ClienteEdicaoScreen(
                             "Cliente marcado como inativo."
                         },
                         color = ClienteCores.Cinza,
-                        fontSize = 11.sp
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
                     )
                 }
+
+                Spacer(Modifier.width(8.dp))
 
                 Switch(
                     checked = ativo,
                     onCheckedChange = { ativo = it },
                     colors = SwitchDefaults.colors(
-                        checkedTrackColor = ClienteCores.Azul
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = ClienteCores.Azul,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = ClienteCores.Borda,
+                        uncheckedBorderColor = ClienteCores.Cinza
                     )
                 )
             }
         }
 
         if (erro.isNotEmpty()) {
-            Spacer(Modifier.height(15.dp))
+            Spacer(Modifier.height(14.dp))
 
             Text(
                 text = erro,
@@ -223,25 +292,29 @@ fun ClienteEdicaoScreen(
             )
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(26.dp))
 
+        // AÇÃO PRINCIPAL: SALVAR ALTERAÇÕES
         Button(
             onClick = {
                 val numeros = telefone.filter { it.isDigit() }
                 val emailLimpo = email.trim()
 
                 erro = when {
-                    nome.isBlank() ->
+                    nome.isBlank() -> {
                         "Informe o nome do cliente."
+                    }
 
-                    numeros.length !in 10..11 ->
-                        "Informe um telefone com DDD válido."
+                    numeros.length !in 10..11 -> {
+                        "Informe um telefone válido com DDD."
+                    }
 
                     emailLimpo.isNotEmpty() &&
                             !Patterns.EMAIL_ADDRESS.matcher(
                                 emailLimpo
-                            ).matches() ->
+                            ).matches() -> {
                         "Informe um e-mail válido."
+                    }
 
                     else -> {
                         onSalvar(
@@ -258,38 +331,47 @@ fun ClienteEdicaoScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(12.dp),
+                .height(50.dp),
+            shape = RoundedCornerShape(11.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = ClienteCores.Azul
+                containerColor = ClienteCores.Azul,
+                contentColor = Color.White
             )
         ) {
             Text(
-                "Salvar alterações",
-                fontSize = 15.sp,
+                text = "Salvar alterações",
+                color = Color.White,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
+        // AÇÃO SECUNDÁRIA: CANCELAR
         OutlinedButton(
             onClick = onVoltar,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp),
+                .height(48.dp),
+            shape = RoundedCornerShape(11.dp),
             border = BorderStroke(
-                1.dp,
-                ClienteCores.Borda
+                width = 1.dp,
+                color = ClienteCores.Borda
             ),
             colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.Transparent,
                 contentColor = ClienteCores.Azul
             )
         ) {
-            Text("Cancelar")
+            Text(
+                text = "Cancelar",
+                color = ClienteCores.Azul,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(24.dp))
     }
 }
