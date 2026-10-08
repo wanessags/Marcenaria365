@@ -12,7 +12,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.HelpOutline
@@ -20,7 +19,6 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Message
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PeopleOutline
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Settings
@@ -31,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,7 +39,6 @@ private val AzulMais = Color(0xFF193447)
 private val CobreMais = Color(0xFFBD906E)
 private val CinzaMais = Color(0xFF929292)
 private val VermelhoMais = Color(0xFFCF6666)
-private val BordaMais = Color(0xFFEDE8E2)
 
 @Composable
 fun MaisScreen(
@@ -55,7 +53,7 @@ fun MaisScreen(
         mutableStateOf(false)
     }
 
-    var opcaoEmDesenvolvimento by remember {
+    var opcaoSelecionada by remember {
         mutableStateOf<String?>(null)
     }
 
@@ -75,75 +73,59 @@ fun MaisScreen(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
+
         containerColor = FundoMais,
 
+        // Cabeçalho limpo: sem ícones laterais
         topBar = {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(62.dp)
-                    .background(AzulMais)
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .background(AzulMais),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Menu,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(21.dp)
-                )
-
                 Text(
                     text = "Mais",
                     color = Color.White,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
-
-                IconButton(
-                    onClick = {
-                        opcaoEmDesenvolvimento = "Configurações"
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.MoreVert,
-                        contentDescription = "Opções",
-                        tint = Color.White
-                    )
-                }
             }
         },
 
+        // Barra inferior fixa
         bottomBar = {
             NavigationBar(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(75.dp),
                 containerColor = Color.White,
-                tonalElevation = 0.dp,
-                modifier = Modifier.height(75.dp)
+                tonalElevation = 0.dp
             ) {
-                itemMenuMais(
+                ItemMenuMais(
                     titulo = "Início",
                     icone = Icons.Outlined.Home,
                     selecionado = false,
                     onClick = onInicioClick
                 )
 
-                itemMenuMais(
+                ItemMenuMais(
                     titulo = "Clientes",
                     icone = Icons.Outlined.PeopleOutline,
                     selecionado = false,
                     onClick = onClientesClick
                 )
 
-                itemMenuMais(
+                ItemMenuMais(
                     titulo = "Serviços",
                     icone = Icons.AutoMirrored.Outlined.Assignment,
                     selecionado = false,
                     onClick = onServicosClick
                 )
 
-                itemMenuMais(
+                ItemMenuMais(
                     titulo = "Mais",
                     icone = Icons.Outlined.Menu,
                     selecionado = true,
@@ -162,12 +144,12 @@ fun MaisScreen(
         ) {
             Spacer(Modifier.height(20.dp))
 
-            // Cartão superior do usuário
+            // Cartão do usuário
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        opcaoEmDesenvolvimento = "Meu perfil"
+                        opcaoSelecionada = "Meu perfil"
                     },
                 shape = RoundedCornerShape(15.dp),
                 colors = CardDefaults.cardColors(
@@ -195,8 +177,8 @@ fun MaisScreen(
                         Text(
                             text = iniciais,
                             color = CobreMais,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
@@ -209,9 +191,9 @@ fun MaisScreen(
                             text = nomeUsuario.ifBlank {
                                 "Meu perfil"
                             },
+                            color = AzulMais,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AzulMais,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -222,8 +204,8 @@ fun MaisScreen(
                             text = emailUsuario.ifBlank {
                                 "Dados da conta"
                             },
-                            fontSize = 11.sp,
                             color = CinzaMais,
+                            fontSize = 11.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -238,14 +220,14 @@ fun MaisScreen(
                 }
             }
 
-            Spacer(Modifier.height(23.dp))
+            Spacer(Modifier.height(22.dp))
 
-            // Opções da tela Mais
+            // Opções do menu
             OpcaoMais(
                 titulo = "Perfil",
                 icone = Icons.Outlined.PersonOutline,
                 onClick = {
-                    opcaoEmDesenvolvimento = "Meu perfil"
+                    opcaoSelecionada = "Meu perfil"
                 }
             )
 
@@ -253,7 +235,7 @@ fun MaisScreen(
                 titulo = "Materiais",
                 icone = Icons.Outlined.Inventory2,
                 onClick = {
-                    opcaoEmDesenvolvimento = "Materiais"
+                    opcaoSelecionada = "Materiais"
                 }
             )
 
@@ -261,7 +243,7 @@ fun MaisScreen(
                 titulo = "Configurações",
                 icone = Icons.Outlined.Settings,
                 onClick = {
-                    opcaoEmDesenvolvimento = "Configurações"
+                    opcaoSelecionada = "Configurações"
                 }
             )
 
@@ -269,8 +251,7 @@ fun MaisScreen(
                 titulo = "Central de atendimento",
                 icone = Icons.Outlined.Message,
                 onClick = {
-                    opcaoEmDesenvolvimento =
-                        "Central de atendimento"
+                    opcaoSelecionada = "Central de atendimento"
                 }
             )
 
@@ -278,7 +259,7 @@ fun MaisScreen(
                 titulo = "Ajuda e suporte",
                 icone = Icons.Outlined.HelpOutline,
                 onClick = {
-                    opcaoEmDesenvolvimento = "Ajuda e suporte"
+                    opcaoSelecionada = "Ajuda e suporte"
                 }
             )
 
@@ -286,14 +267,13 @@ fun MaisScreen(
                 titulo = "Política de Privacidade",
                 icone = Icons.Outlined.Description,
                 onClick = {
-                    opcaoEmDesenvolvimento =
-                        "Política de Privacidade"
+                    opcaoSelecionada = "Política de Privacidade"
                 }
             )
 
             Spacer(Modifier.height(25.dp))
 
-            // Sair da conta
+            // Botão sair
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -312,13 +292,11 @@ fun MaisScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(49.dp),
-                    horizontalArrangement =
-                        Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector =
-                            Icons.AutoMirrored.Outlined.Logout,
+                        imageVector = Icons.AutoMirrored.Outlined.Logout,
                         contentDescription = null,
                         tint = VermelhoMais,
                         modifier = Modifier.size(18.dp)
@@ -335,34 +313,32 @@ fun MaisScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(25.dp))
         }
     }
 
-    // Aviso temporário para opções futuras
-    if (opcaoEmDesenvolvimento != null) {
+    // Aviso das opções ainda não implementadas
+    if (opcaoSelecionada != null) {
         AlertDialog(
             onDismissRequest = {
-                opcaoEmDesenvolvimento = null
+                opcaoSelecionada = null
             },
             title = {
                 Text(
-                    text = opcaoEmDesenvolvimento.orEmpty(),
+                    text = opcaoSelecionada.orEmpty(),
                     color = AzulMais,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "Esta funcionalidade será adicionada " +
-                            "nas próximas etapas do Marcenaria 365.",
-                    color = AzulMais
+                    text = "Esta funcionalidade ainda não está disponível."
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        opcaoEmDesenvolvimento = null
+                        opcaoSelecionada = null
                     }
                 ) {
                     Text(
@@ -376,6 +352,7 @@ fun MaisScreen(
         )
     }
 
+    // Confirmar saída
     if (confirmarSaida) {
         AlertDialog(
             onDismissRequest = {
@@ -465,7 +442,7 @@ private fun OpcaoMais(
 }
 
 @Composable
-private fun RowScope.itemMenuMais(
+private fun RowScope.ItemMenuMais(
     titulo: String,
     icone: ImageVector,
     selecionado: Boolean,
@@ -477,7 +454,8 @@ private fun RowScope.itemMenuMais(
         icon = {
             Icon(
                 imageVector = icone,
-                contentDescription = titulo
+                contentDescription = titulo,
+                modifier = Modifier.size(22.dp)
             )
         },
         label = {
