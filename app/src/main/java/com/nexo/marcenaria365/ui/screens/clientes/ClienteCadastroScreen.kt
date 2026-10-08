@@ -37,11 +37,15 @@ fun ClienteCadastroScreen(
     BackHandler(onBack = onVoltar)
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = ClienteCores.Azul,
+        unfocusedTextColor = ClienteCores.Azul,
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         focusedBorderColor = ClienteCores.Cobre,
         unfocusedBorderColor = ClienteCores.Borda,
-        focusedLabelColor = ClienteCores.Azul
+        focusedLabelColor = ClienteCores.Azul,
+        unfocusedLabelColor = ClienteCores.Cinza,
+        cursorColor = ClienteCores.Cobre
     )
 
     Column(
@@ -57,46 +61,64 @@ fun ClienteCadastroScreen(
 
         ClienteCabecalho(
             titulo = "Novo cliente",
-            subtitulo = "Preencha as informações para cadastrar.",
+            subtitulo = "Cadastre os dados de contato.",
             onVoltar = onVoltar
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(26.dp))
 
-        ClienteTituloSecao("Dados do cliente")
+        ClienteTituloSecao(
+            titulo = "Informações pessoais"
+        )
 
         Spacer(Modifier.height(12.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 0.dp
             )
         ) {
             Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(15.dp)
+                modifier = Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 18.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+
                 OutlinedTextField(
                     value = nome,
                     onValueChange = {
                         nome = it
                         erro = ""
                     },
-                    label = { Text("Nome completo *") },
-                    placeholder = { Text("Ex.: Ana Silva") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.PersonOutline,
-                            contentDescription = null,
-                            tint = ClienteCores.Cinza
+                    label = {
+                        Text(
+                            "Nome completo *",
+                            fontSize = 13.sp
                         )
                     },
-                    singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.PersonOutline,
+                            contentDescription = null,
+                            tint = ClienteCores.Cobre,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = coresCampo
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = coresCampo,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = ClienteCores.Azul,
+                        fontSize = 14.sp
+                    )
                 )
 
                 OutlinedTextField(
@@ -105,22 +127,31 @@ fun ClienteCadastroScreen(
                         telefone = it
                         erro = ""
                     },
-                    label = { Text("Telefone *") },
-                    placeholder = { Text("(11) 99999-9999") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.Phone,
-                            contentDescription = null,
-                            tint = ClienteCores.Cinza
+                    label = {
+                        Text(
+                            "Telefone *",
+                            fontSize = 13.sp
                         )
                     },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Phone,
+                            contentDescription = null,
+                            tint = ClienteCores.Cobre,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Phone
                     ),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = coresCampo
+                    shape = RoundedCornerShape(10.dp),
+                    colors = coresCampo,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = ClienteCores.Azul,
+                        fontSize = 14.sp
+                    )
                 )
 
                 OutlinedTextField(
@@ -129,40 +160,51 @@ fun ClienteCadastroScreen(
                         email = it
                         erro = ""
                     },
-                    label = { Text("E-mail (opcional)") },
-                    placeholder = { Text("cliente@email.com") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.Email,
-                            contentDescription = null,
-                            tint = ClienteCores.Cinza
+                    label = {
+                        Text(
+                            "E-mail (opcional)",
+                            fontSize = 13.sp
                         )
                     },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Email,
+                            contentDescription = null,
+                            tint = ClienteCores.Cobre,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Email
                     ),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = coresCampo
+                    shape = RoundedCornerShape(10.dp),
+                    colors = coresCampo,
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = ClienteCores.Azul,
+                        fontSize = 14.sp
+                    )
                 )
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
         Text(
             text = "* Campos obrigatórios",
+            color = ClienteCores.Cinza,
             fontSize = 11.sp,
-            color = ClienteCores.Cinza
+            modifier = Modifier.padding(start = 4.dp)
         )
 
         if (erro.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
+
             Text(
                 text = erro,
-                fontSize = 12.sp,
-                color = ClienteCores.Vermelho
+                color = ClienteCores.Vermelho,
+                fontSize = 12.sp
             )
         }
 
@@ -174,17 +216,20 @@ fun ClienteCadastroScreen(
                 val emailLimpo = email.trim()
 
                 erro = when {
-                    nome.isBlank() ->
+                    nome.isBlank() -> {
                         "Informe o nome do cliente."
+                    }
 
-                    numeros.length !in 10..11 ->
-                        "Informe um telefone com DDD válido."
+                    numeros.length !in 10..11 -> {
+                        "Informe um telefone válido com DDD."
+                    }
 
                     emailLimpo.isNotEmpty() &&
                             !Patterns.EMAIL_ADDRESS.matcher(
                                 emailLimpo
-                            ).matches() ->
+                            ).matches() -> {
                         "Informe um e-mail válido."
+                    }
 
                     else -> {
                         onSalvar(
@@ -202,38 +247,46 @@ fun ClienteCadastroScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(12.dp),
+                .height(50.dp),
+            shape = RoundedCornerShape(11.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = ClienteCores.Azul
+                containerColor = ClienteCores.Azul,
+                contentColor = Color.White
             )
         ) {
             Text(
-                "Salvar cliente",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
+                text = "Salvar cliente",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
         OutlinedButton(
             onClick = onVoltar,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(12.dp),
+                .height(48.dp),
+            shape = RoundedCornerShape(11.dp),
             border = BorderStroke(
-                1.dp,
-                ClienteCores.Borda
+                width = 1.dp,
+                color = ClienteCores.Borda
             ),
             colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.Transparent,
                 contentColor = ClienteCores.Azul
             )
         ) {
-            Text("Cancelar")
+            Text(
+                text = "Cancelar",
+                color = ClienteCores.Azul,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(24.dp))
     }
 }
