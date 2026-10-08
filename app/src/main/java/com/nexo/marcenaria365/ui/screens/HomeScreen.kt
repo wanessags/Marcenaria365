@@ -3,6 +3,7 @@ package com.nexo.marcenaria365.ui.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.CheckCircleOutline
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.PeopleOutline
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// Identidade visual do Marcenaria 365
 private val Fundo = Color(0xFFFAF6F0)
 private val Azul = Color(0xFF193447)
 private val Cobre = Color(0xFFBD906E)
@@ -40,6 +43,7 @@ private val Laranja = Color(0xFFF6A823)
 private val Vermelho = Color(0xFFE47779)
 private val CinzaGrafico = Color(0xFFC8C8C6)
 
+// Modelos preparados para futura integração com a API
 data class StatusServico(
     val nome: String,
     val quantidade: Int,
@@ -62,7 +66,7 @@ data class ResumoDashboard(
     val entregas: List<EntregaResumo>
 )
 
-// Dados temporários até a integração com a API.
+// Dados temporários enquanto o backend não está conectado
 private val resumoInicial = ResumoDashboard(
     saldo = "R$ 4.850,00",
     clientes = 6,
@@ -76,16 +80,16 @@ private val resumoInicial = ResumoDashboard(
     ),
     entregas = listOf(
         EntregaResumo(
-            "Cozinha planejada",
-            "Ana Silva",
-            "15/10",
-            "Em produção"
+            titulo = "Cozinha planejada",
+            cliente = "Ana Silva",
+            prazo = "15/10",
+            status = "Em produção"
         ),
         EntregaResumo(
-            "Rack para sala",
-            "Bruno Souza",
-            "18/10",
-            "Em produção"
+            titulo = "Rack para sala",
+            cliente = "Bruno Souza",
+            prazo = "18/10",
+            status = "Em produção"
         )
     )
 )
@@ -103,6 +107,10 @@ fun HomeScreen(
         mutableStateOf(false)
     }
 
+    var mostrarFinanceiro by remember {
+        mutableStateOf(false)
+    }
+
     val primeiroNome = nomeUsuario
         .trim()
         .substringBefore(" ")
@@ -114,6 +122,8 @@ fun HomeScreen(
             .background(Fundo)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
+
+        // Conteúdo principal com rolagem
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -121,6 +131,7 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
         ) {
+
             Spacer(Modifier.height(15.dp))
 
             Text(
@@ -140,14 +151,22 @@ fun HomeScreen(
 
             Spacer(Modifier.height(13.dp))
 
-            CartaoSaldo(resumoInicial.saldo)
+            // Carteira com novo visual minimalista
+            CartaoSaldoMinimalista(
+                saldo = resumoInicial.saldo,
+                onVerDetalhes = {
+                    mostrarFinanceiro = true
+                }
+            )
 
             Spacer(Modifier.height(11.dp))
 
+            // Indicadores
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(9.dp)
             ) {
+
                 Indicador(
                     modifier = Modifier.weight(1f),
                     icone = Icons.Outlined.PersonOutline,
@@ -175,10 +194,12 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
+            // Gráfico de status
             CartaoGrafico(resumoInicial.status)
 
             Spacer(Modifier.height(11.dp))
 
+            // Próximas entregas
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -186,9 +207,11 @@ fun HomeScreen(
                     containerColor = Color.White
                 )
             ) {
+
                 Column(
                     modifier = Modifier.padding(13.dp)
                 ) {
+
                     Text(
                         text = "Próximas entregas",
                         fontSize = 16.sp,
@@ -200,6 +223,7 @@ fun HomeScreen(
 
                     resumoInicial.entregas.forEach { entrega ->
                         LinhaEntrega(entrega)
+
                         Spacer(Modifier.height(11.dp))
                     }
                 }
@@ -208,47 +232,61 @@ fun HomeScreen(
             Spacer(Modifier.height(20.dp))
         }
 
+        // Menu inferior
         NavigationBar(
             containerColor = Color.White,
             tonalElevation = 0.dp,
             modifier = Modifier.height(75.dp)
         ) {
+
             NavigationBarItem(
                 selected = abaAtual == "Início",
-                onClick = { abaAtual = "Início" },
+                onClick = {
+                    abaAtual = "Início"
+                },
                 icon = {
                     Icon(
                         Icons.Outlined.Home,
                         contentDescription = "Início"
                     )
                 },
-                label = { Text("Início", fontSize = 10.sp) },
+                label = {
+                    Text("Início", fontSize = 10.sp)
+                },
                 colors = coresMenu()
             )
 
             NavigationBarItem(
                 selected = abaAtual == "Clientes",
-                onClick = { abaAtual = "Clientes" },
+                onClick = {
+                    abaAtual = "Clientes"
+                },
                 icon = {
                     Icon(
                         Icons.Outlined.PeopleOutline,
                         contentDescription = "Clientes"
                     )
                 },
-                label = { Text("Clientes", fontSize = 10.sp) },
+                label = {
+                    Text("Clientes", fontSize = 10.sp)
+                },
                 colors = coresMenu()
             )
 
             NavigationBarItem(
                 selected = abaAtual == "Serviços",
-                onClick = { abaAtual = "Serviços" },
+                onClick = {
+                    abaAtual = "Serviços"
+                },
                 icon = {
                     Icon(
                         Icons.AutoMirrored.Outlined.Assignment,
                         contentDescription = "Serviços"
                     )
                 },
-                label = { Text("Serviços", fontSize = 10.sp) },
+                label = {
+                    Text("Serviços", fontSize = 10.sp)
+                },
                 colors = coresMenu()
             )
 
@@ -264,24 +302,35 @@ fun HomeScreen(
                         contentDescription = "Mais"
                     )
                 },
-                label = { Text("Mais", fontSize = 10.sp) },
+                label = {
+                    Text("Mais", fontSize = 10.sp)
+                },
                 colors = coresMenu()
             )
         }
     }
 
-    if (abaAtual == "Clientes" || abaAtual == "Serviços") {
+    // Detalhes financeiros serão integrados posteriormente
+    if (mostrarFinanceiro) {
         AlertDialog(
             onDismissRequest = {
-                abaAtual = "Início"
+                mostrarFinanceiro = false
             },
-            title = { Text(abaAtual) },
+            title = {
+                Text("Saldo em caixa", color = Azul)
+            },
             text = {
-                Text("Esta área será implementada em breve.")
+                Text(
+                    "O histórico de recebimentos e os " +
+                            "detalhes financeiros serão exibidos " +
+                            "aqui quando a Carteira for implementada."
+                )
             },
             confirmButton = {
                 TextButton(
-                    onClick = { abaAtual = "Início" }
+                    onClick = {
+                        mostrarFinanceiro = false
+                    }
                 ) {
                     Text("Entendi", color = Azul)
                 }
@@ -289,13 +338,40 @@ fun HomeScreen(
         )
     }
 
+    // Telas que serão implementadas posteriormente
+    if (abaAtual == "Clientes" || abaAtual == "Serviços") {
+        AlertDialog(
+            onDismissRequest = {
+                abaAtual = "Início"
+            },
+            title = {
+                Text(abaAtual, color = Azul)
+            },
+            text = {
+                Text("Esta área será implementada em breve.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        abaAtual = "Início"
+                    }
+                ) {
+                    Text("Entendi", color = Azul)
+                }
+            }
+        )
+    }
+
+    // Confirmação de saída
     if (mostrarSaida) {
         AlertDialog(
             onDismissRequest = {
                 mostrarSaida = false
                 abaAtual = "Início"
             },
-            title = { Text("Sair da conta") },
+            title = {
+                Text("Sair da conta", color = Azul)
+            },
             text = {
                 Text("Deseja voltar para a tela de login?")
             },
@@ -323,6 +399,7 @@ fun HomeScreen(
     }
 }
 
+// Cores do menu inferior
 @Composable
 private fun coresMenu() =
     NavigationBarItemDefaults.colors(
@@ -333,70 +410,100 @@ private fun coresMenu() =
         unselectedTextColor = Cinza
     )
 
+// NOVO CARTÃO DE CARTEIRA MINIMALISTA
 @Composable
-private fun CartaoSaldo(saldo: String) {
+private fun CartaoSaldoMinimalista(
+    saldo: String,
+    onVerDetalhes: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp
         )
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 18.dp,
+                    vertical = 16.dp
+                )
         ) {
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Cobre),
-                contentAlignment = Alignment.Center
+
+            // Ícone pequeno, sem quadrado colorido
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
+
                 Icon(
                     imageVector = Icons.Outlined.AccountBalanceWallet,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(33.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = Cobre
+                )
+
+                Spacer(Modifier.width(9.dp))
+
+                Text(
+                    text = "SALDO EM CAIXA",
+                    color = Cinza,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.6.sp
                 )
             }
 
-            Spacer(Modifier.width(15.dp))
+            Spacer(Modifier.height(10.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
+            Text(
+                text = saldo,
+                color = Azul,
+                fontSize = 29.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable {
+                        onVerDetalhes()
+                    }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+
                 Text(
-                    text = "SALDO EM CAIXA",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Cinza
+                    text = "Ver detalhes",
+                    color = Cobre,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
 
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.width(3.dp))
 
-                Text(
-                    text = saldo,
-                    fontSize = 25.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Azul,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(Modifier.height(4.dp))
-
-                Text(
-                    text = "Ver detalhes ›",
-                    fontSize = 11.sp,
-                    color = Cinza
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = Cobre,
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
     }
 }
 
+// Indicadores de clientes e serviços
 @Composable
 private fun Indicador(
     modifier: Modifier,
@@ -412,9 +519,11 @@ private fun Indicador(
             containerColor = Color.White
         )
     ) {
+
         Column(
             modifier = Modifier.padding(10.dp)
         ) {
+
             Icon(
                 imageVector = icone,
                 contentDescription = null,
@@ -441,8 +550,11 @@ private fun Indicador(
     }
 }
 
+// Cartão do gráfico
 @Composable
-private fun CartaoGrafico(status: List<StatusServico>) {
+private fun CartaoGrafico(
+    status: List<StatusServico>
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -450,9 +562,11 @@ private fun CartaoGrafico(status: List<StatusServico>) {
             containerColor = Color.White
         )
     ) {
+
         Column(
             modifier = Modifier.padding(14.dp)
         ) {
+
             Text(
                 text = "Serviços por status",
                 fontSize = 16.sp,
@@ -467,6 +581,7 @@ private fun CartaoGrafico(status: List<StatusServico>) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+
                 GraficoCircular(
                     status = status,
                     modifier = Modifier.size(132.dp)
@@ -476,10 +591,13 @@ private fun CartaoGrafico(status: List<StatusServico>) {
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(13.dp)
                 ) {
+
                     status.forEach { item ->
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+
                             Box(
                                 modifier = Modifier
                                     .size(7.dp)
@@ -514,20 +632,25 @@ private fun CartaoGrafico(status: List<StatusServico>) {
     }
 }
 
+// Gráfico circular em Jetpack Compose
 @Composable
 private fun GraficoCircular(
     status: List<StatusServico>,
     modifier: Modifier
 ) {
-    val total = status.sumOf { it.quantidade }
+    val total = status.sumOf {
+        it.quantidade
+    }
 
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
+
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
+
             val espessura = 19.dp.toPx()
             val margem = espessura / 2f
             val diametro = size.minDimension - espessura
@@ -535,6 +658,7 @@ private fun GraficoCircular(
             var angulo = -90f
 
             status.forEach { item ->
+
                 val parte = if (total > 0) {
                     360f * item.quantidade / total
                 } else {
@@ -548,7 +672,9 @@ private fun GraficoCircular(
                     useCenter = false,
                     topLeft = Offset(margem, margem),
                     size = Size(diametro, diametro),
-                    style = Stroke(width = espessura)
+                    style = Stroke(
+                        width = espessura
+                    )
                 )
 
                 angulo += parte
@@ -558,6 +684,7 @@ private fun GraficoCircular(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Text(
                 text = total.toString(),
                 color = Azul,
@@ -574,12 +701,16 @@ private fun GraficoCircular(
     }
 }
 
+// Lista de próximas entregas
 @Composable
-private fun LinhaEntrega(entrega: EntregaResumo) {
+private fun LinhaEntrega(
+    entrega: EntregaResumo
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+
         Box(
             modifier = Modifier
                 .size(32.dp)
@@ -587,6 +718,7 @@ private fun LinhaEntrega(entrega: EntregaResumo) {
                 .background(Color(0xFFF7EBDC)),
             contentAlignment = Alignment.Center
         ) {
+
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.Assignment,
                 contentDescription = null,
@@ -600,6 +732,7 @@ private fun LinhaEntrega(entrega: EntregaResumo) {
         Column(
             modifier = Modifier.weight(1f)
         ) {
+
             Text(
                 text = entrega.titulo,
                 color = Azul,
@@ -615,6 +748,8 @@ private fun LinhaEntrega(entrega: EntregaResumo) {
                 fontSize = 10.sp
             )
         }
+
+        Spacer(Modifier.width(4.dp))
 
         Text(
             text = "● ${entrega.status}",
