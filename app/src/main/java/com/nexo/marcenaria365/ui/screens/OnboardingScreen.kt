@@ -8,6 +8,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -19,8 +21,14 @@ fun OnboardingScreen() {
         mutableStateOf("onboarding")
     }
 
-    var nomeDemonstracao by rememberSaveable {
+    var nomeUsuario by rememberSaveable {
         mutableStateOf("Mariana")
+    }
+
+    val clientes = remember {
+        mutableStateListOf<ClienteUi>().apply {
+            addAll(clientesIniciais())
+        }
     }
 
     val pagerState = rememberPagerState(
@@ -43,7 +51,7 @@ fun OnboardingScreen() {
                     telaAtual = "cadastro"
                 },
                 onDemoLogin = { nome ->
-                    nomeDemonstracao = nome
+                    nomeUsuario = nome
                     telaAtual = "home"
                 }
             )
@@ -66,14 +74,41 @@ fun OnboardingScreen() {
 
         "home" -> {
             BackHandler {
-                // Evita voltar ao login pelo botão físico
-                // durante a demonstração.
+                // A saída é feita pelo menu Mais.
             }
 
             HomeScreen(
-                nomeUsuario = nomeDemonstracao,
+                nomeUsuario = nomeUsuario,
+                quantidadeClientes = clientes.size,
+                onClientesClick = {
+                    telaAtual = "clientes"
+                },
                 onSair = {
                     telaAtual = "login"
+                }
+            )
+        }
+
+        "clientes" -> {
+            BackHandler {
+                telaAtual = "home"
+            }
+
+            ClientesScreen(
+                clientes = clientes,
+                onAdicionarCliente = { novoCliente ->
+                    clientes.add(novoCliente)
+                },
+                onAtualizarCliente = { clienteAtualizado ->
+                    val indice = clientes.indexOfFirst {
+                        it.id == clienteAtualizado.id
+                    }
+                    if (indice >= 0) {
+                        clientes[indice] = clienteAtualizado
+                    }
+                },
+                onInicioClick = {
+                    telaAtual = "home"
                 }
             )
         }

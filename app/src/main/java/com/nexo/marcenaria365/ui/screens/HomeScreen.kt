@@ -33,17 +33,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Identidade visual do Marcenaria 365
-private val Fundo = Color(0xFFFAF6F0)
-private val Azul = Color(0xFF193447)
-private val Cobre = Color(0xFFBD906E)
-private val Cinza = Color(0xFF929292)
-private val Verde = Color(0xFF239B7A)
-private val Laranja = Color(0xFFF6A823)
-private val Vermelho = Color(0xFFE47779)
-private val CinzaGrafico = Color(0xFFC8C8C6)
+private val FundoHome = Color(0xFFFAF6F0)
+private val AzulHome = Color(0xFF193447)
+private val CobreHome = Color(0xFFBD906E)
+private val CinzaHome = Color(0xFF929292)
+private val VerdeHome = Color(0xFF239B7A)
+private val LaranjaHome = Color(0xFFF6A823)
+private val VermelhoHome = Color(0xFFE47779)
+private val CinzaGraficoHome = Color(0xFFC8C8C6)
 
-// Modelos preparados para futura integração com a API
 data class StatusServico(
     val nome: String,
     val quantidade: Int,
@@ -66,30 +64,29 @@ data class ResumoDashboard(
     val entregas: List<EntregaResumo>
 )
 
-// Dados temporários enquanto o backend não está conectado
 private val resumoInicial = ResumoDashboard(
     saldo = "R$ 4.850,00",
     clientes = 6,
     emAndamento = 8,
     concluidos = 4,
     status = listOf(
-        StatusServico("Orçamentos", 4, Laranja),
-        StatusServico("Produção", 4, CinzaGrafico),
-        StatusServico("Concluídos", 7, Verde),
-        StatusServico("Pendentes", 1, Vermelho)
+        StatusServico("Orçamentos", 4, LaranjaHome),
+        StatusServico("Produção", 4, CinzaGraficoHome),
+        StatusServico("Concluídos", 7, VerdeHome),
+        StatusServico("Pendentes", 1, VermelhoHome)
     ),
     entregas = listOf(
         EntregaResumo(
-            titulo = "Cozinha planejada",
-            cliente = "Ana Silva",
-            prazo = "15/10",
-            status = "Em produção"
+            "Cozinha planejada",
+            "Ana Silva",
+            "15/10",
+            "Em produção"
         ),
         EntregaResumo(
-            titulo = "Rack para sala",
-            cliente = "Bruno Souza",
-            prazo = "18/10",
-            status = "Em produção"
+            "Rack para sala",
+            "Bruno Souza",
+            "18/10",
+            "Em produção"
         )
     )
 )
@@ -97,46 +94,35 @@ private val resumoInicial = ResumoDashboard(
 @Composable
 fun HomeScreen(
     nomeUsuario: String,
-    onSair: () -> Unit
+    onSair: () -> Unit,
+    onClientesClick: () -> Unit,
+    quantidadeClientes: Int = resumoInicial.clientes
 ) {
-    var abaAtual by remember {
-        mutableStateOf("Início")
-    }
+    var mostrarSaida by remember { mutableStateOf(false) }
+    var mostrarFinanceiro by remember { mutableStateOf(false) }
+    var mostrarServicos by remember { mutableStateOf(false) }
 
-    var mostrarSaida by remember {
-        mutableStateOf(false)
-    }
-
-    var mostrarFinanceiro by remember {
-        mutableStateOf(false)
-    }
-
-    val primeiroNome = nomeUsuario
-        .trim()
+    val primeiroNome = nomeUsuario.trim()
         .substringBefore(" ")
         .ifBlank { "Usuário" }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Fundo)
+            .background(FundoHome)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
-
-        // Conteúdo principal com rolagem
         Column(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
         ) {
-
             Spacer(Modifier.height(15.dp))
 
             Text(
-                text = "Olá, $primeiroNome!",
-                color = Azul,
+                "Olá, $primeiroNome!",
+                color = AzulHome,
                 fontSize = 25.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -144,62 +130,112 @@ fun HomeScreen(
             Spacer(Modifier.height(4.dp))
 
             Text(
-                text = "Confira o resumo da sua marcenaria hoje.",
-                color = Cinza,
+                "Confira o resumo da sua marcenaria hoje.",
+                color = CinzaHome,
                 fontSize = 12.sp
             )
 
             Spacer(Modifier.height(13.dp))
 
-            // Carteira com novo visual minimalista
-            CartaoSaldoMinimalista(
-                saldo = resumoInicial.saldo,
-                onVerDetalhes = {
-                    mostrarFinanceiro = true
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(
+                        horizontal = 18.dp,
+                        vertical = 16.dp
+                    )
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.AccountBalanceWallet,
+                            contentDescription = null,
+                            tint = CobreHome,
+                            modifier = Modifier.size(20.dp)
+                        )
+
+                        Spacer(Modifier.width(9.dp))
+
+                        Text(
+                            "SALDO EM CAIXA",
+                            fontSize = 11.sp,
+                            color = CinzaHome,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Text(
+                        resumoInicial.saldo,
+                        color = AzulHome,
+                        fontSize = 29.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .clickable { mostrarFinanceiro = true }
+                            .padding(vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Ver detalhes",
+                            color = CobreHome,
+                            fontSize = 12.sp
+                        )
+
+                        Icon(
+                            Icons.Outlined.ChevronRight,
+                            contentDescription = null,
+                            tint = CobreHome,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
                 }
-            )
+            }
 
             Spacer(Modifier.height(11.dp))
 
-            // Indicadores
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(9.dp)
             ) {
-
-                Indicador(
+                IndicadorDashboard(
                     modifier = Modifier.weight(1f),
                     icone = Icons.Outlined.PersonOutline,
-                    numero = resumoInicial.clientes,
+                    numero = quantidadeClientes,
                     descricao = "Clientes\ncadastrados",
-                    cor = Cobre
+                    cor = CobreHome
                 )
 
-                Indicador(
+                IndicadorDashboard(
                     modifier = Modifier.weight(1f),
                     icone = Icons.AutoMirrored.Outlined.Assignment,
                     numero = resumoInicial.emAndamento,
                     descricao = "Serviços em\nandamento",
-                    cor = Cobre
+                    cor = CobreHome
                 )
 
-                Indicador(
+                IndicadorDashboard(
                     modifier = Modifier.weight(1f),
                     icone = Icons.Outlined.CheckCircleOutline,
                     numero = resumoInicial.concluidos,
                     descricao = "Serviços\nconcluídos",
-                    cor = Verde
+                    cor = VerdeHome
                 )
             }
 
             Spacer(Modifier.height(11.dp))
 
-            // Gráfico de status
-            CartaoGrafico(resumoInicial.status)
-
-            Spacer(Modifier.height(11.dp))
-
-            // Próximas entregas
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -207,24 +243,132 @@ fun HomeScreen(
                     containerColor = Color.White
                 )
             ) {
-
-                Column(
-                    modifier = Modifier.padding(13.dp)
-                ) {
-
+                Column(Modifier.padding(14.dp)) {
                     Text(
-                        text = "Próximas entregas",
-                        fontSize = 16.sp,
+                        "Serviços por status",
                         fontWeight = FontWeight.Bold,
-                        color = Azul
+                        fontSize = 16.sp,
+                        color = AzulHome
+                    )
+
+                    Spacer(Modifier.height(13.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        GraficoDashboard(
+                            status = resumoInicial.status,
+                            modifier = Modifier.size(132.dp)
+                        )
+
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(13.dp)
+                        ) {
+                            resumoInicial.status.forEach { item ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(item.cor)
+                                    )
+
+                                    Spacer(Modifier.width(6.dp))
+
+                                    Text(
+                                        text = item.nome,
+                                        color = AzulHome,
+                                        fontSize = 10.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
+                                    )
+
+                                    Text(
+                                        item.quantidade.toString(),
+                                        color = AzulHome,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(11.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(Modifier.padding(13.dp)) {
+                    Text(
+                        "Próximas entregas",
+                        color = AzulHome,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     )
 
                     Spacer(Modifier.height(12.dp))
 
                     resumoInicial.entregas.forEach { entrega ->
-                        LinhaEntrega(entrega)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFF7EBDC)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Outlined.Assignment,
+                                    contentDescription = null,
+                                    tint = CobreHome,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
 
-                        Spacer(Modifier.height(11.dp))
+                            Spacer(Modifier.width(9.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    entrega.titulo,
+                                    color = AzulHome,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                Text(
+                                    "${entrega.cliente} · ${entrega.prazo}",
+                                    color = CinzaHome,
+                                    fontSize = 10.sp
+                                )
+                            }
+
+                            Text(
+                                "● ${entrega.status}",
+                                color = LaranjaHome,
+                                fontSize = 9.sp,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
@@ -232,280 +376,116 @@ fun HomeScreen(
             Spacer(Modifier.height(20.dp))
         }
 
-        // Menu inferior
         NavigationBar(
             containerColor = Color.White,
             tonalElevation = 0.dp,
             modifier = Modifier.height(75.dp)
         ) {
-
             NavigationBarItem(
-                selected = abaAtual == "Início",
-                onClick = {
-                    abaAtual = "Início"
-                },
-                icon = {
-                    Icon(
-                        Icons.Outlined.Home,
-                        contentDescription = "Início"
-                    )
-                },
-                label = {
-                    Text("Início", fontSize = 10.sp)
-                },
-                colors = coresMenu()
+                selected = true,
+                onClick = {},
+                icon = { Icon(Icons.Outlined.Home, "Início") },
+                label = { Text("Início", fontSize = 10.sp) },
+                colors = coresDashboard()
             )
 
             NavigationBarItem(
-                selected = abaAtual == "Clientes",
-                onClick = {
-                    abaAtual = "Clientes"
-                },
+                selected = false,
+                onClick = onClientesClick,
                 icon = {
-                    Icon(
-                        Icons.Outlined.PeopleOutline,
-                        contentDescription = "Clientes"
-                    )
+                    Icon(Icons.Outlined.PeopleOutline, "Clientes")
                 },
-                label = {
-                    Text("Clientes", fontSize = 10.sp)
-                },
-                colors = coresMenu()
+                label = { Text("Clientes", fontSize = 10.sp) },
+                colors = coresDashboard()
             )
 
             NavigationBarItem(
-                selected = abaAtual == "Serviços",
-                onClick = {
-                    abaAtual = "Serviços"
-                },
+                selected = false,
+                onClick = { mostrarServicos = true },
                 icon = {
                     Icon(
                         Icons.AutoMirrored.Outlined.Assignment,
-                        contentDescription = "Serviços"
+                        "Serviços"
                     )
                 },
-                label = {
-                    Text("Serviços", fontSize = 10.sp)
-                },
-                colors = coresMenu()
+                label = { Text("Serviços", fontSize = 10.sp) },
+                colors = coresDashboard()
             )
 
             NavigationBarItem(
-                selected = abaAtual == "Mais",
-                onClick = {
-                    abaAtual = "Mais"
-                    mostrarSaida = true
-                },
-                icon = {
-                    Icon(
-                        Icons.Outlined.Menu,
-                        contentDescription = "Mais"
-                    )
-                },
-                label = {
-                    Text("Mais", fontSize = 10.sp)
-                },
-                colors = coresMenu()
+                selected = false,
+                onClick = { mostrarSaida = true },
+                icon = { Icon(Icons.Outlined.Menu, "Mais") },
+                label = { Text("Mais", fontSize = 10.sp) },
+                colors = coresDashboard()
             )
         }
     }
 
-    // Detalhes financeiros serão integrados posteriormente
     if (mostrarFinanceiro) {
         AlertDialog(
-            onDismissRequest = {
-                mostrarFinanceiro = false
-            },
-            title = {
-                Text("Saldo em caixa", color = Azul)
-            },
+            onDismissRequest = { mostrarFinanceiro = false },
+            title = { Text("Saldo em caixa") },
             text = {
-                Text(
-                    "O histórico de recebimentos e os " +
-                            "detalhes financeiros serão exibidos " +
-                            "aqui quando a Carteira for implementada."
-                )
+                Text("Os detalhes da Carteira serão implementados em breve.")
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarFinanceiro = false
-                    }
-                ) {
-                    Text("Entendi", color = Azul)
+                TextButton(onClick = { mostrarFinanceiro = false }) {
+                    Text("Entendi", color = AzulHome)
                 }
             }
         )
     }
 
-    // Telas que serão implementadas posteriormente
-    if (abaAtual == "Clientes" || abaAtual == "Serviços") {
+    if (mostrarServicos) {
         AlertDialog(
-            onDismissRequest = {
-                abaAtual = "Início"
-            },
-            title = {
-                Text(abaAtual, color = Azul)
-            },
+            onDismissRequest = { mostrarServicos = false },
+            title = { Text("Serviços") },
             text = {
-                Text("Esta área será implementada em breve.")
+                Text("Essa área será implementada nas próximas etapas.")
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        abaAtual = "Início"
-                    }
-                ) {
-                    Text("Entendi", color = Azul)
+                TextButton(onClick = { mostrarServicos = false }) {
+                    Text("Entendi", color = AzulHome)
                 }
             }
         )
     }
 
-    // Confirmação de saída
     if (mostrarSaida) {
         AlertDialog(
-            onDismissRequest = {
-                mostrarSaida = false
-                abaAtual = "Início"
-            },
-            title = {
-                Text("Sair da conta", color = Azul)
-            },
-            text = {
-                Text("Deseja voltar para a tela de login?")
-            },
+            onDismissRequest = { mostrarSaida = false },
+            title = { Text("Sair da conta") },
+            text = { Text("Deseja voltar para a tela de login?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarSaida = false
-                        onSair()
-                    }
-                ) {
-                    Text("Sair", color = Azul)
+                TextButton(onClick = {
+                    mostrarSaida = false
+                    onSair()
+                }) {
+                    Text("Sair", color = AzulHome)
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        mostrarSaida = false
-                        abaAtual = "Início"
-                    }
-                ) {
-                    Text("Cancelar", color = Cinza)
+                TextButton(onClick = { mostrarSaida = false }) {
+                    Text("Cancelar", color = CinzaHome)
                 }
             }
         )
     }
 }
 
-// Cores do menu inferior
 @Composable
-private fun coresMenu() =
+private fun coresDashboard() =
     NavigationBarItemDefaults.colors(
-        selectedIconColor = Azul,
-        selectedTextColor = Azul,
-        indicatorColor = Fundo,
-        unselectedIconColor = Cinza,
-        unselectedTextColor = Cinza
+        selectedIconColor = AzulHome,
+        selectedTextColor = AzulHome,
+        indicatorColor = FundoHome,
+        unselectedIconColor = CinzaHome,
+        unselectedTextColor = CinzaHome
     )
 
-// NOVO CARTÃO DE CARTEIRA MINIMALISTA
 @Composable
-private fun CartaoSaldoMinimalista(
-    saldo: String,
-    onVerDetalhes: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
-    ) {
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 18.dp,
-                    vertical = 16.dp
-                )
-        ) {
-
-            // Ícone pequeno, sem quadrado colorido
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Icon(
-                    imageVector = Icons.Outlined.AccountBalanceWallet,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = Cobre
-                )
-
-                Spacer(Modifier.width(9.dp))
-
-                Text(
-                    text = "SALDO EM CAIXA",
-                    color = Cinza,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.6.sp
-                )
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            Text(
-                text = saldo,
-                color = Azul,
-                fontSize = 29.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .clickable {
-                        onVerDetalhes()
-                    }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Text(
-                    text = "Ver detalhes",
-                    color = Cobre,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(Modifier.width(3.dp))
-
-                Icon(
-                    imageVector = Icons.Outlined.ChevronRight,
-                    contentDescription = null,
-                    tint = Cobre,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-    }
-}
-
-// Indicadores de clientes e serviços
-@Composable
-private fun Indicador(
+private fun IndicadorDashboard(
     modifier: Modifier,
     icone: ImageVector,
     numero: Int,
@@ -519,13 +499,9 @@ private fun Indicador(
             containerColor = Color.White
         )
     ) {
-
-        Column(
-            modifier = Modifier.padding(10.dp)
-        ) {
-
+        Column(modifier = Modifier.padding(10.dp)) {
             Icon(
-                imageVector = icone,
+                icone,
                 contentDescription = null,
                 tint = cor,
                 modifier = Modifier.size(21.dp)
@@ -534,15 +510,15 @@ private fun Indicador(
             Spacer(Modifier.height(5.dp))
 
             Text(
-                text = numero.toString(),
-                color = Azul,
+                numero.toString(),
+                color = AzulHome,
                 fontSize = 21.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = descricao,
-                color = Cinza,
+                descricao,
+                color = CinzaHome,
                 fontSize = 10.sp,
                 lineHeight = 13.sp
             )
@@ -550,120 +526,28 @@ private fun Indicador(
     }
 }
 
-// Cartão do gráfico
 @Composable
-private fun CartaoGrafico(
-    status: List<StatusServico>
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-
-        Column(
-            modifier = Modifier.padding(14.dp)
-        ) {
-
-            Text(
-                text = "Serviços por status",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Azul
-            )
-
-            Spacer(Modifier.height(13.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-
-                GraficoCircular(
-                    status = status,
-                    modifier = Modifier.size(132.dp)
-                )
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(13.dp)
-                ) {
-
-                    status.forEach { item ->
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-
-                            Box(
-                                modifier = Modifier
-                                    .size(7.dp)
-                                    .clip(CircleShape)
-                                    .background(item.cor)
-                            )
-
-                            Spacer(Modifier.width(6.dp))
-
-                            Text(
-                                text = item.nome,
-                                fontSize = 10.sp,
-                                color = Azul,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            Spacer(Modifier.width(4.dp))
-
-                            Text(
-                                text = item.quantidade.toString(),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Azul
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Gráfico circular em Jetpack Compose
-@Composable
-private fun GraficoCircular(
+private fun GraficoDashboard(
     status: List<StatusServico>,
-    modifier: Modifier
+    modifier: Modifier = Modifier
 ) {
-    val total = status.sumOf {
-        it.quantidade
-    }
+    val total = status.sumOf { it.quantidade }
 
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-
-        Canvas(
-            modifier = Modifier.fillMaxSize()
-        ) {
-
+        Canvas(modifier = Modifier.fillMaxSize()) {
             val espessura = 19.dp.toPx()
-            val margem = espessura / 2f
+            val margem = espessura / 2
             val diametro = size.minDimension - espessura
 
             var angulo = -90f
 
             status.forEach { item ->
-
-                val parte = if (total > 0) {
+                val parte = if (total > 0)
                     360f * item.quantidade / total
-                } else {
-                    0f
-                }
+                else 0f
 
                 drawArc(
                     color = item.cor,
@@ -672,90 +556,26 @@ private fun GraficoCircular(
                     useCenter = false,
                     topLeft = Offset(margem, margem),
                     size = Size(diametro, diametro),
-                    style = Stroke(
-                        width = espessura
-                    )
+                    style = Stroke(width = espessura)
                 )
 
                 angulo += parte
             }
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = total.toString(),
-                color = Azul,
-                fontSize = 23.sp,
-                fontWeight = FontWeight.Bold
+                total.toString(),
+                color = AzulHome,
+                fontWeight = FontWeight.Bold,
+                fontSize = 23.sp
             )
 
             Text(
-                text = "Total",
-                color = Cinza,
+                "Total",
+                color = CinzaHome,
                 fontSize = 10.sp
             )
         }
-    }
-}
-
-// Lista de próximas entregas
-@Composable
-private fun LinhaEntrega(
-    entrega: EntregaResumo
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFFF7EBDC)),
-            contentAlignment = Alignment.Center
-        ) {
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.Assignment,
-                contentDescription = null,
-                tint = Cobre,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        Spacer(Modifier.width(9.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-
-            Text(
-                text = entrega.titulo,
-                color = Azul,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Text(
-                text = "${entrega.cliente} · ${entrega.prazo}",
-                color = Cinza,
-                fontSize = 10.sp
-            )
-        }
-
-        Spacer(Modifier.width(4.dp))
-
-        Text(
-            text = "● ${entrega.status}",
-            fontSize = 9.sp,
-            color = Laranja,
-            maxLines = 1
-        )
     }
 }
