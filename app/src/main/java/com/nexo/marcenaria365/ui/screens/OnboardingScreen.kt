@@ -13,6 +13,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
+import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
+import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
 
 @Composable
 fun OnboardingScreen() {
