@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,6 +29,7 @@ fun WelcomeScreen(
         modifier = Modifier.fillMaxSize()
     ) {
 
+        // Fotografia da cozinha preenchendo a tela inteira
         Image(
             painter = painterResource(R.drawable.background),
             contentDescription = null,
@@ -37,6 +37,7 @@ fun WelcomeScreen(
             modifier = Modifier.fillMaxSize()
         )
 
+        // Gradiente suave sobre a fotografia
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -52,6 +53,7 @@ fun WelcomeScreen(
                 )
         )
 
+        // Logo e frase principal
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -63,6 +65,7 @@ fun WelcomeScreen(
                 ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Image(
                 painter = painterResource(R.drawable.logo),
                 contentDescription = "Marcenaria 365",
@@ -78,11 +81,12 @@ fun WelcomeScreen(
                 text = "Seu trabalho organizado,\ndo orçamento ao recebimento.",
                 fontSize = 16.sp,
                 lineHeight = 23.sp,
-                color = Color(0xFF193447),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = Color(0xFF193447)
             )
         }
 
+        // Instrução discreta, sem fundo ou bordas
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -90,23 +94,17 @@ fun WelcomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(Color.Black.copy(alpha = 0.22f))
-                    .padding(horizontal = 16.dp, vertical = 7.dp)
-            ) {
-                Text(
-                    text = "Deslize para continuar",
-                    color = Color.White.copy(alpha = 0.90f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    textAlign = TextAlign.Center
-                )
-            }
+            Text(
+                text = "Deslize para continuar",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xFFD8D4D0),
+                textAlign = TextAlign.Center
+            )
 
             Spacer(modifier = Modifier.height(15.dp))
 
+            // Indicadores de navegação
             Row(
                 horizontalArrangement = Arrangement.spacedBy(9.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -114,7 +112,10 @@ fun WelcomeScreen(
                 repeat(totalPaginas) { index ->
                     Box(
                         modifier = Modifier
-                            .size(if (index == paginaAtual) 9.dp else 8.dp)
+                            .size(
+                                if (index == paginaAtual) 9.dp
+                                else 8.dp
+                            )
                             .clip(CircleShape)
                             .background(
                                 if (index == paginaAtual)
