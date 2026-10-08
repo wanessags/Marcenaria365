@@ -1,3 +1,4 @@
+
 package com.nexo.marcenaria365.ui.screens
 
 import androidx.activity.compose.BackHandler
@@ -14,8 +15,8 @@ import androidx.compose.ui.Modifier
 @Composable
 fun OnboardingScreen() {
 
-    var mostrarLogin by rememberSaveable {
-        mutableStateOf(false)
+    var telaAtual by rememberSaveable {
+        mutableStateOf("onboarding")
     }
 
     val pagerState = rememberPagerState(
@@ -23,37 +24,56 @@ fun OnboardingScreen() {
         pageCount = { 2 }
     )
 
-    if (mostrarLogin) {
+    when (telaAtual) {
 
-        BackHandler {
-            mostrarLogin = false
+        "login" -> {
+            BackHandler {
+                telaAtual = "onboarding"
+            }
+
+            LoginScreen(
+                onBackClick = {
+                    telaAtual = "onboarding"
+                },
+                onRegisterClick = {
+                    telaAtual = "cadastro"
+                }
+            )
         }
 
-        LoginScreen(
-            onBackClick = {
-                mostrarLogin = false
+        "cadastro" -> {
+            BackHandler {
+                telaAtual = "login"
             }
-        )
 
-    } else {
+            RegisterScreen(
+                onBackClick = {
+                    telaAtual = "login"
+                },
+                onLoginClick = {
+                    telaAtual = "login"
+                }
+            )
+        }
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { pagina ->
+        else -> {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { pagina ->
+                when (pagina) {
 
-            when (pagina) {
+                    0 -> WelcomeScreen(
+                        paginaAtual = pagerState.currentPage,
+                        totalPaginas = 2
+                    )
 
-                0 -> WelcomeScreen(
-                    paginaAtual = pagerState.currentPage,
-                    totalPaginas = 2
-                )
-
-                1 -> PrivacyScreen(
-                    onAgreeClick = {
-                        mostrarLogin = true
-                    }
-                )
+                    1 -> PrivacyScreen(
+                        onAgreeClick = {
+                            telaAtual = "login"
+                        }
+                    )
+                }
             }
         }
     }
