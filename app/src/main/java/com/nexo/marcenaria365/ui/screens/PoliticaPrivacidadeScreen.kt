@@ -1,7 +1,6 @@
 
 package com.nexo.marcenaria365.ui.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,17 +8,26 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Shield
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -55,8 +63,8 @@ fun PrivacyScreen(
                 modifier = Modifier
                     .size(66.dp)
                     .background(
-                        Color(0xFFF3E5D8),
-                        RoundedCornerShape(18.dp)
+                        color = Color(0xFFF3E5D8),
+                        shape = RoundedCornerShape(18.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -99,19 +107,19 @@ fun PrivacyScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         text = "Sobre o aplicativo",
                         color = AzulPrivacidade,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
                     )
 
                     Text(
-                        text = "O Marcenaria 365 foi desenvolvido " +
-                                "para ajudar na organização de clientes, " +
-                                "serviços, orçamentos e movimentações financeiras.",
+                        text = "O Marcenaria 365 ajuda a organizar " +
+                                "clientes, serviços, orçamentos " +
+                                "e movimentações financeiras.",
                         color = CinzaPrivacidade,
                         fontSize = 12.sp,
                         lineHeight = 19.sp
@@ -120,7 +128,7 @@ fun PrivacyScreen(
                     Text(
                         text = "Esta versão faz parte de um projeto " +
                                 "acadêmico e utiliza dados fictícios " +
-                                "e recursos em desenvolvimento.",
+                                "e funcionalidades em desenvolvimento.",
                         color = CinzaPrivacidade,
                         fontSize = 12.sp,
                         lineHeight = 19.sp
@@ -130,6 +138,7 @@ fun PrivacyScreen(
 
             Spacer(Modifier.height(17.dp))
 
+            // Abre a tela completa da Política de Privacidade
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -169,13 +178,14 @@ fun PrivacyScreen(
                         Text(
                             text = "Toque para ler o documento completo",
                             color = CinzaPrivacidade,
-                            fontSize = 11.sp
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
                         )
                     }
 
                     Icon(
                         imageVector = Icons.Outlined.ChevronRight,
-                        contentDescription = "Ler política",
+                        contentDescription = "Abrir política",
                         tint = CinzaPrivacidade,
                         modifier = Modifier.size(19.dp)
                     )
@@ -194,8 +204,8 @@ fun PrivacyScreen(
             ) {
                 Checkbox(
                     checked = aceitouTermos,
-                    onCheckedChange = {
-                        aceitouTermos = it
+                    onCheckedChange = { aceitou ->
+                        aceitouTermos = aceitou
                     },
                     colors = CheckboxDefaults.colors(
                         checkedColor = AzulPrivacidade,
@@ -217,6 +227,7 @@ fun PrivacyScreen(
             Spacer(Modifier.height(25.dp))
         }
 
+        // Botão inferior fixo
         Button(
             onClick = onAgreeClick,
             enabled = aceitouTermos,
@@ -227,7 +238,9 @@ fun PrivacyScreen(
             shape = RoundedCornerShape(11.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = AzulPrivacidade,
-                contentColor = Color.White
+                contentColor = Color.White,
+                disabledContainerColor = Color(0xFFBEC7CA),
+                disabledContentColor = Color.White
             )
         ) {
             Text(

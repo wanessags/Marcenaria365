@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,7 +20,6 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.PeopleOutline
-import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,10 +31,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nexo.marcenaria365.ui.screens.perfil.FotoPerfil
 
 private val FundoMais = Color(0xFFFAF6F0)
 private val AzulMais = Color(0xFF193447)
-private val CobreMais = Color(0xFFBD906E)
 private val CinzaMais = Color(0xFF929292)
 private val VermelhoMais = Color(0xFFCF6666)
 
@@ -44,6 +42,8 @@ private val VermelhoMais = Color(0xFFCF6666)
 fun MaisScreen(
     nomeUsuario: String,
     emailUsuario: String = "",
+    fotoUsuario: String? = null,
+    onPerfilClick: () -> Unit = {},
     onInicioClick: () -> Unit,
     onClientesClick: () -> Unit,
     onServicosClick: () -> Unit,
@@ -57,16 +57,6 @@ fun MaisScreen(
     var opcaoSelecionada by remember {
         mutableStateOf<String?>(null)
     }
-
-    val iniciais = nomeUsuario
-        .trim()
-        .split(" ")
-        .filter { it.isNotBlank() }
-        .take(2)
-        .mapNotNull { it.firstOrNull() }
-        .joinToString("")
-        .uppercase()
-        .ifBlank { "M" }
 
     BackHandler(onBack = onInicioClick)
 
@@ -155,12 +145,11 @@ fun MaisScreen(
         ) {
             Spacer(Modifier.height(20.dp))
 
+            // Cartão clicável: único acesso ao perfil
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        opcaoSelecionada = "Meu perfil"
-                    },
+                    .clickable(onClick = onPerfilClick),
                 shape = RoundedCornerShape(15.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
@@ -172,22 +161,11 @@ fun MaisScreen(
                         .padding(17.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .background(
-                                Color(0xFFEFE4D9),
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = iniciais,
-                            color = CobreMais,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    FotoPerfil(
+                        nome = nomeUsuario,
+                        fotoUri = fotoUsuario,
+                        modifier = Modifier.size(54.dp)
+                    )
 
                     Spacer(Modifier.width(14.dp))
 
@@ -195,7 +173,9 @@ fun MaisScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = nomeUsuario.ifBlank { "Meu perfil" },
+                            text = nomeUsuario.ifBlank {
+                                "Meu perfil"
+                            },
                             color = AzulMais,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
@@ -207,7 +187,7 @@ fun MaisScreen(
 
                         Text(
                             text = emailUsuario.ifBlank {
-                                "Dados da conta"
+                                "Toque para editar seu perfil"
                             },
                             color = CinzaMais,
                             fontSize = 11.sp,
@@ -225,15 +205,7 @@ fun MaisScreen(
                 }
             }
 
-            Spacer(Modifier.height(22.dp))
-
-            OpcaoMais(
-                titulo = "Perfil",
-                icone = Icons.Outlined.PersonOutline,
-                onClick = {
-                    opcaoSelecionada = "Meu perfil"
-                }
-            )
+            Spacer(Modifier.height(20.dp))
 
             OpcaoMais(
                 titulo = "Materiais",
@@ -267,7 +239,6 @@ fun MaisScreen(
                 }
             )
 
-            // Abre a política real, não um aviso.
             OpcaoMais(
                 titulo = "Política de Privacidade",
                 icone = Icons.Outlined.Description,
@@ -331,7 +302,8 @@ fun MaisScreen(
             },
             text = {
                 Text(
-                    text = "Esta funcionalidade ainda não está disponível."
+                    text = "Esta funcionalidade ainda " +
+                            "não está disponível."
                 )
             },
             confirmButton = {
@@ -340,7 +312,10 @@ fun MaisScreen(
                         opcaoSelecionada = null
                     }
                 ) {
-                    Text("Entendi", color = AzulMais)
+                    Text(
+                        text = "Entendi",
+                        color = AzulMais
+                    )
                 }
             },
             containerColor = Color.White,
@@ -355,13 +330,16 @@ fun MaisScreen(
             },
             title = {
                 Text(
-                    "Sair da conta?",
+                    text = "Sair da conta?",
                     color = AzulMais,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Text("Deseja voltar para a tela de login?")
+                Text(
+                    text = "Deseja voltar para " +
+                            "a tela de login?"
+                )
             },
             confirmButton = {
                 TextButton(
@@ -371,7 +349,7 @@ fun MaisScreen(
                     }
                 ) {
                     Text(
-                        "Sair",
+                        text = "Sair",
                         color = VermelhoMais,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -383,7 +361,10 @@ fun MaisScreen(
                         confirmarSaida = false
                     }
                 ) {
-                    Text("Cancelar", color = AzulMais)
+                    Text(
+                        text = "Cancelar",
+                        color = AzulMais
+                    )
                 }
             },
             containerColor = Color.White,

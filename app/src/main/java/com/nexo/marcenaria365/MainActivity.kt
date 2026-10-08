@@ -1,3 +1,4 @@
+
 package com.nexo.marcenaria365
 
 import android.os.Bundle
@@ -11,7 +12,6 @@ import com.nexo.marcenaria365.ui.theme.Marcenaria365Theme
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         installSplashScreen()
 
         super.onCreate(savedInstanceState)
