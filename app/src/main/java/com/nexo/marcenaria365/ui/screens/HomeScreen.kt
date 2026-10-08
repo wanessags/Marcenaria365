@@ -19,7 +19,7 @@ import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.PeopleOutline
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,26 +70,10 @@ private val resumoInicial = ResumoDashboard(
     emAndamento = 8,
     concluidos = 4,
     status = listOf(
-        StatusServico(
-            "Orçamentos",
-            4,
-            LaranjaHome
-        ),
-        StatusServico(
-            "Produção",
-            4,
-            CinzaGraficoHome
-        ),
-        StatusServico(
-            "Concluídos",
-            7,
-            VerdeHome
-        ),
-        StatusServico(
-            "Pendentes",
-            1,
-            VermelhoHome
-        )
+        StatusServico("Orçamentos", 4, LaranjaHome),
+        StatusServico("Produção", 4, CinzaGraficoHome),
+        StatusServico("Concluídos", 7, VerdeHome),
+        StatusServico("Pendentes", 1, VermelhoHome)
     ),
     entregas = listOf(
         EntregaResumo(
@@ -114,12 +98,9 @@ fun HomeScreen(
     onClientesClick: () -> Unit,
     onServicosClick: () -> Unit,
     onCaixaClick: () -> Unit,
+    onMaisClick: () -> Unit,
     quantidadeClientes: Int = resumoInicial.clientes
 ) {
-    var mostrarSaida by remember {
-        mutableStateOf(false)
-    }
-
     val primeiroNome = nomeUsuario
         .trim()
         .substringBefore(" ")
@@ -156,7 +137,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(13.dp))
 
-            // CARTEIRA
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -204,7 +184,6 @@ fun HomeScreen(
 
                     Spacer(Modifier.height(10.dp))
 
-                    // AGORA ABRE A TELA CAIXA
                     Row(
                         modifier = Modifier
                             .clickable(onClick = onCaixaClick)
@@ -230,7 +209,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
-            // INDICADORES
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(9.dp)
@@ -262,7 +240,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
-            // GRÁFICO DE SERVIÇOS
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -336,7 +313,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(11.dp))
 
-            // PRÓXIMAS ENTREGAS
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -416,7 +392,6 @@ fun HomeScreen(
             Spacer(Modifier.height(20.dp))
         }
 
-        // MENU INFERIOR
         NavigationBar(
             containerColor = Color.White,
             tonalElevation = 0.dp,
@@ -426,10 +401,7 @@ fun HomeScreen(
                 selected = true,
                 onClick = {},
                 icon = {
-                    Icon(
-                        Icons.Outlined.Home,
-                        contentDescription = "Início"
-                    )
+                    Icon(Icons.Outlined.Home, "Início")
                 },
                 label = {
                     Text("Início", fontSize = 10.sp)
@@ -441,10 +413,7 @@ fun HomeScreen(
                 selected = false,
                 onClick = onClientesClick,
                 icon = {
-                    Icon(
-                        Icons.Outlined.PeopleOutline,
-                        contentDescription = "Clientes"
-                    )
+                    Icon(Icons.Outlined.PeopleOutline, "Clientes")
                 },
                 label = {
                     Text("Clientes", fontSize = 10.sp)
@@ -458,7 +427,7 @@ fun HomeScreen(
                 icon = {
                     Icon(
                         Icons.AutoMirrored.Outlined.Assignment,
-                        contentDescription = "Serviços"
+                        "Serviços"
                     )
                 },
                 label = {
@@ -469,14 +438,9 @@ fun HomeScreen(
 
             NavigationBarItem(
                 selected = false,
-                onClick = {
-                    mostrarSaida = true
-                },
+                onClick = onMaisClick,
                 icon = {
-                    Icon(
-                        Icons.Outlined.Menu,
-                        contentDescription = "Mais"
-                    )
+                    Icon(Icons.Outlined.Menu, "Mais")
                 },
                 label = {
                     Text("Mais", fontSize = 10.sp)
@@ -485,46 +449,6 @@ fun HomeScreen(
             )
         }
     }
-
-    // CONFIRMAÇÃO DE SAÍDA
-    if (mostrarSaida) {
-        AlertDialog(
-            onDismissRequest = {
-                mostrarSaida = false
-            },
-            title = {
-                Text("Sair da conta")
-            },
-            text = {
-                Text("Deseja voltar para a tela de login?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarSaida = false
-                        onSair()
-                    }
-                ) {
-                    Text(
-                        "Sair",
-                        color = AzulHome
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        mostrarSaida = false
-                    }
-                ) {
-                    Text(
-                        "Cancelar",
-                        color = CinzaHome
-                    )
-                }
-            }
-        )
-    }
 }
 
 @Composable
@@ -532,7 +456,7 @@ private fun coresDashboard() =
     NavigationBarItemDefaults.colors(
         selectedIconColor = AzulHome,
         selectedTextColor = AzulHome,
-        indicatorColor = FundoHome,
+        indicatorColor = Color(0xFFF1E8DE),
         unselectedIconColor = CinzaHome,
         unselectedTextColor = CinzaHome
     )
@@ -600,7 +524,6 @@ private fun GraficoDashboard(
             val espessura = 19.dp.toPx()
             val margem = espessura / 2f
             val diametro = size.minDimension - espessura
-
             var angulo = -90f
 
             status.forEach { item ->
@@ -615,17 +538,9 @@ private fun GraficoDashboard(
                     startAngle = angulo,
                     sweepAngle = parte,
                     useCenter = false,
-                    topLeft = Offset(
-                        margem,
-                        margem
-                    ),
-                    size = Size(
-                        diametro,
-                        diametro
-                    ),
-                    style = Stroke(
-                        width = espessura
-                    )
+                    topLeft = Offset(margem, margem),
+                    size = Size(diametro, diametro),
+                    style = Stroke(width = espessura)
                 )
 
                 angulo += parte

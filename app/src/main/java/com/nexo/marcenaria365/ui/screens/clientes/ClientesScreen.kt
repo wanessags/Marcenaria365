@@ -46,7 +46,7 @@ fun ClientesScreen(
     onNovoClienteClick: () -> Unit,
     onClienteClick: (ClienteUi) -> Unit,
     onServicosClick: () -> Unit,
-    onSair: () -> Unit
+    onMaisClick: () -> Unit
 ) {
     var busca by rememberSaveable {
         mutableStateOf("")
@@ -54,10 +54,6 @@ fun ClientesScreen(
 
     var filtro by rememberSaveable {
         mutableStateOf("Todos")
-    }
-
-    var mostrarSaida by remember {
-        mutableStateOf(false)
     }
 
     val clientesFiltrados = clientes.filter { cliente ->
@@ -69,17 +65,10 @@ fun ClientesScreen(
 
         val termo = busca.trim()
 
-        correspondeFiltro &&
-                (
-                        cliente.nome.contains(
-                            termo,
-                            ignoreCase = true
-                        ) ||
-                                cliente.telefone.contains(
-                                    termo,
-                                    ignoreCase = true
-                                )
-                        )
+        correspondeFiltro && (
+                cliente.nome.contains(termo, ignoreCase = true) ||
+                        cliente.telefone.contains(termo, ignoreCase = true)
+                )
     }
 
     BackHandler(onBack = onInicioClick)
@@ -90,7 +79,6 @@ fun ClientesScreen(
             .windowInsetsPadding(WindowInsets.safeDrawing),
         containerColor = FundoClientes,
 
-        // Botão de adicionar acima da barra fixa
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNovoClienteClick,
@@ -105,7 +93,6 @@ fun ClientesScreen(
             }
         },
 
-        // BARRA INFERIOR FIXA
         bottomBar = {
             NavigationBar(
                 containerColor = Color.White,
@@ -116,10 +103,7 @@ fun ClientesScreen(
                     selected = false,
                     onClick = onInicioClick,
                     icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Home,
-                            contentDescription = "Início"
-                        )
+                        Icon(Icons.Outlined.Home, "Início")
                     },
                     label = {
                         Text("Início", fontSize = 10.sp)
@@ -132,8 +116,8 @@ fun ClientesScreen(
                     onClick = {},
                     icon = {
                         Icon(
-                            imageVector = Icons.Outlined.PeopleOutline,
-                            contentDescription = "Clientes"
+                            Icons.Outlined.PeopleOutline,
+                            "Clientes"
                         )
                     },
                     label = {
@@ -147,9 +131,8 @@ fun ClientesScreen(
                     onClick = onServicosClick,
                     icon = {
                         Icon(
-                            imageVector =
-                                Icons.AutoMirrored.Outlined.Assignment,
-                            contentDescription = "Serviços"
+                            Icons.AutoMirrored.Outlined.Assignment,
+                            "Serviços"
                         )
                     },
                     label = {
@@ -160,14 +143,9 @@ fun ClientesScreen(
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = {
-                        mostrarSaida = true
-                    },
+                    onClick = onMaisClick,
                     icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Menu,
-                            contentDescription = "Mais"
-                        )
+                        Icon(Icons.Outlined.Menu, "Mais")
                     },
                     label = {
                         Text("Mais", fontSize = 10.sp)
@@ -178,8 +156,6 @@ fun ClientesScreen(
         }
     ) { paddingValues ->
 
-        // Somente o conteúdo rola.
-        // A barra inferior fica fora do LazyColumn.
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -241,7 +217,7 @@ fun ClientesScreen(
                 },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.Search,
+                        Icons.Outlined.Search,
                         contentDescription = null,
                         tint = CinzaClientes
                     )
@@ -269,19 +245,13 @@ fun ClientesScreen(
                 items(
                     listOf(
                         "Todos" to clientes.size,
-                        "Ativos" to clientes.count {
-                            it.ativo
-                        },
-                        "Inativos" to clientes.count {
-                            !it.ativo
-                        }
+                        "Ativos" to clientes.count { it.ativo },
+                        "Inativos" to clientes.count { !it.ativo }
                     )
                 ) { (nome, quantidade) ->
                     FilterChip(
                         selected = filtro == nome,
-                        onClick = {
-                            filtro = nome
-                        },
+                        onClick = { filtro = nome },
                         label = {
                             Text(
                                 text = "$nome ($quantidade)",
@@ -289,21 +259,17 @@ fun ClientesScreen(
                             )
                         },
                         shape = RoundedCornerShape(16.dp),
-                        colors =
-                            FilterChipDefaults.filterChipColors(
-                                selectedContainerColor =
-                                    Color(0xFFF4E6D8),
-                                selectedLabelColor =
-                                    AzulClientes
-                            ),
-                        border =
-                            FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = filtro == nome,
-                                borderColor = BordaClientes,
-                                selectedBorderColor =
-                                    CobreClientes
-                            )
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor =
+                                Color(0xFFF4E6D8),
+                            selectedLabelColor = AzulClientes
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = filtro == nome,
+                            borderColor = BordaClientes,
+                            selectedBorderColor = CobreClientes
+                        )
                     )
                 }
             }
@@ -361,46 +327,6 @@ fun ClientesScreen(
             }
         }
     }
-
-    if (mostrarSaida) {
-        AlertDialog(
-            onDismissRequest = {
-                mostrarSaida = false
-            },
-            title = {
-                Text("Sair da conta")
-            },
-            text = {
-                Text("Deseja voltar para a tela de login?")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarSaida = false
-                        onSair()
-                    }
-                ) {
-                    Text(
-                        text = "Sair",
-                        color = AzulClientes
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        mostrarSaida = false
-                    }
-                ) {
-                    Text(
-                        text = "Cancelar",
-                        color = CinzaClientes
-                    )
-                }
-            },
-            containerColor = Color.White
-        )
-    }
 }
 
 @Composable
@@ -457,7 +383,6 @@ private fun LinhaCliente(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Badge bem pequeno, abaixo do nome
             Surface(
                 modifier = Modifier.align(Alignment.Start),
                 color = if (cliente.ativo) {
@@ -468,11 +393,7 @@ private fun LinhaCliente(
                 shape = RoundedCornerShape(4.dp)
             ) {
                 Text(
-                    text = if (cliente.ativo) {
-                        "Ativo"
-                    } else {
-                        "Inativo"
-                    },
+                    text = if (cliente.ativo) "Ativo" else "Inativo",
                     color = if (cliente.ativo) {
                         VerdeClientes
                     } else {
@@ -521,7 +442,7 @@ private fun coresMenuClientes() =
     NavigationBarItemDefaults.colors(
         selectedIconColor = AzulClientes,
         selectedTextColor = AzulClientes,
-        indicatorColor = FundoClientes,
+        indicatorColor = Color(0xFFF1E8DE),
         unselectedIconColor = CinzaClientes,
         unselectedTextColor = CinzaClientes
     )

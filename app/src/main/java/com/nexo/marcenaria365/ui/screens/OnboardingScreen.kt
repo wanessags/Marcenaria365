@@ -11,12 +11,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 
 import com.nexo.marcenaria365.ui.screens.caixa.CaixaScreen
+
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteCadastroScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteDetalhesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteEdicaoScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
+
+import com.nexo.marcenaria365.ui.screens.mais.MaisScreen
+
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
 import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
@@ -122,15 +126,23 @@ fun OnboardingScreen() {
             HomeScreen(
                 nomeUsuario = nomeUsuario,
                 quantidadeClientes = clientes.size,
+
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
+
                 onServicosClick = {
                     telaAtual = "servicos"
                 },
+
                 onCaixaClick = {
                     telaAtual = "caixa"
                 },
+
+                onMaisClick = {
+                    telaAtual = "mais"
+                },
+
                 onSair = {
                     telaAtual = "login"
                 }
@@ -149,21 +161,26 @@ fun OnboardingScreen() {
             ClientesScreen(
                 clientes = clientes,
                 servicos = servicos,
+
                 onInicioClick = {
                     telaAtual = "home"
                 },
+
                 onNovoClienteClick = {
                     telaAtual = "cliente_cadastro"
                 },
+
                 onClienteClick = { cliente ->
                     clienteSelecionadoId = cliente.id
                     telaAtual = "cliente_detalhes"
                 },
+
                 onServicosClick = {
                     telaAtual = "servicos"
                 },
-                onSair = {
-                    telaAtual = "login"
+
+                onMaisClick = {
+                    telaAtual = "mais"
                 }
             )
         }
@@ -178,7 +195,9 @@ fun OnboardingScreen() {
                         (clientes.maxOfOrNull { it.id } ?: 0L) + 1L
 
                     clientes.add(
-                        novoCliente.copy(id = novoId)
+                        novoCliente.copy(
+                            id = novoId
+                        )
                     )
 
                     telaAtual = "clientes"
@@ -191,12 +210,15 @@ fun OnboardingScreen() {
                 ClienteDetalhesScreen(
                     cliente = clienteSelecionado,
                     servicos = servicos,
+
                     onVoltar = {
                         telaAtual = "clientes"
                     },
+
                     onEditar = {
                         telaAtual = "cliente_edicao"
                     },
+
                     onExcluir = { id ->
                         val possuiServicos = servicos.any {
                             it.clienteId == id
@@ -211,6 +233,7 @@ fun OnboardingScreen() {
                             telaAtual = "clientes"
                         }
                     },
+
                     onAbrirServico = { servico ->
                         servicoVindoClienteId = servico.id
                         telaAtual = "servico_cliente"
@@ -227,9 +250,11 @@ fun OnboardingScreen() {
             if (clienteSelecionado != null) {
                 ClienteEdicaoScreen(
                     cliente = clienteSelecionado,
+
                     onVoltar = {
                         telaAtual = "cliente_detalhes"
                     },
+
                     onSalvar = { atualizado ->
                         val indice = clientes.indexOfFirst {
                             it.id == atualizado.id
@@ -282,6 +307,29 @@ fun OnboardingScreen() {
                 onVoltarDoServicoInicial = {
                     servicoVindoClienteId = null
                     telaAtual = "cliente_detalhes"
+                }
+            )
+        }
+
+        "mais" -> {
+            MaisScreen(
+                nomeUsuario = nomeUsuario,
+                emailUsuario = "",
+
+                onInicioClick = {
+                    telaAtual = "home"
+                },
+
+                onClientesClick = {
+                    telaAtual = "clientes"
+                },
+
+                onServicosClick = {
+                    telaAtual = "servicos"
+                },
+
+                onSair = {
+                    telaAtual = "login"
                 }
             )
         }
