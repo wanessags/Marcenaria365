@@ -28,6 +28,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nexo.marcenaria365.data.repository.AuthRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val FundoCadastro = Color(0xFFFAF6F0)
 private val AzulCadastro = Color(0xFF193447)
@@ -43,9 +47,15 @@ fun RegisterScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var senha by rememberSaveable { mutableStateOf("") }
     var confirmarSenha by rememberSaveable { mutableStateOf("") }
+
     var senhaVisivel by rememberSaveable { mutableStateOf(false) }
     var confirmarVisivel by rememberSaveable { mutableStateOf(false) }
+
     var mensagem by rememberSaveable { mutableStateOf("") }
+    var cadastroConcluido by rememberSaveable { mutableStateOf(false) }
+    var carregando by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
@@ -66,10 +76,12 @@ fun RegisterScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 30.dp)
     ) {
-
         Spacer(Modifier.height(8.dp))
 
-        IconButton(onClick = onBackClick) {
+        IconButton(
+            onClick = onBackClick,
+            enabled = !carregando
+        ) {
             Icon(
                 Icons.Outlined.ArrowBack,
                 contentDescription = "Voltar",
@@ -106,7 +118,9 @@ fun RegisterScreen(
                 nome = it
                 mensagem = ""
             },
-            placeholder = { Text("Nome completo", color = CinzaCadastro) },
+            placeholder = {
+                Text("Nome completo", color = CinzaCadastro)
+            },
             leadingIcon = {
                 Icon(
                     Icons.Outlined.Person,
@@ -114,6 +128,7 @@ fun RegisterScreen(
                     tint = CinzaCadastro
                 )
             },
+            enabled = !carregando && !cadastroConcluido,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
@@ -128,7 +143,9 @@ fun RegisterScreen(
                 email = it
                 mensagem = ""
             },
-            placeholder = { Text("E-mail", color = CinzaCadastro) },
+            placeholder = {
+                Text("E-mail", color = CinzaCadastro)
+            },
             leadingIcon = {
                 Icon(
                     Icons.Outlined.Email,
@@ -139,6 +156,7 @@ fun RegisterScreen(
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email
             ),
+            enabled = !carregando && !cadastroConcluido,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
@@ -153,7 +171,9 @@ fun RegisterScreen(
                 senha = it
                 mensagem = ""
             },
-            placeholder = { Text("Senha", color = CinzaCadastro) },
+            placeholder = {
+                Text("Senha", color = CinzaCadastro)
+            },
             leadingIcon = {
                 Icon(
                     Icons.Outlined.Lock,
@@ -181,6 +201,7 @@ fun RegisterScreen(
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
             ),
+            enabled = !carregando && !cadastroConcluido,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
@@ -228,6 +249,7 @@ fun RegisterScreen(
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password
             ),
+            enabled = !carregando && !cadastroConcluido,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
@@ -248,9 +270,9 @@ fun RegisterScreen(
             onClick = {
                 mensagem = when {
                     nome.isBlank() ||
-                            email.isBlank() ||
-                            senha.isBlank() ||
-                            confirmarSenha.isBlank() ->
+                        email.isBlank() ||
+                        senha.isBlank() ||
+                        confirmarSenha.isBlank() ->
                         "Preencha todos os campos."
 
                     !Patterns.EMAIL_ADDRESS
@@ -263,11 +285,42 @@ fun RegisterScreen(
                     senha != confirmarSenha ->
                         "As senhas não coincidem."
 
-                    else ->
-                        "Dados válidos! O cadastro será ativado " +
-                                "quando a API estiver integrada."
+                    else -> ""
+                }
+
+                if (mensagem.isEmpty() && !carregando) {
+                    carregando = true
+
+                    scope.launch {
+                        val resultado = withContext(Dispatchers.IO) {
+                            AuthRepository.cadastrar(
+                                nome = nome,
+                                email = email,
+                                senha = senha
+                            )
+                        }
+
+                        carregando = false
+
+                        resultado.fold(
+                            onSuccess = {
+                                cadastroConcluido = true
+                                senha = ""
+                                confirmarSenha = ""
+
+                                mensagem =
+                                    "Conta criada com sucesso! " +
+                                    "Agora você pode entrar."
+                            },
+                            onFailure = { erro ->
+                                mensagem = erro.message
+                                    ?: "Não foi possível realizar o cadastro."
+                            }
+                        )
+                    }
                 }
             },
+            enabled = !carregando && !cadastroConcluido,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(53.dp),
@@ -277,11 +330,21 @@ fun RegisterScreen(
                 contentColor = Color.White
             )
         ) {
-            Text(
-                text = "Criar conta",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            if (carregando) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(23.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text = if (cadastroConcluido)
+                        "Conta criada"
+                    else "Criar conta",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
 
         if (mensagem.isNotEmpty()) {
@@ -307,7 +370,9 @@ fun RegisterScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Já possui uma conta? ",
+                text = if (cadastroConcluido)
+                    "Sua conta está pronta. "
+                else "Já possui uma conta? ",
                 fontSize = 12.sp,
                 color = CinzaCadastro
             )
@@ -317,7 +382,9 @@ fun RegisterScreen(
                 color = CobreCadastro,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.clickable {
+                modifier = Modifier.clickable(
+                    enabled = !carregando
+                ) {
                     onLoginClick()
                 }
             )

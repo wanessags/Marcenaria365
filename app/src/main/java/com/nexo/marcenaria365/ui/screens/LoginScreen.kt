@@ -32,6 +32,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nexo.marcenaria365.R
+import com.nexo.marcenaria365.data.repository.AuthRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private val FundoLogin = Color(0xFFFAF6F0)
 private val AzulLogin = Color(0xFF193447)
@@ -59,6 +63,9 @@ fun LoginScreen(
     var mensagem by rememberSaveable {
         mutableStateOf("")
     }
+
+    var carregando by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
@@ -230,26 +237,44 @@ fun LoginScreen(
         Button(
             onClick = {
                 mensagem = when {
-                    email.isBlank() || senha.isBlank() -> {
+                    email.isBlank() || senha.isBlank() ->
                         "Preencha o e-mail e a senha."
-                    }
 
                     !Patterns.EMAIL_ADDRESS
                         .matcher(email.trim())
-                        .matches() -> {
+                        .matches() ->
                         "Digite um e-mail válido."
-                    }
 
-                    else -> {
-                        // Mantém a navegação atual.
-                        // A autenticação será integrada posteriormente.
-                        senha = ""
-                        onDemoLogin("Mariana")
-                        ""
+                    else -> ""
+                }
+
+                if (mensagem.isEmpty() && !carregando) {
+                    carregando = true
+
+                    scope.launch {
+                        val resultado = withContext(Dispatchers.IO) {
+                            AuthRepository.login(
+                                email = email,
+                                senha = senha
+                            )
+                        }
+
+                        carregando = false
+
+                        resultado.fold(
+                            onSuccess = { sessao ->
+                                senha = ""
+                                onDemoLogin(sessao.usuario.nome)
+                            },
+                            onFailure = { erro ->
+                                mensagem = erro.message
+                                    ?: "Não foi possível entrar. Tente novamente."
+                            }
+                        )
                     }
                 }
             },
-            modifier = Modifier
+            enabled = !carregando,            modifier = Modifier
                 .fillMaxWidth()
                 .height(53.dp),
             shape = RoundedCornerShape(10.dp),
