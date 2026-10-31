@@ -32,6 +32,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nexo.marcenaria365.data.repository.RecebimentoRepository
+import com.nexo.marcenaria365.data.repository.MovimentacaoCaixaRepository
+import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -45,14 +52,114 @@ private val Borda = Color(0xFFE9E3DD)
 
 @Composable
 fun CaixaScreen(
-    onVoltar: () -> Unit
+    onVoltar: () -> Unit,
+    servicos: List<ServicoUi>
 ) {
     val movimentacoes = remember {
-        mutableStateListOf<MovimentacaoUi>().apply {
-            addAll(movimentacoesIniciais())
-        }
+        mutableStateListOf<MovimentacaoUi>()
     }
 
+    var erroCaixa by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var carregandoCaixa by remember {
+        mutableStateOf(true)
+    }
+
+    val scope = rememberCoroutineScope()
+
+    var atualizacaoCaixa by remember {
+        mutableIntStateOf(0)
+    }
+
+    var salvandoMovimentacao by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(atualizacaoCaixa) {
+        carregandoCaixa = true
+
+        val servicosPorId = servicos.associateBy { it.id }
+
+        val resultado = withContext(Dispatchers.IO) {
+            runCatching {
+                val recebimentos =
+                    RecebimentoRepository.listar().getOrThrow()
+
+                val avulsas =
+                    MovimentacaoCaixaRepository.listar().getOrThrow()
+
+                val entradasRecebidas = recebimentos.mapNotNull { recebimento ->
+                    if (!recebimento.status.equals("RECEBIDO", true)) {
+                        return@mapNotNull null
+                    }
+
+                    val data = recebimento.dataRecebimento
+                        ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                        ?: return@mapNotNull null
+
+                    val servico = servicosPorId[recebimento.servicoId]
+
+                    MovimentacaoUi(
+                        id = recebimento.id,
+                        titulo = "Pagamento recebido",
+                        descricao = servico?.let {
+                            "${it.clienteNome} - ${it.titulo}"
+                        } ?: "Servico #${recebimento.servicoId}",
+                        valor = recebimento.valor,
+                        tipo = TipoMovimentacao.ENTRADA,
+                        dia = data.dayOfMonth,
+                        mes = data.monthValue,
+                        ano = data.year,
+                        servicoId = recebimento.servicoId
+                    )
+                }
+
+                val movimentosAvulsos = avulsas.mapNotNull { movimento ->
+                    // Recebimentos vinculados ja aparecem na primeira lista.
+                    if (movimento.recebimentoId != null) {
+                        return@mapNotNull null
+                    }
+
+                    val data = runCatching {
+                        LocalDate.parse(movimento.dataMovimentacao)
+                    }.getOrNull() ?: return@mapNotNull null
+
+                    MovimentacaoUi(
+                        id = -movimento.id,
+                        titulo = movimento.categoria,
+                        descricao = movimento.descricao,
+                        valor = movimento.valor,
+                        tipo = if (movimento.tipo == "ENTRADA") {
+                            TipoMovimentacao.ENTRADA
+                        } else {
+                            TipoMovimentacao.SAIDA
+                        },
+                        dia = data.dayOfMonth,
+                        mes = data.monthValue,
+                        ano = data.year
+                    )
+                }
+
+                entradasRecebidas + movimentosAvulsos
+            }
+        }
+
+        resultado.fold(
+            onSuccess = { lista ->
+                movimentacoes.clear()
+                movimentacoes.addAll(lista)
+                erroCaixa = null
+            },
+            onFailure = { erro ->
+                erroCaixa = erro.message
+                    ?: "Nao foi possivel carregar a Carteira."
+            }
+        )
+
+        carregandoCaixa = false
+    }
     var periodo by rememberSaveable {
         mutableIntStateOf(0)
     }
@@ -151,6 +258,21 @@ fun CaixaScreen(
         voltarTela()
     }
 
+    if (erroCaixa != null) {
+        AlertDialog(
+            onDismissRequest = { erroCaixa = null },
+            title = { Text("Carteira") },
+            text = {
+                Text(erroCaixa ?: "Erro ao acessar os recebimentos.")
+            },
+            confirmButton = {
+                TextButton(onClick = { erroCaixa = null }) {
+                    Text("Entendi")
+                }
+            }
+        )
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -159,9 +281,7 @@ fun CaixaScreen(
 
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    mostrarCadastro = true
-                },
+                onClick = { mostrarCadastro = true },
                 containerColor = Azul,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(15.dp)
@@ -360,8 +480,10 @@ fun CaixaScreen(
 
                         Text(
                             text = "Toque em Entradas ou Saídas " +
-                                    "para consultar as movimentações " +
-                                    "separadamente.",
+                                    "para consultar os registros " +
+                                    "separadamente. Por enquanto, somente " +
+                                    "recebimentos e movimentações estão sincronizados. " +
+                                    "Consulte os registros por período.",
                             fontSize = 11.sp,
                             lineHeight = 16.sp,
                             color = Color(0xFF988A80)
@@ -493,42 +615,47 @@ fun CaixaScreen(
     if (mostrarCadastro) {
         CadastroMovimentacaoDialog(
             onCancelar = {
-                mostrarCadastro = false
+                if (!salvandoMovimentacao) {
+                    mostrarCadastro = false
+                }
             },
             onSalvar = { titulo, descricao, valor, tipo ->
-                val hoje = Calendar.getInstance()
+                if (!salvandoMovimentacao) {
+                    salvandoMovimentacao = true
 
-                movimentacoes.add(
-                    MovimentacaoUi(
-                        id = (movimentacoes.maxOfOrNull {
-                            it.id
-                        } ?: 0L) + 1L,
-                        titulo = titulo,
-                        descricao = descricao,
-                        valor = valor,
-                        tipo = tipo,
-                        dia = hoje.get(Calendar.DAY_OF_MONTH),
-                        mes = hoje.get(Calendar.MONTH) + 1,
-                        ano = hoje.get(Calendar.YEAR)
-                    )
-                )
+                    scope.launch {
+                        val resultado = withContext(Dispatchers.IO) {
+                            MovimentacaoCaixaRepository.cadastrar(
+                                tipo = tipo.name,
+                                categoria = titulo,
+                                descricao = descricao.ifBlank { titulo },
+                                valor = valor
+                            )
+                        }
 
-                periodo = 0
-                mostrarCadastro = false
+                        salvandoMovimentacao = false
 
-                // MOSTRA A CATEGORIA DO REGISTRO ADICIONADO
-                visualizacao = if (
-                    tipo == TipoMovimentacao.ENTRADA
-                ) {
-                    "Entradas"
-                } else {
-                    "Saídas"
+                        resultado.fold(
+                            onSuccess = {
+                                mostrarCadastro = false
+                                periodo = 0
+                                visualizacao = if (
+                                    tipo == TipoMovimentacao.ENTRADA
+                                ) "Entradas" else "Saídas"
+
+                                atualizacaoCaixa++
+                            },
+                            onFailure = { erro ->
+                                erroCaixa = erro.message
+                                    ?: "Nao foi possivel salvar a movimentacao."
+                            }
+                        )
+                    }
                 }
             }
         )
     }
 }
-
 @Composable
 private fun SeletorPeriodoCaixa(
     titulo: String,

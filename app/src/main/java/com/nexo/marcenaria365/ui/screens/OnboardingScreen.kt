@@ -45,6 +45,7 @@ import com.nexo.marcenaria365.ui.screens.perfil.MeuPerfilScreen
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
 import com.nexo.marcenaria365.data.repository.ServicoRepository
+import com.nexo.marcenaria365.data.repository.RecebimentoRepository
 
 @Composable
 fun OnboardingScreen() {
@@ -130,7 +131,30 @@ fun OnboardingScreen() {
             val resultado = withContext(Dispatchers.IO) {
                 runCatching {
                     val clientesApi = ClienteRepository.listar().getOrThrow()
-                    ServicoRepository.listar(clientesApi).getOrThrow()
+                    val listaServicos =
+                        ServicoRepository.listar(clientesApi).getOrThrow()
+
+                    val recebimentos =
+                        RecebimentoRepository.listar().getOrThrow()
+
+                    val totaisPorServico = recebimentos
+                        .filter {
+                            it.status.equals(
+                                "RECEBIDO",
+                                ignoreCase = true
+                            )
+                        }
+                        .groupBy { it.servicoId }
+                        .mapValues { (_, pagamentos) ->
+                            RecebimentoRepository.totalRecebido(pagamentos)
+                        }
+
+                    listaServicos.map { servico ->
+                        servico.copy(
+                            valorRecebido =
+                                totaisPorServico[servico.id] ?: 0.0
+                        )
+                    }
                 }
             }
 
@@ -306,6 +330,7 @@ fun OnboardingScreen() {
         // CAIXA
         "caixa" -> {
             CaixaScreen(
+                servicos = servicos,
                 onVoltar = {
                     telaAtual = "home"
                 }
@@ -488,6 +513,17 @@ fun OnboardingScreen() {
                 onAdicionarServico = adicionarServico,
                 onAtualizarServico = atualizarServico,
                 onExcluirServico = excluirServico,
+                onAtualizarValorRecebido = { servicoId, total ->
+                    val indice = servicos.indexOfFirst {
+                        it.id == servicoId
+                    }
+
+                    if (indice >= 0) {
+                        servicos[indice] = servicos[indice].copy(
+                            valorRecebido = total
+                        )
+                    }
+                },
                 onInicioClick = {
                     telaAtual = "home"
                 },
@@ -510,6 +546,17 @@ fun OnboardingScreen() {
                 onAdicionarServico = adicionarServico,
                 onAtualizarServico = atualizarServico,
                 onExcluirServico = excluirServico,
+                onAtualizarValorRecebido = { servicoId, total ->
+                    val indice = servicos.indexOfFirst {
+                        it.id == servicoId
+                    }
+
+                    if (indice >= 0) {
+                        servicos[indice] = servicos[indice].copy(
+                            valorRecebido = total
+                        )
+                    }
+                },
                 onInicioClick = {
                     telaAtual = "home"
                 },

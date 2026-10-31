@@ -8,6 +8,7 @@ import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.NovoOrcamentoScreen
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.OrcamentoScreen
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.OrcamentoUi
 import com.nexo.marcenaria365.data.repository.OrcamentoRepository
+import com.nexo.marcenaria365.data.repository.RecebimentoRepository
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,6 +23,7 @@ fun ServicosFlowScreen(
     onAdicionarServico: (ServicoUi) -> Unit,
     onAtualizarServico: (ServicoUi) -> Unit,
     onExcluirServico: (Long) -> Unit,
+    onAtualizarValorRecebido: (Long, Double) -> Unit = { _, _ -> },
     onInicioClick: () -> Unit,
     onClientesClick: () -> Unit,
     onMaisClick: () -> Unit = {},
@@ -173,12 +175,56 @@ fun ServicosFlowScreen(
                     },
 
                     onRegistrarRecebimento = { valor ->
-                        onAtualizarServico(
-                            selecionado.copy(
-                                valorRecebido =
-                                    selecionado.valorRecebido + valor
-                            )
-                        )
+                        if (!processandoOrcamento) {
+                            processandoOrcamento = true
+
+                            val servicoId = selecionado.id
+
+                            scope.launch {
+                                val resultado = withContext(Dispatchers.IO) {
+                                    RecebimentoRepository.cadastrar(
+                                        servicoId = servicoId,
+                                        valor = valor
+                                    )
+                                }
+
+                                resultado.fold(
+                                    onSuccess = {
+                                        val lista = withContext(Dispatchers.IO) {
+                                            RecebimentoRepository
+                                                .listarPorServico(servicoId)
+                                        }
+
+                                        lista.fold(
+                                            onSuccess = { recebimentos ->
+                                                val total =
+                                                    RecebimentoRepository
+                                                        .totalRecebido(recebimentos)
+
+                                                onAtualizarValorRecebido(
+                                                    servicoId,
+                                                    total
+                                                )
+
+                                                erroOrcamento = null
+                                            },
+                                            onFailure = { erro ->
+                                                erroOrcamento =
+                                                    erro.message
+                                                        ?: "Pagamento salvo, mas nao foi possivel atualizar o total."
+                                            }
+                                        )
+                                    },
+                                    onFailure = { erro ->
+                                        erroOrcamento =
+                                            erro.message
+                                                ?: "Nao foi possivel registrar o recebimento."
+                                    }
+                                )
+
+                                processandoOrcamento = false
+                            }
+                        }
                     },
 
                     onExcluirServico = { id ->
