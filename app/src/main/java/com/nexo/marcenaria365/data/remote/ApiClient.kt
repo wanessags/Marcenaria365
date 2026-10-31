@@ -6,8 +6,8 @@ import java.net.URL
 
 object ApiClient {
 
-    // Endereco da API local acessivel pelo emulador Android.
-    // Na publicacao final, usaremos HTTPS do Render.
+    // API local para testes no emulador.
+    // Depois usaremos o endereço HTTPS do Render.
     private const val BASE_URL = "http://10.0.2.2:8080"
 
     data class ApiResponse(
@@ -18,23 +18,25 @@ object ApiClient {
             get() = status in 200..299
     }
 
-    fun post(
+    private fun requisicao(
+        metodo: String,
         endpoint: String,
-        dados: JSONObject,
+        dados: JSONObject? = null,
         token: String? = null
     ): ApiResponse {
+
+        require(endpoint.startsWith("/") && !endpoint.startsWith("//")) {
+            "Endpoint inválido."
+        }
+
         val conexao = URL("$BASE_URL$endpoint")
             .openConnection() as HttpURLConnection
 
         try {
-            conexao.requestMethod = "POST"
+            conexao.requestMethod = metodo
             conexao.connectTimeout = 15000
             conexao.readTimeout = 15000
-            conexao.doOutput = true
-            conexao.setRequestProperty(
-                "Content-Type",
-                "application/json; charset=UTF-8"
-            )
+
             conexao.setRequestProperty(
                 "Accept",
                 "application/json"
@@ -47,13 +49,24 @@ object ApiClient {
                 )
             }
 
-            conexao.outputStream.use { saida ->
-                saida.write(
-                    dados.toString().toByteArray(Charsets.UTF_8)
+            if (dados != null) {
+                conexao.doOutput = true
+
+                conexao.setRequestProperty(
+                    "Content-Type",
+                    "application/json; charset=UTF-8"
                 )
+
+                conexao.outputStream.use { saida ->
+                    saida.write(
+                        dados.toString().toByteArray(Charsets.UTF_8)
+                    )
+                }
             }
 
-            val fluxo = if (conexao.responseCode in 200..299) {
+            val status = conexao.responseCode
+
+            val fluxo = if (status in 200..299) {
                 conexao.inputStream
             } else {
                 conexao.errorStream
@@ -64,11 +77,42 @@ object ApiClient {
             )?.use { it.readText() } ?: ""
 
             return ApiResponse(
-                status = conexao.responseCode,
+                status = status,
                 body = resposta
             )
+
         } finally {
             conexao.disconnect()
         }
+    }
+
+    fun get(
+        endpoint: String,
+        token: String? = null
+    ): ApiResponse {
+        return requisicao("GET", endpoint, token = token)
+    }
+
+    fun post(
+        endpoint: String,
+        dados: JSONObject,
+        token: String? = null
+    ): ApiResponse {
+        return requisicao("POST", endpoint, dados, token)
+    }
+
+    fun put(
+        endpoint: String,
+        dados: JSONObject,
+        token: String? = null
+    ): ApiResponse {
+        return requisicao("PUT", endpoint, dados, token)
+    }
+
+    fun delete(
+        endpoint: String,
+        token: String? = null
+    ): ApiResponse {
+        return requisicao("DELETE", endpoint, token = token)
     }
 }
