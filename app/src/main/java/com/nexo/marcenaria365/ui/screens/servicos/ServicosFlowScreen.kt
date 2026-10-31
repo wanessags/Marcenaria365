@@ -7,7 +7,13 @@ import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.NovoOrcamentoScreen
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.OrcamentoScreen
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.OrcamentoUi
-import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.orcamentosIniciais
+import com.nexo.marcenaria365.data.repository.OrcamentoRepository
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun ServicosFlowScreen(
@@ -37,9 +43,57 @@ fun ServicosFlowScreen(
     }
 
     val orcamentos = remember {
-        mutableStateListOf<OrcamentoUi>().apply {
-            addAll(orcamentosIniciais())
+        mutableStateListOf<OrcamentoUi>()
+    }
+
+    val scope = rememberCoroutineScope()
+
+    var erroOrcamento by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var processandoOrcamento by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(Unit) {
+        val nomes = clientes.associate { it.id to it.nome }
+
+        val resultado = withContext(Dispatchers.IO) {
+            OrcamentoRepository.listar { clienteId ->
+                nomes[clienteId] ?: "Cliente"
+            }
         }
+
+        resultado.fold(
+            onSuccess = { lista ->
+                orcamentos.clear()
+                orcamentos.addAll(lista)
+                erroOrcamento = null
+            },
+            onFailure = { erro ->
+                erroOrcamento =
+                    erro.message ?: "Erro ao carregar orcamentos."
+            }
+        )
+    }
+
+    if (erroOrcamento != null) {
+        AlertDialog(
+            onDismissRequest = { erroOrcamento = null },
+            title = { Text("Orcamentos") },
+            text = {
+                Text(
+                    erroOrcamento
+                        ?: "Nao foi possivel concluir a operacao."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { erroOrcamento = null }) {
+                    Text("Entendi")
+                }
+            }
+        )
     }
 
     val selecionado = servicos.find {
@@ -128,10 +182,6 @@ fun ServicosFlowScreen(
                     },
 
                     onExcluirServico = { id ->
-                        orcamentos.removeAll {
-                            it.servicoId == id
-                        }
-
                         onExcluirServico(id)
                         servicoSelecionadoId = null
 
@@ -163,20 +213,44 @@ fun ServicosFlowScreen(
                     },
 
                     onSalvar = { novo ->
-                        orcamentos.removeAll {
-                            it.servicoId == novo.servicoId
+                        if (!processandoOrcamento) {
+                            processandoOrcamento = true
+
+                            val clienteId = selecionado.clienteId
+                            val nomes = clientes.associate {
+                                it.id to it.nome
+                            }
+
+                            scope.launch {
+                                val resultado = withContext(Dispatchers.IO) {
+                                    OrcamentoRepository.cadastrar(
+                                        orcamento = novo,
+                                        clienteId = clienteId,
+                                        nomeCliente = { id ->
+                                            nomes[id] ?: "Cliente"
+                                        }
+                                    )
+                                }
+
+                                processandoOrcamento = false
+
+                                resultado.fold(
+                                    onSuccess = { salvo ->
+                                        orcamentos.removeAll {
+                                            it.servicoId == salvo.servicoId
+                                        }
+                                        orcamentos.add(salvo)
+                                        erroOrcamento = null
+                                        tela = "ver_orcamento"
+                                    },
+                                    onFailure = { erro ->
+                                        erroOrcamento =
+                                            erro.message
+                                                ?: "Erro ao salvar orcamento."
+                                    }
+                                )
+                            }
                         }
-
-                        val novoId =
-                            (orcamentos.maxOfOrNull {
-                                it.id
-                            } ?: 0L) + 1L
-
-                        orcamentos.add(
-                            novo.copy(id = novoId)
-                        )
-
-                        tela = "ver_orcamento"
                     }
                 )
             } else {
@@ -196,11 +270,32 @@ fun ServicosFlowScreen(
                     },
 
                     onExcluir = { id ->
-                        orcamentos.removeAll {
-                            it.id == id
-                        }
+                        if (!processandoOrcamento) {
+                            processandoOrcamento = true
 
-                        tela = "detalhes"
+                            scope.launch {
+                                val resultado = withContext(Dispatchers.IO) {
+                                    OrcamentoRepository.excluir(id)
+                                }
+
+                                processandoOrcamento = false
+
+                                resultado.fold(
+                                    onSuccess = {
+                                        orcamentos.removeAll {
+                                            it.id == id
+                                        }
+                                        erroOrcamento = null
+                                        tela = "detalhes"
+                                    },
+                                    onFailure = { erro ->
+                                        erroOrcamento =
+                                            erro.message
+                                                ?: "Erro ao excluir orcamento."
+                                    }
+                                )
+                            }
+                        }
                     }
                 )
             } else {
