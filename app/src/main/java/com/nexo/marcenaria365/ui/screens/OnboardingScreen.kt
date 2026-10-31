@@ -44,7 +44,7 @@ import com.nexo.marcenaria365.ui.screens.perfil.MeuPerfilScreen
 
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
-import com.nexo.marcenaria365.ui.screens.servicos.servicosIniciais
+import com.nexo.marcenaria365.data.repository.ServicoRepository
 
 @Composable
 fun OnboardingScreen() {
@@ -118,8 +118,32 @@ fun OnboardingScreen() {
     }
 
     val servicos = remember {
-        mutableStateListOf<ServicoUi>().apply {
-            addAll(servicosIniciais())
+        mutableStateListOf<ServicoUi>()
+    }
+
+    var erroServicos by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    fun carregarServicos() {
+        scope.launch {
+            val resultado = withContext(Dispatchers.IO) {
+                runCatching {
+                    val clientesApi = ClienteRepository.listar().getOrThrow()
+                    ServicoRepository.listar(clientesApi).getOrThrow()
+                }
+            }
+
+            resultado.fold(
+                onSuccess = { lista ->
+                    servicos.clear()
+                    servicos.addAll(lista)
+                    erroServicos = null
+                },
+                onFailure = { erro ->
+                    erroServicos = erro.message ?: "Erro ao carregar servicos."
+                }
+            )
         }
     }
 
@@ -133,23 +157,87 @@ fun OnboardingScreen() {
     }
 
     val adicionarServico: (ServicoUi) -> Unit = { novo ->
-        servicos.add(novo)
+        scope.launch {
+            val resultado = withContext(Dispatchers.IO) {
+                runCatching {
+                    val clientesApi = ClienteRepository.listar().getOrThrow()
+                    ServicoRepository.cadastrar(novo, clientesApi).getOrThrow()
+                }
+            }
+
+            resultado.fold(
+                onSuccess = { salvo ->
+                    servicos.add(salvo.copy(fotoUri = novo.fotoUri))
+                    erroServicos = null
+                },
+                onFailure = { erro ->
+                    erroServicos = erro.message ?: "Erro ao cadastrar servico."
+                }
+            )
+        }
     }
 
     val atualizarServico: (ServicoUi) -> Unit = { atualizado ->
-        val indice = servicos.indexOfFirst {
-            it.id == atualizado.id
-        }
+        scope.launch {
+            val resultado = withContext(Dispatchers.IO) {
+                runCatching {
+                    val clientesApi = ClienteRepository.listar().getOrThrow()
+                    ServicoRepository.editar(atualizado, clientesApi).getOrThrow()
+                }
+            }
 
-        if (indice >= 0) {
-            servicos[indice] = atualizado
+            resultado.fold(
+                onSuccess = { salvo ->
+                    val indice = servicos.indexOfFirst {
+                        it.id == salvo.id
+                    }
+
+                    if (indice >= 0) {
+                        servicos[indice] = salvo.copy(
+                            fotoUri = atualizado.fotoUri,
+                            valorRecebido = atualizado.valorRecebido
+                        )
+                    }
+                    erroServicos = null
+                },
+                onFailure = { erro ->
+                    erroServicos = erro.message ?: "Erro ao editar servico."
+                }
+            )
         }
     }
 
     val excluirServico: (Long) -> Unit = { id ->
-        servicos.removeAll {
-            it.id == id
+        scope.launch {
+            val resultado = withContext(Dispatchers.IO) {
+                ServicoRepository.excluir(id)
+            }
+
+            resultado.fold(
+                onSuccess = {
+                    servicos.removeAll { it.id == id }
+                    erroServicos = null
+                },
+                onFailure = { erro ->
+                    erroServicos = erro.message ?: "Erro ao excluir servico."
+                }
+            )
         }
+    }
+
+    if (erroServicos != null) {
+        AlertDialog(
+            onDismissRequest = { erroServicos = null },
+            title = { Text("Servicos") },
+            text = {
+                Text(erroServicos ?: "Ocorreu um erro ao acessar a API.")
+            },
+            confirmButton = {
+                TextButton(onClick = { erroServicos = null }) {
+                    Text("Entendi")
+                }
+            }
+        )
     }
 
     when (telaAtual) {
@@ -170,6 +258,7 @@ fun OnboardingScreen() {
                 onDemoLogin = { nome ->
                     nomeUsuario = nome
                     carregarClientes()
+                    carregarServicos()
                     telaAtual = "home"
                 }
             )
