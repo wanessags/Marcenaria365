@@ -2,6 +2,12 @@
 package com.nexo.marcenaria365.ui.screens
 
 import androidx.activity.compose.BackHandler
+import com.nexo.marcenaria365.data.mapper.paraRequest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import com.nexo.marcenaria365.data.mapper.paraUi
+import com.nexo.marcenaria365.data.repository.ClienteRepository
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -83,8 +89,31 @@ fun OnboardingScreen() {
     }
 
     val clientes = remember {
-        mutableStateListOf<ClienteUi>().apply {
-            addAll(clientesIniciais())
+        mutableStateListOf<ClienteUi>()
+    }
+
+    val scope = rememberCoroutineScope()
+
+    var erroClientes by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    fun carregarClientes() {
+        scope.launch {
+            val resultado = withContext(Dispatchers.IO) {
+                ClienteRepository.listar()
+            }
+
+            resultado.fold(
+                onSuccess = { lista ->
+                    clientes.clear()
+                    clientes.addAll(lista.map { it.paraUi() })
+                    erroClientes = null
+                },
+                onFailure = { erro ->
+                    erroClientes = erro.message
+                }
+            )
         }
     }
 
@@ -139,15 +168,8 @@ fun OnboardingScreen() {
                     telaAtual = "cadastro_usuario"
                 },
                 onDemoLogin = { nome ->
-                    val nomeSalvo = preferencias.getString(
-                        "nome",
-                        null
-                    )
-
-                    nomeUsuario = nomeSalvo
-                        ?.takeIf { it.isNotBlank() }
-                        ?: nome
-
+                    nomeUsuario = nome
+                    carregarClientes()
                     telaAtual = "home"
                 }
             )
@@ -232,14 +254,27 @@ fun OnboardingScreen() {
                     telaAtual = "clientes"
                 },
                 onSalvar = { novoCliente ->
-                    val novoId =
-                        (clientes.maxOfOrNull { it.id } ?: 0L) + 1L
+                    scope.launch {
+                        val resultado = withContext(Dispatchers.IO) {
+                            ClienteRepository.cadastrar(
+                                novoCliente.paraRequest()
+                            )
+                        }
 
-                    clientes.add(
-                        novoCliente.copy(id = novoId)
-                    )
-
-                    telaAtual = "clientes"
+                        resultado.fold(
+                            onSuccess = { salvo ->
+                                clientes.add(salvo.paraUi())
+                                telaAtual = "clientes"
+                            },
+                            onFailure = { erro ->
+                                android.widget.Toast.makeText(
+                                    context,
+                                    erro.message ?: "Erro ao cadastrar cliente.",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        )
+                    }
                 }
             )
         }
@@ -257,17 +292,25 @@ fun OnboardingScreen() {
                         telaAtual = "cliente_edicao"
                     },
                     onExcluir = { id ->
-                        val possuiServicos = servicos.any {
-                            it.clienteId == id
-                        }
-
-                        if (!possuiServicos) {
-                            clientes.removeAll {
-                                it.id == id
+                        scope.launch {
+                            val resultado = withContext(Dispatchers.IO) {
+                                ClienteRepository.excluir(id)
                             }
 
-                            clienteSelecionadoId = null
-                            telaAtual = "clientes"
+                            resultado.fold(
+                                onSuccess = {
+                                    clientes.removeAll { it.id == id }
+                                    clienteSelecionadoId = null
+                                    telaAtual = "clientes"
+                                },
+                                onFailure = { erro ->
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        erro.message ?: "Erro ao excluir cliente.",
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            )
                         }
                     },
                     onAbrirServico = { servico ->
@@ -291,15 +334,54 @@ fun OnboardingScreen() {
                         telaAtual = "cliente_detalhes"
                     },
                     onSalvar = { atualizado ->
-                        val indice = clientes.indexOfFirst {
-                            it.id == atualizado.id
-                        }
+                        scope.launch {
+                            val resultado = withContext(Dispatchers.IO) {
+                                // Buscar os dados atuais para preservar
+                                // endereco e observacoes no PostgreSQL.
+                                ClienteRepository.buscar(atualizado.id)
+                                    .mapCatching { existente ->
+                                        ClienteRepository.ClienteRequest(
+                                            nome = atualizado.nome,
+                                            telefone = atualizado.telefone,
+                                            email = atualizado.email,
+                                            endereco = existente.endereco,
+                                            observacoes = existente.observacoes
+                                        )
+                                    }
+                                    .fold(
+                                        onSuccess = { dados ->
+                                            ClienteRepository.editar(
+                                                atualizado.id,
+                                                dados
+                                            )
+                                        },
+                                        onFailure = { erro ->
+                                            Result.failure(erro)
+                                        }
+                                    )
+                            }
 
-                        if (indice >= 0) {
-                            clientes[indice] = atualizado
-                        }
+                            resultado.fold(
+                                onSuccess = { salvo ->
+                                    val indice = clientes.indexOfFirst {
+                                        it.id == salvo.id
+                                    }
 
-                        telaAtual = "cliente_detalhes"
+                                    if (indice >= 0) {
+                                        clientes[indice] = salvo.paraUi()
+                                    }
+
+                                    telaAtual = "cliente_detalhes"
+                                },
+                                onFailure = { erro ->
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        erro.message ?: "Erro ao editar cliente.",
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            )
+                        }
                     }
                 )
             } else {
