@@ -171,4 +171,32 @@ public class RecebimentoController {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(salvo);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> excluir(
+        @PathVariable Long id,
+        @AuthenticationPrincipal Jwt jwt
+    ) {
+        var encontrado = recebimentos.buscarDoUsuario(
+            id, usuarioId(jwt)
+        );
+
+        if (encontrado.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            recebimentos.delete(encontrado.get());
+            recebimentos.flush();
+
+            return ResponseEntity.noContent().build();
+        } catch (org.springframework.dao.DataIntegrityViolationException erro) {
+            return ResponseEntity.status(
+                org.springframework.http.HttpStatus.CONFLICT
+            ).body(Map.of(
+                "erro",
+                "O recebimento possui movimentacoes vinculadas e nao pode ser excluido."
+            ));
+        }
+    }
 }
