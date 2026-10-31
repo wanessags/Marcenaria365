@@ -39,6 +39,7 @@ import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
 
 import com.nexo.marcenaria365.ui.screens.mais.MaisScreen
+import com.nexo.marcenaria365.ui.screens.materiais.MateriaisScreen
 
 import com.nexo.marcenaria365.ui.screens.perfil.MeuPerfilScreen
 
@@ -579,6 +580,9 @@ fun OnboardingScreen() {
                 nomeUsuario = nomeUsuario,
                 emailUsuario = emailUsuario,
                 fotoUsuario = fotoUsuario,
+                onMateriaisClick = {
+                    telaAtual = "materiais"
+                },
                 onPerfilClick = {
                     telaAtual = "meu_perfil"
                 },
@@ -600,6 +604,14 @@ fun OnboardingScreen() {
             )
         }
 
+        // MATERIAIS
+        "materiais" -> {
+            MateriaisScreen(
+                onVoltar = {
+                    telaAtual = "mais"
+                }
+            )
+        }
         // MEU PERFIL
         "meu_perfil" -> {
             MeuPerfilScreen(

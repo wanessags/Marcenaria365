@@ -44,6 +44,7 @@ fun MaisScreen(
     emailUsuario: String = "",
     fotoUsuario: String? = null,
     onPerfilClick: () -> Unit = {},
+    onMateriaisClick: () -> Unit = {},
     onInicioClick: () -> Unit,
     onClientesClick: () -> Unit,
     onServicosClick: () -> Unit,
@@ -210,9 +211,7 @@ fun MaisScreen(
             OpcaoMais(
                 titulo = "Materiais",
                 icone = Icons.Outlined.Inventory2,
-                onClick = {
-                    opcaoSelecionada = "Materiais"
-                }
+                onClick = onMateriaisClick
             )
 
             OpcaoMais(
