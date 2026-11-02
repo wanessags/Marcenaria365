@@ -55,6 +55,10 @@ fun MaisScreen(
         mutableStateOf(false)
     }
 
+    var mostrarConfiguracoes by remember {
+        mutableStateOf(false)
+    }
+
     var opcaoSelecionada by remember {
         mutableStateOf<String?>(null)
     }
@@ -66,7 +70,6 @@ fun MaisScreen(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
         containerColor = FundoMais,
-
         topBar = {
             Box(
                 modifier = Modifier
@@ -98,7 +101,6 @@ fun MaisScreen(
                 )
             }
         },
-
         bottomBar = {
             NavigationBar(
                 modifier = Modifier
@@ -146,7 +148,6 @@ fun MaisScreen(
         ) {
             Spacer(Modifier.height(20.dp))
 
-            // Cartão clicável: único acesso ao perfil
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -188,7 +189,7 @@ fun MaisScreen(
 
                         Text(
                             text = emailUsuario.ifBlank {
-                                "Toque para editar seu perfil"
+                                "Toque para acessar seu perfil"
                             },
                             color = CinzaMais,
                             fontSize = 11.sp,
@@ -218,7 +219,7 @@ fun MaisScreen(
                 titulo = "Configurações",
                 icone = Icons.Outlined.Settings,
                 onClick = {
-                    opcaoSelecionada = "Configurações"
+                    mostrarConfiguracoes = true
                 }
             )
 
@@ -287,6 +288,82 @@ fun MaisScreen(
         }
     }
 
+    if (mostrarConfiguracoes) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarConfiguracoes = false
+            },
+            title = {
+                Text(
+                    text = "Configurações",
+                    color = AzulMais,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Minha conta",
+                        fontWeight = FontWeight.SemiBold,
+                        color = AzulMais
+                    )
+
+                    Text(
+                        text = "Nome: " + nomeUsuario.ifBlank {
+                            "Não informado"
+                        },
+                        fontSize = 13.sp
+                    )
+
+                    Text(
+                        text = "E-mail: " + emailUsuario.ifBlank {
+                            "Não informado"
+                        },
+                        fontSize = 13.sp
+                    )
+
+                    HorizontalDivider()
+
+                    TextButton(
+                        onClick = {
+                            mostrarConfiguracoes = false
+                            onPerfilClick()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Acessar meu perfil", color = AzulMais)
+                    }
+
+                    TextButton(
+                        onClick = {
+                            mostrarConfiguracoes = false
+                            onPoliticaClick()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Política de Privacidade",
+                            color = AzulMais
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarConfiguracoes = false
+                    }
+                ) {
+                    Text("Fechar", color = AzulMais)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(17.dp)
+        )
+    }
+
     if (opcaoSelecionada != null) {
         AlertDialog(
             onDismissRequest = {
@@ -301,8 +378,7 @@ fun MaisScreen(
             },
             text = {
                 Text(
-                    text = "Esta funcionalidade ainda " +
-                            "não está disponível."
+                    "Esta funcionalidade ainda não está disponível."
                 )
             },
             confirmButton = {
@@ -311,10 +387,7 @@ fun MaisScreen(
                         opcaoSelecionada = null
                     }
                 ) {
-                    Text(
-                        text = "Entendi",
-                        color = AzulMais
-                    )
+                    Text("Entendi", color = AzulMais)
                 }
             },
             containerColor = Color.White,
@@ -335,10 +408,7 @@ fun MaisScreen(
                 )
             },
             text = {
-                Text(
-                    text = "Deseja voltar para " +
-                            "a tela de login?"
-                )
+                Text("Deseja voltar para a tela de login?")
             },
             confirmButton = {
                 TextButton(
@@ -348,7 +418,7 @@ fun MaisScreen(
                     }
                 ) {
                     Text(
-                        text = "Sair",
+                        "Sair",
                         color = VermelhoMais,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -360,10 +430,7 @@ fun MaisScreen(
                         confirmarSaida = false
                     }
                 ) {
-                    Text(
-                        text = "Cancelar",
-                        color = AzulMais
-                    )
+                    Text("Cancelar", color = AzulMais)
                 }
             },
             containerColor = Color.White,
