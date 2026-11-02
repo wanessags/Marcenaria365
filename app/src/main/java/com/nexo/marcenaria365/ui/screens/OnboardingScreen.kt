@@ -46,6 +46,7 @@ import com.nexo.marcenaria365.ui.screens.perfil.MeuPerfilScreen
 
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
+import com.nexo.marcenaria365.data.repository.AuthRepository
 import com.nexo.marcenaria365.data.repository.ServicoRepository
 import com.nexo.marcenaria365.data.repository.RecebimentoRepository
 
