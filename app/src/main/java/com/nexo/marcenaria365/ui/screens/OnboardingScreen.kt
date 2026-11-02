@@ -38,6 +38,7 @@ import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
 
+import com.nexo.marcenaria365.ui.screens.ajuda.AjudaSuporteScreen
 import com.nexo.marcenaria365.ui.screens.mais.MaisScreen
 import com.nexo.marcenaria365.ui.screens.materiais.MateriaisScreen
 
@@ -580,6 +581,9 @@ fun OnboardingScreen() {
                 nomeUsuario = nomeUsuario,
                 emailUsuario = emailUsuario,
                 fotoUsuario = fotoUsuario,
+                onAjudaClick = {
+                    telaAtual = "ajuda"
+                },
                 onMateriaisClick = {
                     telaAtual = "materiais"
                 },
@@ -604,6 +608,14 @@ fun OnboardingScreen() {
             )
         }
 
+        // AJUDA E SUPORTE
+        "ajuda" -> {
+            AjudaSuporteScreen(
+                onVoltar = {
+                    telaAtual = "mais"
+                }
+            )
+        }
         // MATERIAIS
         "materiais" -> {
             MateriaisScreen(

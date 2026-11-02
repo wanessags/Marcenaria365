@@ -45,6 +45,7 @@ fun MaisScreen(
     fotoUsuario: String? = null,
     onPerfilClick: () -> Unit = {},
     onMateriaisClick: () -> Unit = {},
+    onAjudaClick: () -> Unit = {},
     onInicioClick: () -> Unit,
     onClientesClick: () -> Unit,
     onServicosClick: () -> Unit,
@@ -84,8 +85,7 @@ fun MaisScreen(
                         .padding(start = 8.dp)
                 ) {
                     Icon(
-                        imageVector =
-                            Icons.AutoMirrored.Outlined.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Voltar ao início",
                         tint = Color.White,
                         modifier = Modifier.size(23.dp)
@@ -234,9 +234,7 @@ fun MaisScreen(
             OpcaoMais(
                 titulo = "Ajuda e suporte",
                 icone = Icons.Outlined.HelpOutline,
-                onClick = {
-                    opcaoSelecionada = "Ajuda e suporte"
-                }
+                onClick = onAjudaClick
             )
 
             OpcaoMais(
@@ -266,8 +264,7 @@ fun MaisScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector =
-                            Icons.AutoMirrored.Outlined.Logout,
+                        imageVector = Icons.AutoMirrored.Outlined.Logout,
                         contentDescription = null,
                         tint = VermelhoMais,
                         modifier = Modifier.size(18.dp)
@@ -333,7 +330,10 @@ fun MaisScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Acessar meu perfil", color = AzulMais)
+                        Text(
+                            text = "Acessar meu perfil",
+                            color = AzulMais
+                        )
                     }
 
                     TextButton(
@@ -344,7 +344,7 @@ fun MaisScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            "Política de Privacidade",
+                            text = "Política de Privacidade",
                             color = AzulMais
                         )
                     }
@@ -418,7 +418,7 @@ fun MaisScreen(
                     }
                 ) {
                     Text(
-                        "Sair",
+                        text = "Sair",
                         color = VermelhoMais,
                         fontWeight = FontWeight.SemiBold
                     )
