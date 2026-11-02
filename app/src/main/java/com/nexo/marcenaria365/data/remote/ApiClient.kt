@@ -1,3 +1,4 @@
+
 package com.nexo.marcenaria365.data.remote
 
 import org.json.JSONObject
@@ -6,9 +7,8 @@ import java.net.URL
 
 object ApiClient {
 
-    // API local para testes no emulador.
-    // Depois usaremos o endereço HTTPS do Render.
-    private const val BASE_URL = "http://10.0.2.2:8080"
+    // API hospedada no Render e conectada ao Supabase.
+    private const val BASE_URL = "https://marcenaria365-api.onrender.com"
 
     data class ApiResponse(
         val status: Int,
@@ -34,8 +34,8 @@ object ApiClient {
 
         try {
             conexao.requestMethod = metodo
-            conexao.connectTimeout = 15000
-            conexao.readTimeout = 15000
+            conexao.connectTimeout = 30000
+            conexao.readTimeout = 30000
 
             conexao.setRequestProperty(
                 "Accept",
