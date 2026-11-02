@@ -1,4 +1,5 @@
 
+
 package com.nexo.marcenaria365.ui.screens
 
 import androidx.activity.compose.BackHandler
@@ -104,9 +105,11 @@ fun OnboardingScreen() {
 
     fun carregarClientes() {
         scope.launch {
+            val sessaoDaConsulta = AuthRepository.sessaoAtual ?: return@launch
             val resultado = withContext(Dispatchers.IO) {
                 ClienteRepository.listar()
             }
+            if (AuthRepository.sessaoAtual !== sessaoDaConsulta) return@launch
 
             resultado.fold(
                 onSuccess = { lista ->
@@ -131,6 +134,7 @@ fun OnboardingScreen() {
 
     fun carregarServicos() {
         scope.launch {
+            val sessaoDaConsulta = AuthRepository.sessaoAtual ?: return@launch
             val resultado = withContext(Dispatchers.IO) {
                 runCatching {
                     val clientesApi = ClienteRepository.listar().getOrThrow()
@@ -160,6 +164,7 @@ fun OnboardingScreen() {
                     }
                 }
             }
+            if (AuthRepository.sessaoAtual !== sessaoDaConsulta) return@launch
 
             resultado.fold(
                 onSuccess = { lista ->
@@ -267,7 +272,16 @@ fun OnboardingScreen() {
         )
     }
 
-    when (telaAtual) {
+    // Telas publicas podem ser exibidas sem autenticacao.
+    val telasPublicas = setOf(
+        "onboarding", "login", "cadastro_usuario", "politica_entrada"
+    )
+
+    val telaSegura = if (
+        AuthRepository.sessaoAtual == null && telaAtual !in telasPublicas
+    ) "login" else telaAtual
+
+    when (telaSegura) {
 
         // LOGIN
         "login" -> {
@@ -283,10 +297,21 @@ fun OnboardingScreen() {
                     telaAtual = "cadastro_usuario"
                 },
                 onDemoLogin = { nome ->
-                    nomeUsuario = nome
-                    carregarClientes()
-                    carregarServicos()
-                    telaAtual = "home"
+                    if (AuthRepository.sessaoAtual != null) {
+                        clientes.clear()
+                        servicos.clear()
+                        clienteSelecionadoId = null
+                        servicoVindoClienteId = null
+                        erroClientes = null
+                        erroServicos = null
+
+                        nomeUsuario = nome
+                        emailUsuario = ""
+                        fotoUsuario = null
+                        carregarClientes()
+                        carregarServicos()
+                        telaAtual = "home"
+                    }
                 }
             )
         }
@@ -325,6 +350,21 @@ fun OnboardingScreen() {
                     telaAtual = "mais"
                 },
                 onSair = {
+                    AuthRepository.encerrarSessao()
+                    clientes.clear()
+                    servicos.clear()
+                    clienteSelecionadoId = null
+                    servicoVindoClienteId = null
+                    erroClientes = null
+                    erroServicos = null
+                    nomeUsuario = ""
+                    emailUsuario = ""
+                    fotoUsuario = null
+                    preferencias.edit()
+                        .remove("nome")
+                        .remove("email")
+                        .remove("foto")
+                        .apply()
                     telaAtual = "login"
                 }
             )
@@ -604,6 +644,21 @@ fun OnboardingScreen() {
                     telaAtual = "politica_mais"
                 },
                 onSair = {
+                    AuthRepository.encerrarSessao()
+                    clientes.clear()
+                    servicos.clear()
+                    clienteSelecionadoId = null
+                    servicoVindoClienteId = null
+                    erroClientes = null
+                    erroServicos = null
+                    nomeUsuario = ""
+                    emailUsuario = ""
+                    fotoUsuario = null
+                    preferencias.edit()
+                        .remove("nome")
+                        .remove("email")
+                        .remove("foto")
+                        .apply()
                     telaAtual = "login"
                 }
             )
