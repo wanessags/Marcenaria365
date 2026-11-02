@@ -1,4 +1,4 @@
-﻿
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -8,7 +8,7 @@ android {
     namespace = "com.nexo.marcenaria365"
 
     compileSdk {
-        version = release(37)
+        version = release(36)
     }
 
     defaultConfig {
