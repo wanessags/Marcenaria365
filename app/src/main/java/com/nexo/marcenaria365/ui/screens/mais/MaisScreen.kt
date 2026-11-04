@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.PeopleOutline
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,14 +31,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.nexo.marcenaria365.ui.screens.perfil.FotoPerfil
 
 private val FundoMais = Color(0xFFFAF6F0)
 private val AzulMais = Color(0xFF193447)
-private val CinzaMais = Color(0xFF929292)
+private val CinzaMais = Color(0xFF77828A)
 private val VermelhoMais = Color(0xFFCF6666)
+private val CobreMais = Color(0xFFB88966)
+private val BordaMais = Color(0xFFEAE5DF)
 
 @Composable
 fun MaisScreen(
@@ -64,13 +71,19 @@ fun MaisScreen(
         mutableStateOf<String?>(null)
     }
 
-    BackHandler(onBack = onInicioClick)
+    BackHandler(
+        enabled = !mostrarConfiguracoes &&
+                !confirmarSaida &&
+                opcaoSelecionada == null,
+        onBack = onInicioClick
+    )
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
         containerColor = FundoMais,
+
         topBar = {
             Box(
                 modifier = Modifier
@@ -85,7 +98,8 @@ fun MaisScreen(
                         .padding(start = 8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Voltar ao início",
                         tint = Color.White,
                         modifier = Modifier.size(23.dp)
@@ -101,6 +115,7 @@ fun MaisScreen(
                 )
             }
         },
+
         bottomBar = {
             NavigationBar(
                 modifier = Modifier
@@ -139,6 +154,7 @@ fun MaisScreen(
             }
         }
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -148,6 +164,7 @@ fun MaisScreen(
         ) {
             Spacer(Modifier.height(20.dp))
 
+            // CARTAO DO PERFIL
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -209,6 +226,7 @@ fun MaisScreen(
 
             Spacer(Modifier.height(20.dp))
 
+            // OPCOES DO MENU MAIS
             OpcaoMais(
                 titulo = "Materiais",
                 icone = Icons.Outlined.Inventory2,
@@ -285,85 +303,188 @@ fun MaisScreen(
         }
     }
 
+    // NOVA JANELA DE CONFIGURACOES
     if (mostrarConfiguracoes) {
-        AlertDialog(
+        Dialog(
             onDismissRequest = {
                 mostrarConfiguracoes = false
             },
-            title = {
-                Text(
-                    text = "Configurações",
-                    color = AzulMais,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                usePlatformDefaultWidth = true
+            )
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = FundoMais,
+                tonalElevation = 0.dp,
+                shadowElevation = 8.dp
+            ) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .background(
+                                Color(0xFFF1E7DC),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = null,
+                            tint = CobreMais,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
                     Text(
-                        text = "Minha conta",
-                        fontWeight = FontWeight.SemiBold,
+                        text = "Configurações",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
                         color = AzulMais
                     )
 
-                    Text(
-                        text = "Nome: " + nomeUsuario.ifBlank {
-                            "Não informado"
-                        },
-                        fontSize = 13.sp
-                    )
+                    Spacer(Modifier.height(5.dp))
 
                     Text(
-                        text = "E-mail: " + emailUsuario.ifBlank {
-                            "Não informado"
-                        },
-                        fontSize = 13.sp
+                        text = "Gerencie sua conta e informações",
+                        color = CinzaMais,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
                     )
 
-                    HorizontalDivider()
+                    Spacer(Modifier.height(20.dp))
 
-                    TextButton(
+                    // INFORMACOES DA CONTA
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            BordaMais
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(15.dp)
+                        ) {
+                            Text(
+                                text = "MINHA CONTA",
+                                color = CobreMais,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp
+                            )
+
+                            Spacer(Modifier.height(14.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                FotoPerfil(
+                                    nome = nomeUsuario,
+                                    fotoUri = fotoUsuario,
+                                    modifier = Modifier.size(44.dp)
+                                )
+
+                                Spacer(Modifier.width(11.dp))
+
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = nomeUsuario.ifBlank {
+                                            "Nome não informado"
+                                        },
+                                        color = AzulMais,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 14.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    Spacer(Modifier.height(3.dp))
+
+                                    Text(
+                                        text = emailUsuario.ifBlank {
+                                            "E-mail não informado"
+                                        },
+                                        color = CinzaMais,
+                                        fontSize = 11.sp,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // ACESSAR PERFIL
+                    OpcaoConfiguracaoMais(
+                        titulo = "Meu perfil",
+                        descricao = "Visualizar e editar meus dados",
+                        icone = Icons.Outlined.PersonOutline,
                         onClick = {
                             mostrarConfiguracoes = false
                             onPerfilClick()
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "Acessar meu perfil",
-                            color = AzulMais
-                        )
-                    }
+                        }
+                    )
 
-                    TextButton(
+                    Spacer(Modifier.height(9.dp))
+
+                    // PRIVACIDADE
+                    OpcaoConfiguracaoMais(
+                        titulo = "Privacidade",
+                        descricao = "Consultar a política de dados",
+                        icone = Icons.Outlined.Description,
                         onClick = {
                             mostrarConfiguracoes = false
                             onPoliticaClick()
+                        }
+                    )
+
+                    Spacer(Modifier.height(20.dp))
+
+                    // FECHAR JANELA
+                    Button(
+                        onClick = {
+                            mostrarConfiguracoes = false
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AzulMais,
+                            contentColor = Color.White
+                        )
                     ) {
                         Text(
-                            text = "Política de Privacidade",
-                            color = AzulMais
+                            text = "Fechar",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarConfiguracoes = false
-                    }
-                ) {
-                    Text("Fechar", color = AzulMais)
-                }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(17.dp)
-        )
+            }
+        }
     }
 
+    // CENTRAL DE ATENDIMENTO
     if (opcaoSelecionada != null) {
         AlertDialog(
             onDismissRequest = {
@@ -387,7 +508,10 @@ fun MaisScreen(
                         opcaoSelecionada = null
                     }
                 ) {
-                    Text("Entendi", color = AzulMais)
+                    Text(
+                        text = "Entendi",
+                        color = AzulMais
+                    )
                 }
             },
             containerColor = Color.White,
@@ -395,6 +519,7 @@ fun MaisScreen(
         )
     }
 
+    // CONFIRMACAO DE SAIDA
     if (confirmarSaida) {
         AlertDialog(
             onDismissRequest = {
@@ -408,7 +533,9 @@ fun MaisScreen(
                 )
             },
             text = {
-                Text("Deseja voltar para a tela de login?")
+                Text(
+                    "Deseja voltar para a tela de login?"
+                )
             },
             confirmButton = {
                 TextButton(
@@ -430,7 +557,10 @@ fun MaisScreen(
                         confirmarSaida = false
                     }
                 ) {
-                    Text("Cancelar", color = AzulMais)
+                    Text(
+                        text = "Cancelar",
+                        color = AzulMais
+                    )
                 }
             },
             containerColor = Color.White,
@@ -439,6 +569,84 @@ fun MaisScreen(
     }
 }
 
+// OPCAO DENTRO DAS CONFIGURACOES
+@Composable
+private fun OpcaoConfiguracaoMais(
+    titulo: String,
+    descricao: String,
+    icone: ImageVector,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            BordaMais
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = 13.dp,
+                vertical = 13.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(37.dp)
+                    .background(
+                        Color(0xFFF5EFE8),
+                        RoundedCornerShape(11.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icone,
+                    contentDescription = null,
+                    tint = CobreMais,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(Modifier.width(11.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = titulo,
+                    color = AzulMais,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(Modifier.height(3.dp))
+
+                Text(
+                    text = descricao,
+                    color = CinzaMais,
+                    fontSize = 10.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(Modifier.width(5.dp))
+
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = "Abrir $titulo",
+                tint = CinzaMais,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+// OPCAO DO MENU MAIS
 @Composable
 private fun OpcaoMais(
     titulo: String,
@@ -478,6 +686,7 @@ private fun OpcaoMais(
     }
 }
 
+// MENU INFERIOR
 @Composable
 private fun RowScope.ItemMenuMais(
     titulo: String,
