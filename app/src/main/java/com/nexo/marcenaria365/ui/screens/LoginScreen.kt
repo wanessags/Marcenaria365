@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Visibility
@@ -40,7 +40,9 @@ import kotlinx.coroutines.withContext
 private val FundoLogin = Color(0xFFFAF6F0)
 private val AzulLogin = Color(0xFF193447)
 private val CobreLogin = Color(0xFFBD8B60)
-private val CinzaLogin = Color(0xFF929292)
+private val CinzaLogin = Color(0xFF53616A)
+private val BordaLogin = Color(0xFFABB5BA)
+private val VermelhoLogin = Color(0xFFB3261E)
 
 @Composable
 fun LoginScreen(
@@ -64,16 +66,26 @@ fun LoginScreen(
         mutableStateOf("")
     }
 
-    var carregando by remember { mutableStateOf(false) }
+    var carregando by remember {
+        mutableStateOf(false)
+    }
+
     val scope = rememberCoroutineScope()
 
+    // Campos permanecem legiveis durante a requisicao.
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         focusedBorderColor = CobreLogin,
-        unfocusedBorderColor = Color.Transparent,
+        unfocusedBorderColor = BordaLogin,
         focusedTextColor = AzulLogin,
         unfocusedTextColor = AzulLogin,
+        focusedPlaceholderColor = CinzaLogin,
+        unfocusedPlaceholderColor = CinzaLogin,
+        focusedLeadingIconColor = CinzaLogin,
+        unfocusedLeadingIconColor = CinzaLogin,
+        focusedTrailingIconColor = CinzaLogin,
+        unfocusedTrailingIconColor = CinzaLogin,
         cursorColor = CobreLogin
     )
 
@@ -86,13 +98,15 @@ fun LoginScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 30.dp)
     ) {
+
         Spacer(Modifier.height(10.dp))
 
         IconButton(
-            onClick = onBackClick
+            onClick = onBackClick,
+            enabled = !carregando
         ) {
             Icon(
-                imageVector = Icons.Outlined.ArrowBack,
+                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                 contentDescription = "Voltar",
                 tint = AzulLogin
             )
@@ -113,28 +127,33 @@ fun LoginScreen(
 
         Text(
             text = "Bem-vindo de volta!",
-            color = CinzaLogin,
+            color = AzulLogin,
             fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
 
+        Spacer(Modifier.height(5.dp))
+
         Text(
             text = "Acesse sua conta para continuar.",
             color = CinzaLogin,
-            fontSize = 15.sp,
+            fontSize = 14.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(Modifier.height(36.dp))
 
-        // Campo de e-mail
+        // E-MAIL
         OutlinedTextField(
             value = email,
             onValueChange = {
-                email = it
-                mensagem = ""
+                if (!carregando) {
+                    email = it
+                    mensagem = ""
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
@@ -151,6 +170,7 @@ fun LoginScreen(
                 )
             },
             singleLine = true,
+            readOnly = carregando,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email
             ),
@@ -160,12 +180,14 @@ fun LoginScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Campo de senha
+        // SENHA
         OutlinedTextField(
             value = senha,
             onValueChange = {
-                senha = it
-                mensagem = ""
+                if (!carregando) {
+                    senha = it
+                    mensagem = ""
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
@@ -203,6 +225,7 @@ fun LoginScreen(
                 }
             },
             singleLine = true,
+            readOnly = carregando,
             visualTransformation = if (senhaVisivel) {
                 VisualTransformation.None
             } else {
@@ -217,7 +240,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Recuperação de senha
+        // RECUPERACAO DE SENHA
         Text(
             text = "Esqueceu sua senha?",
             fontSize = 12.sp,
@@ -225,7 +248,7 @@ fun LoginScreen(
             textAlign = TextAlign.End,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
+                .clickable(enabled = !carregando) {
                     mensagem =
                         "A recuperação de senha ainda não está disponível."
                 }
@@ -233,7 +256,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(25.dp))
 
-        // Botão Entrar
+        // BOTAO ENTRAR
         Button(
             onClick = {
                 mensagem = when {
@@ -254,7 +277,7 @@ fun LoginScreen(
                     scope.launch {
                         val resultado = withContext(Dispatchers.IO) {
                             AuthRepository.login(
-                                email = email,
+                                email = email.trim(),
                                 senha = senha
                             )
                         }
@@ -274,31 +297,71 @@ fun LoginScreen(
                     }
                 }
             },
-            enabled = !carregando,            modifier = Modifier
+            enabled = !carregando,
+            modifier = Modifier
                 .fillMaxWidth()
                 .height(53.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = AzulLogin,
-                contentColor = Color.White
+                contentColor = Color.White,
+                disabledContainerColor = AzulLogin,
+                disabledContentColor = Color.White
             )
         ) {
+            if (carregando) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Text(
+                        text = "Entrando...",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            } else {
+                Text(
+                    text = "Entrar",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        // INFORMACAO DURANTE O CARREGAMENTO
+        if (carregando) {
+            Spacer(Modifier.height(15.dp))
+
             Text(
-                text = "Entrar",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
+                text = "Conectando à sua conta...",
+                color = AzulLogin,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
-        // Mensagens de validação e orientação
+        // MENSAGEM DE ERRO
         if (mensagem.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
             Text(
                 text = mensagem,
                 fontSize = 13.sp,
-                color = AzulLogin,
+                lineHeight = 19.sp,
+                color = VermelhoLogin,
+                fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -306,7 +369,7 @@ fun LoginScreen(
 
         Spacer(Modifier.height(90.dp))
 
-        // Acesso à tela de cadastro
+        // ACESSO AO CADASTRO
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -324,8 +387,10 @@ fun LoginScreen(
                 text = "Cadastre-se",
                 fontSize = 12.sp,
                 color = CobreLogin,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.clickable {
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable(
+                    enabled = !carregando
+                ) {
                     onRegisterClick()
                 }
             )
