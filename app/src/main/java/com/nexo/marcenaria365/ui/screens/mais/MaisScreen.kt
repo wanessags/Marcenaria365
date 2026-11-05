@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,8 +20,6 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.PeopleOutline
-import androidx.compose.material.icons.outlined.PersonOutline
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,20 +27,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.nexo.marcenaria365.ui.screens.perfil.FotoPerfil
 
 private val FundoMais = Color(0xFFFAF6F0)
 private val AzulMais = Color(0xFF193447)
 private val CinzaMais = Color(0xFF77828A)
 private val VermelhoMais = Color(0xFFCF6666)
-private val CobreMais = Color(0xFFB88966)
-private val BordaMais = Color(0xFFEAE5DF)
 
 @Composable
 fun MaisScreen(
@@ -63,17 +56,12 @@ fun MaisScreen(
         mutableStateOf(false)
     }
 
-    var mostrarConfiguracoes by remember {
-        mutableStateOf(false)
-    }
-
     var opcaoSelecionada by remember {
         mutableStateOf<String?>(null)
     }
 
     BackHandler(
-        enabled = !mostrarConfiguracoes &&
-                !confirmarSaida &&
+        enabled = !confirmarSaida &&
                 opcaoSelecionada == null,
         onBack = onInicioClick
     )
@@ -164,7 +152,7 @@ fun MaisScreen(
         ) {
             Spacer(Modifier.height(20.dp))
 
-            // CARTAO DO PERFIL
+            // CARTAO DE PERFIL
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -224,23 +212,16 @@ fun MaisScreen(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(22.dp))
 
-            // OPCOES DO MENU MAIS
+            // MATERIAIS
             OpcaoMais(
                 titulo = "Materiais",
                 icone = Icons.Outlined.Inventory2,
                 onClick = onMateriaisClick
             )
 
-            OpcaoMais(
-                titulo = "Configurações",
-                icone = Icons.Outlined.Settings,
-                onClick = {
-                    mostrarConfiguracoes = true
-                }
-            )
-
+            // CENTRAL DE ATENDIMENTO
             OpcaoMais(
                 titulo = "Central de atendimento",
                 icone = Icons.Outlined.Message,
@@ -249,12 +230,14 @@ fun MaisScreen(
                 }
             )
 
+            // AJUDA E SUPORTE
             OpcaoMais(
                 titulo = "Ajuda e suporte",
                 icone = Icons.Outlined.HelpOutline,
                 onClick = onAjudaClick
             )
 
+            // POLITICA DE PRIVACIDADE
             OpcaoMais(
                 titulo = "Política de Privacidade",
                 icone = Icons.Outlined.Description,
@@ -263,6 +246,7 @@ fun MaisScreen(
 
             Spacer(Modifier.height(25.dp))
 
+            // SAIR DA CONTA
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -282,7 +266,8 @@ fun MaisScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Logout,
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.Logout,
                         contentDescription = null,
                         tint = VermelhoMais,
                         modifier = Modifier.size(18.dp)
@@ -303,187 +288,6 @@ fun MaisScreen(
         }
     }
 
-    // NOVA JANELA DE CONFIGURACOES
-    if (mostrarConfiguracoes) {
-        Dialog(
-            onDismissRequest = {
-                mostrarConfiguracoes = false
-            },
-            properties = DialogProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true,
-                usePlatformDefaultWidth = true
-            )
-        ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = FundoMais,
-                tonalElevation = 0.dp,
-                shadowElevation = 8.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .background(
-                                Color(0xFFF1E7DC),
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Settings,
-                            contentDescription = null,
-                            tint = CobreMais,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Text(
-                        text = "Configurações",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AzulMais
-                    )
-
-                    Spacer(Modifier.height(5.dp))
-
-                    Text(
-                        text = "Gerencie sua conta e informações",
-                        color = CinzaMais,
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(Modifier.height(20.dp))
-
-                    // INFORMACOES DA CONTA
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            BordaMais
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(15.dp)
-                        ) {
-                            Text(
-                                text = "MINHA CONTA",
-                                color = CobreMais,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-
-                            Spacer(Modifier.height(14.dp))
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                FotoPerfil(
-                                    nome = nomeUsuario,
-                                    fotoUri = fotoUsuario,
-                                    modifier = Modifier.size(44.dp)
-                                )
-
-                                Spacer(Modifier.width(11.dp))
-
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = nomeUsuario.ifBlank {
-                                            "Nome não informado"
-                                        },
-                                        color = AzulMais,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 14.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-
-                                    Spacer(Modifier.height(3.dp))
-
-                                    Text(
-                                        text = emailUsuario.ifBlank {
-                                            "E-mail não informado"
-                                        },
-                                        color = CinzaMais,
-                                        fontSize = 11.sp,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // ACESSAR PERFIL
-                    OpcaoConfiguracaoMais(
-                        titulo = "Meu perfil",
-                        descricao = "Visualizar e editar meus dados",
-                        icone = Icons.Outlined.PersonOutline,
-                        onClick = {
-                            mostrarConfiguracoes = false
-                            onPerfilClick()
-                        }
-                    )
-
-                    Spacer(Modifier.height(9.dp))
-
-                    // PRIVACIDADE
-                    OpcaoConfiguracaoMais(
-                        titulo = "Privacidade",
-                        descricao = "Consultar a política de dados",
-                        icone = Icons.Outlined.Description,
-                        onClick = {
-                            mostrarConfiguracoes = false
-                            onPoliticaClick()
-                        }
-                    )
-
-                    Spacer(Modifier.height(20.dp))
-
-                    // FECHAR JANELA
-                    Button(
-                        onClick = {
-                            mostrarConfiguracoes = false
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AzulMais,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text(
-                            text = "Fechar",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
-    }
-
     // CENTRAL DE ATENDIMENTO
     if (opcaoSelecionada != null) {
         AlertDialog(
@@ -499,7 +303,7 @@ fun MaisScreen(
             },
             text = {
                 Text(
-                    "Esta funcionalidade ainda não está disponível."
+                    text = "Esta funcionalidade ainda não está disponível."
                 )
             },
             confirmButton = {
@@ -534,7 +338,7 @@ fun MaisScreen(
             },
             text = {
                 Text(
-                    "Deseja voltar para a tela de login?"
+                    text = "Deseja voltar para a tela de login?"
                 )
             },
             confirmButton = {
@@ -569,84 +373,7 @@ fun MaisScreen(
     }
 }
 
-// OPCAO DENTRO DAS CONFIGURACOES
-@Composable
-private fun OpcaoConfiguracaoMais(
-    titulo: String,
-    descricao: String,
-    icone: ImageVector,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            BordaMais
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(
-                horizontal = 13.dp,
-                vertical = 13.dp
-            ),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(37.dp)
-                    .background(
-                        Color(0xFFF5EFE8),
-                        RoundedCornerShape(11.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icone,
-                    contentDescription = null,
-                    tint = CobreMais,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(Modifier.width(11.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = titulo,
-                    color = AzulMais,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(Modifier.height(3.dp))
-
-                Text(
-                    text = descricao,
-                    color = CinzaMais,
-                    fontSize = 10.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(Modifier.width(5.dp))
-
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = "Abrir $titulo",
-                tint = CinzaMais,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}
-
-// OPCAO DO MENU MAIS
+// OPCOES DA TELA MAIS
 @Composable
 private fun OpcaoMais(
     titulo: String,
