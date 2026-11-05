@@ -3,28 +3,33 @@ package com.nexo.marcenaria365.ui.screens
 
 import android.util.Patterns
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material.icons.outlined.CheckCircleOutline
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -38,30 +43,26 @@ import kotlinx.coroutines.withContext
 
 private val FundoCadastro = Color(0xFFFAF6F0)
 private val AzulCadastro = Color(0xFF193447)
-private val CobreCadastro = Color(0xFFBD8B60)
-private val CinzaCadastro = Color(0xFF929292)
-private val BordaCadastro = Color(0xFFE8DFD4)
-private val VerdeCadastro = Color(0xFF239B7A)
-private val AmareloCadastro = Color(0xFFD49A34)
-private val VermelhoCadastro = Color(0xFFC75D5D)
+private val CobreCadastro = Color(0xFF94613C)
+private val CinzaCadastro = Color(0xFF53616A)
+private val BordaCadastro = Color(0xFF9AA6AD)
+private val VermelhoCadastro = Color(0xFFB3261E)
+private val VerdeCadastro = Color(0xFF237A58)
 
-// REGRAS DA SENHA
-private data class RequisitosSenha(
+private data class RegrasCadastro(
     val tamanho: Boolean,
     val maiuscula: Boolean,
     val minuscula: Boolean,
     val numero: Boolean,
-    val especial: Boolean,
-    val semEspacos: Boolean
+    val especial: Boolean
 ) {
-    val quantidadeAtendida: Int
+    val quantidade: Int
         get() = listOf(
             tamanho,
             maiuscula,
             minuscula,
             numero,
-            especial,
-            semEspacos
+            especial
         ).count { it }
 
     val valida: Boolean
@@ -69,160 +70,26 @@ private data class RequisitosSenha(
                 maiuscula &&
                 minuscula &&
                 numero &&
-                especial &&
-                semEspacos
+                especial
 }
 
-private fun verificarSenha(senha: String): RequisitosSenha {
-    return RequisitosSenha(
+private fun avaliarSenhaCadastro(
+    senha: String
+): RegrasCadastro {
+    return RegrasCadastro(
         tamanho = senha.length >= 8,
         maiuscula = senha.any { it.isUpperCase() },
         minuscula = senha.any { it.isLowerCase() },
         numero = senha.any { it.isDigit() },
         especial = senha.any {
             !it.isLetterOrDigit() && !it.isWhitespace()
-        },
-        semEspacos = senha.none { it.isWhitespace() }
+        }
     )
 }
 
-// INDICADOR VISUAL DE FORCA
 @Composable
-private fun IndicadorForcaSenha(
-    senha: String,
-    requisitos: RequisitosSenha
-) {
-    val forca = when {
-        senha.isBlank() -> 0
-        requisitos.quantidadeAtendida <= 2 -> 1
-        requisitos.quantidadeAtendida <= 4 -> 2
-        requisitos.quantidadeAtendida == 5 -> 3
-        else -> 4
-    }
-
-    val cor = when (forca) {
-        1 -> VermelhoCadastro
-        2 -> AmareloCadastro
-        3 -> AmareloCadastro
-        4 -> VerdeCadastro
-        else -> BordaCadastro
-    }
-
-    val classificacao = when (forca) {
-        1 -> "Fraca"
-        2 -> "Média"
-        3 -> "Quase pronta"
-        4 -> "Forte"
-        else -> "Não informada"
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Força da senha",
-                color = AzulCadastro,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = classificacao,
-                color = if (forca == 0) {
-                    CinzaCadastro
-                } else {
-                    cor
-                },
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(Modifier.height(9.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
-        ) {
-            repeat(4) { indice ->
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(6.dp)
-                        .background(
-                            color = if (indice < forca) {
-                                cor
-                            } else {
-                                BordaCadastro
-                            },
-                            shape = RoundedCornerShape(6.dp)
-                        )
-                )
-            }
-        }
-
-        Spacer(Modifier.height(15.dp))
-
-        Text(
-            text = "Sua senha deve conter:",
-            color = AzulCadastro,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Spacer(Modifier.height(9.dp))
-
-        RequisitoSenhaItem(
-            texto = "Pelo menos 8 caracteres",
-            atendido = requisitos.tamanho
-        )
-
-        RequisitoSenhaItem(
-            texto = "Uma letra maiúscula",
-            atendido = requisitos.maiuscula
-        )
-
-        RequisitoSenhaItem(
-            texto = "Uma letra minúscula",
-            atendido = requisitos.minuscula
-        )
-
-        RequisitoSenhaItem(
-            texto = "Um número",
-            atendido = requisitos.numero
-        )
-
-        RequisitoSenhaItem(
-            texto = "Um caractere especial (@, #, !...)",
-            atendido = requisitos.especial
-        )
-
-        RequisitoSenhaItem(
-            texto = "Sem espaços",
-            atendido = requisitos.semEspacos
-        )
-
-        if (requisitos.valida) {
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "Sua senha atende aos requisitos!",
-                color = VerdeCadastro,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
-@Composable
-private fun RequisitoSenhaItem(
-    texto: String,
+private fun RequisitoCadastro(
+    descricao: String,
     atendido: Boolean
 ) {
     Row(
@@ -232,31 +99,153 @@ private fun RequisitoSenhaItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = if (atendido) {
-                Icons.Outlined.CheckCircleOutline
-            } else {
-                Icons.Outlined.RadioButtonUnchecked
-            },
+            imageVector = Icons.Outlined.CheckCircleOutline,
             contentDescription = null,
             tint = if (atendido) {
                 VerdeCadastro
             } else {
                 CinzaCadastro
             },
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(17.dp)
         )
 
         Spacer(Modifier.width(9.dp))
 
         Text(
-            text = texto,
+            text = "${if (atendido) "Atendido" else "Pendente"}: $descricao",
             color = if (atendido) {
                 VerdeCadastro
             } else {
                 CinzaCadastro
             },
-            fontSize = 11.sp
+            fontSize = 12.sp,
+            lineHeight = 17.sp
         )
+    }
+}
+
+@Composable
+private fun ForcaSenhaCadastro(
+    senha: String,
+    regras: RegrasCadastro
+) {
+    if (senha.isEmpty()) return
+
+    val nivel = when {
+        regras.valida -> 4
+        regras.quantidade >= 4 -> 3
+        regras.quantidade >= 3 -> 2
+        else -> 1
+    }
+
+    val descricao = when (nivel) {
+        4 -> "Forte"
+        3 -> "Quase pronta"
+        2 -> "Média"
+        else -> "Fraca"
+    }
+
+    val cor = when (nivel) {
+        4 -> VerdeCadastro
+        3 -> Color(0xFF825B12)
+        2 -> Color(0xFF825B12)
+        else -> VermelhoCadastro
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Segurança da senha",
+                    color = AzulCadastro,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = descricao,
+                    color = cor,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        // A descrição textual acima informa
+                        // a classificação da senha.
+                    },
+                horizontalArrangement =
+                    Arrangement.spacedBy(5.dp)
+            ) {
+                repeat(4) { indice ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(7.dp)
+                            .background(
+                                color = if (indice < nivel) {
+                                    cor
+                                } else {
+                                    BordaCadastro
+                                },
+                                shape = RoundedCornerShape(5.dp)
+                            )
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Text(
+                text = "Requisitos da senha",
+                color = AzulCadastro,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(Modifier.height(5.dp))
+
+            RequisitoCadastro(
+                "Pelo menos 8 caracteres",
+                regras.tamanho
+            )
+
+            RequisitoCadastro(
+                "Uma letra maiúscula",
+                regras.maiuscula
+            )
+
+            RequisitoCadastro(
+                "Uma letra minúscula",
+                regras.minuscula
+            )
+
+            RequisitoCadastro(
+                "Um número",
+                regras.numero
+            )
+
+            RequisitoCadastro(
+                "Um caractere especial",
+                regras.especial
+            )
+        }
     }
 }
 
@@ -301,13 +290,33 @@ fun RegisterScreen(
         mutableStateOf(false)
     }
 
+    var tentouSalvar by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     val scope = rememberCoroutineScope()
+    val foco = LocalFocusManager.current
+    val teclado = LocalSoftwareKeyboardController.current
 
-    val requisitos = verificarSenha(senha)
+    val regras = avaliarSenhaCadastro(senha)
+    val bloquearEdicao = carregando || cadastroConcluido
 
-    val senhasCoincidem =
+    val nomeInvalido =
+        tentouSalvar && nome.isBlank()
+
+    val emailInvalido =
+        tentouSalvar &&
+                !Patterns.EMAIL_ADDRESS.matcher(
+                    email.trim()
+                ).matches()
+
+    val senhaInvalida =
+        tentouSalvar && !regras.valida
+
+    val confirmacaoInvalida =
         confirmarSenha.isNotEmpty() &&
-                senha == confirmarSenha
+                confirmarSenha != senha ||
+                tentouSalvar && confirmarSenha != senha
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
@@ -316,27 +325,106 @@ fun RegisterScreen(
         unfocusedBorderColor = BordaCadastro,
         focusedTextColor = AzulCadastro,
         unfocusedTextColor = AzulCadastro,
-        cursorColor = CobreCadastro
+        focusedLabelColor = AzulCadastro,
+        unfocusedLabelColor = CinzaCadastro,
+        focusedLeadingIconColor = AzulCadastro,
+        unfocusedLeadingIconColor = CinzaCadastro,
+        cursorColor = AzulCadastro,
+        errorBorderColor = VermelhoCadastro,
+        errorLabelColor = VermelhoCadastro
     )
+
+    fun cadastrar() {
+        tentouSalvar = true
+
+        mensagem = when {
+            nome.isBlank() ->
+                "Informe seu nome completo."
+
+            email.isBlank() ->
+                "Informe seu e-mail."
+
+            !Patterns.EMAIL_ADDRESS
+                .matcher(email.trim())
+                .matches() ->
+                "Informe um e-mail válido."
+
+            !regras.valida ->
+                "Confira os requisitos da senha."
+
+            confirmarSenha.isBlank() ->
+                "Confirme sua senha."
+
+            senha != confirmarSenha ->
+                "A confirmação deve ser igual à senha."
+
+            else -> ""
+        }
+
+        if (
+            mensagem.isNotBlank() ||
+            carregando ||
+            cadastroConcluido
+        ) {
+            return
+        }
+
+        teclado?.hide()
+        foco.clearFocus()
+        carregando = true
+
+        scope.launch {
+            val resultado = withContext(Dispatchers.IO) {
+                AuthRepository.cadastrar(
+                    nome = nome.trim(),
+                    email = email.trim(),
+                    senha = senha
+                )
+            }
+
+            carregando = false
+
+            resultado.fold(
+                onSuccess = {
+                    cadastroConcluido = true
+                    senha = ""
+                    confirmarSenha = ""
+                    mensagem =
+                        "Conta criada com sucesso! " +
+                                "Agora você pode entrar."
+                },
+                onFailure = { erro ->
+                    mensagem = erro.message
+                        ?: "Não foi possível criar a conta."
+                }
+            )
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(FundoCadastro)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .windowInsetsPadding(
+                WindowInsets.safeDrawing
+            )
             .imePadding()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 27.dp)
+            .padding(horizontal = 25.dp)
     ) {
         Spacer(Modifier.height(8.dp))
 
-        // VOLTAR
         IconButton(
             onClick = onBackClick,
-            enabled = !carregando
+            enabled = !carregando,
+            modifier = Modifier.sizeIn(
+                minWidth = 48.dp,
+                minHeight = 48.dp
+            )
         ) {
             Icon(
-                imageVector = Icons.Outlined.ArrowBack,
+                imageVector =
+                    Icons.AutoMirrored.Outlined.ArrowBack,
                 contentDescription = "Voltar",
                 tint = AzulCadastro
             )
@@ -344,7 +432,6 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(15.dp))
 
-        // TITULO
         Text(
             text = "Crie sua conta",
             color = AzulCadastro,
@@ -359,39 +446,47 @@ fun RegisterScreen(
         Text(
             text = "Organize seus serviços em um só lugar.",
             color = CinzaCadastro,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(25.dp))
 
-        // NOME COMPLETO
+        // NOME
         OutlinedTextField(
             value = nome,
             onValueChange = {
-                nome = it
-                mensagem = ""
+                if (!bloquearEdicao) {
+                    nome = it
+                    mensagem = ""
+                }
             },
-            placeholder = {
-                Text(
-                    text = "Nome completo",
-                    color = CinzaCadastro
-                )
+            label = {
+                Text("Nome completo")
             },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Person,
-                    contentDescription = null,
-                    tint = CinzaCadastro
+                    contentDescription = null
                 )
             },
-            readOnly = carregando || cadastroConcluido,
             singleLine = true,
+            readOnly = bloquearEdicao,
+            isError = nomeInvalido,
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Next
+            ),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
             colors = coresCampo
         )
+
+        if (nomeInvalido) {
+            TextoErroCadastro(
+                "Informe seu nome completo."
+            )
+        }
 
         Spacer(Modifier.height(12.dp))
 
@@ -399,31 +494,37 @@ fun RegisterScreen(
         OutlinedTextField(
             value = email,
             onValueChange = {
-                email = it
-                mensagem = ""
+                if (!bloquearEdicao) {
+                    email = it
+                    mensagem = ""
+                }
             },
-            placeholder = {
-                Text(
-                    text = "E-mail",
-                    color = CinzaCadastro
-                )
+            label = {
+                Text("E-mail")
             },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Email,
-                    contentDescription = null,
-                    tint = CinzaCadastro
+                    contentDescription = null
                 )
             },
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
             ),
-            readOnly = carregando || cadastroConcluido,
             singleLine = true,
+            readOnly = bloquearEdicao,
+            isError = emailInvalido,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
             colors = coresCampo
         )
+
+        if (emailInvalido) {
+            TextoErroCadastro(
+                "Informe um e-mail válido."
+            )
+        }
 
         Spacer(Modifier.height(12.dp))
 
@@ -431,27 +532,29 @@ fun RegisterScreen(
         OutlinedTextField(
             value = senha,
             onValueChange = {
-                senha = it
-                mensagem = ""
+                if (!bloquearEdicao) {
+                    senha = it
+                    mensagem = ""
+                }
             },
-            placeholder = {
-                Text(
-                    text = "Senha",
-                    color = CinzaCadastro
-                )
+            label = {
+                Text("Senha")
             },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Lock,
-                    contentDescription = null,
-                    tint = CinzaCadastro
+                    contentDescription = null
                 )
             },
             trailingIcon = {
                 IconButton(
                     onClick = {
                         senhaVisivel = !senhaVisivel
-                    }
+                    },
+                    modifier = Modifier.sizeIn(
+                        minWidth = 48.dp,
+                        minHeight = 48.dp
+                    )
                 ) {
                     Icon(
                         imageVector = if (senhaVisivel) {
@@ -459,56 +562,46 @@ fun RegisterScreen(
                         } else {
                             Icons.Outlined.Visibility
                         },
-                        contentDescription = if (senhaVisivel) {
-                            "Ocultar senha"
-                        } else {
-                            "Mostrar senha"
-                        },
-                        tint = CinzaCadastro
+                        contentDescription =
+                            if (senhaVisivel) {
+                                "Ocultar senha"
+                            } else {
+                                "Mostrar senha"
+                            }
                     )
                 }
             },
-            visualTransformation = if (senhaVisivel) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
+            visualTransformation =
+                if (senhaVisivel) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Next
             ),
-            readOnly = carregando || cadastroConcluido,
+            readOnly = bloquearEdicao,
             singleLine = true,
+            isError = senhaInvalida,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
             colors = coresCampo
         )
 
-        // REQUISITOS E FORCA DA SENHA
-        if (senha.isNotEmpty() && !cadastroConcluido) {
-            Spacer(Modifier.height(13.dp))
+        if (senhaInvalida) {
+            TextoErroCadastro(
+                "Sua senha ainda não atende aos requisitos."
+            )
+        }
 
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(13.dp),
-                color = Color.White,
-                tonalElevation = 0.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(15.dp)
-                ) {
-                    IndicadorForcaSenha(
-                        senha = senha,
-                        requisitos = requisitos
-                    )
-                }
-            }
-        } else if (!cadastroConcluido) {
-            Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
 
-            Text(
-                text = "Use uma senha com letras, números e símbolo.",
-                color = CinzaCadastro,
-                fontSize = 11.sp
+        // INDICADOR DE SEGURANCA
+        if (!cadastroConcluido) {
+            ForcaSenhaCadastro(
+                senha = senha,
+                regras = regras
             )
         }
 
@@ -518,27 +611,29 @@ fun RegisterScreen(
         OutlinedTextField(
             value = confirmarSenha,
             onValueChange = {
-                confirmarSenha = it
-                mensagem = ""
+                if (!bloquearEdicao) {
+                    confirmarSenha = it
+                    mensagem = ""
+                }
             },
-            placeholder = {
-                Text(
-                    text = "Confirmar senha",
-                    color = CinzaCadastro
-                )
+            label = {
+                Text("Confirmar senha")
             },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Lock,
-                    contentDescription = null,
-                    tint = CinzaCadastro
+                    contentDescription = null
                 )
             },
             trailingIcon = {
                 IconButton(
                     onClick = {
                         confirmarVisivel = !confirmarVisivel
-                    }
+                    },
+                    modifier = Modifier.sizeIn(
+                        minWidth = 48.dp,
+                        minHeight = 48.dp
+                    )
                 ) {
                     Icon(
                         imageVector = if (confirmarVisivel) {
@@ -546,151 +641,93 @@ fun RegisterScreen(
                         } else {
                             Icons.Outlined.Visibility
                         },
-                        contentDescription = if (confirmarVisivel) {
-                            "Ocultar confirmação"
-                        } else {
-                            "Mostrar confirmação"
-                        },
-                        tint = CinzaCadastro
+                        contentDescription =
+                            if (confirmarVisivel) {
+                                "Ocultar confirmação de senha"
+                            } else {
+                                "Mostrar confirmação de senha"
+                            }
                     )
                 }
             },
-            visualTransformation = if (confirmarVisivel) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
+            visualTransformation =
+                if (confirmarVisivel) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
             ),
-            readOnly = carregando || cadastroConcluido,
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    teclado?.hide()
+                    foco.clearFocus()
+                }
+            ),
+            readOnly = bloquearEdicao,
             singleLine = true,
+            isError = confirmacaoInvalida,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
-            colors = coresCampo,
-            isError = confirmarSenha.isNotEmpty() &&
-                    !senhasCoincidem &&
-                    !cadastroConcluido
+            colors = coresCampo
         )
 
-        // CONFIRMACAO VISUAL
         if (
-            confirmarSenha.isNotEmpty() &&
+            confirmacaoInvalida &&
             !cadastroConcluido
         ) {
-            Spacer(Modifier.height(7.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = if (senhasCoincidem) {
-                        Icons.Outlined.CheckCircleOutline
-                    } else {
-                        Icons.Outlined.RadioButtonUnchecked
-                    },
-                    contentDescription = null,
-                    tint = if (senhasCoincidem) {
-                        VerdeCadastro
-                    } else {
-                        VermelhoCadastro
-                    },
-                    modifier = Modifier.size(15.dp)
+            TextoErroCadastro(
+                "A confirmação deve ser igual à senha."
+            )
+        } else if (
+            confirmarSenha.isNotBlank() &&
+            confirmarSenha == senha &&
+            !cadastroConcluido
+        ) {
+            Text(
+                text = "As senhas coincidem.",
+                color = VerdeCadastro,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(
+                    top = 6.dp
                 )
-
-                Spacer(Modifier.width(6.dp))
-
-                Text(
-                    text = if (senhasCoincidem) {
-                        "As senhas coincidem."
-                    } else {
-                        "As senhas não coincidem."
-                    },
-                    color = if (senhasCoincidem) {
-                        VerdeCadastro
-                    } else {
-                        VermelhoCadastro
-                    },
-                    fontSize = 11.sp
-                )
-            }
+            )
         }
 
         Spacer(Modifier.height(24.dp))
 
-        // CRIAR CONTA
+        // BOTAO CRIAR CONTA
         Button(
             onClick = {
-                mensagem = when {
-                    nome.isBlank() ||
-                            email.isBlank() ||
-                            senha.isBlank() ||
-                            confirmarSenha.isBlank() ->
-                        "Preencha todos os campos."
-
-                    !Patterns.EMAIL_ADDRESS
-                        .matcher(email.trim())
-                        .matches() ->
-                        "Digite um e-mail válido."
-
-                    !requisitos.valida ->
-                        "Sua senha ainda não atende a todos os requisitos."
-
-                    senha != confirmarSenha ->
-                        "As senhas não coincidem."
-
-                    else -> ""
-                }
-
-                if (mensagem.isEmpty() && !carregando) {
-                    carregando = true
-
-                    scope.launch {
-                        val resultado = withContext(
-                            Dispatchers.IO
-                        ) {
-                            AuthRepository.cadastrar(
-                                nome = nome.trim(),
-                                email = email.trim(),
-                                senha = senha
-                            )
-                        }
-
-                        carregando = false
-
-                        resultado.fold(
-                            onSuccess = {
-                                cadastroConcluido = true
-                                senha = ""
-                                confirmarSenha = ""
-
-                                mensagem =
-                                    "Conta criada com sucesso! " +
-                                            "Agora você pode entrar."
-                            },
-                            onFailure = { erro ->
-                                mensagem = erro.message
-                                    ?: "Não foi possível realizar o cadastro."
-                            }
-                        )
-                    }
-                }
+                cadastrar()
             },
-            enabled = !carregando && !cadastroConcluido,
+            enabled = !carregando &&
+                    !cadastroConcluido,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(53.dp),
+                .heightIn(min = 53.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = AzulCadastro,
-                contentColor = Color.White
+                contentColor = Color.White,
+                disabledContainerColor = AzulCadastro,
+                disabledContentColor = Color.White
             )
         ) {
             if (carregando) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(23.dp),
+                    modifier = Modifier.size(20.dp),
                     color = Color.White,
                     strokeWidth = 2.dp
+                )
+
+                Spacer(Modifier.width(10.dp))
+
+                Text(
+                    text = "Criando conta...",
+                    fontWeight = FontWeight.SemiBold
                 )
             } else {
                 Text(
@@ -699,15 +736,15 @@ fun RegisterScreen(
                     } else {
                         "Criar conta"
                     },
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp
                 )
             }
         }
 
-        // MENSAGEM DE RESULTADO
-        if (mensagem.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
+        // FEEDBACK ACESSIVEL
+        if (mensagem.isNotBlank()) {
+            Spacer(Modifier.height(14.dp))
 
             Text(
                 text = mensagem,
@@ -717,19 +754,21 @@ fun RegisterScreen(
                     VermelhoCadastro
                 },
                 fontSize = 13.sp,
-                lineHeight = 19.sp,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                lineHeight = 19.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        liveRegion = LiveRegionMode.Polite
+                    }
             )
         }
 
-        Spacer(Modifier.height(38.dp))
+        Spacer(Modifier.height(30.dp))
 
-        // ENTRAR
+        // ACESSO AO LOGIN
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 26.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -739,21 +778,44 @@ fun RegisterScreen(
                 } else {
                     "Já possui uma conta? "
                 },
-                fontSize = 12.sp,
-                color = CinzaCadastro
+                color = CinzaCadastro,
+                fontSize = 12.sp
             )
 
-            Text(
-                text = "Entrar",
-                color = CobreCadastro,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.clickable(
-                    enabled = !carregando
-                ) {
-                    onLoginClick()
-                }
-            )
+            TextButton(
+                onClick = onLoginClick,
+                enabled = !carregando,
+                modifier = Modifier.heightIn(
+                    min = 48.dp
+                )
+            ) {
+                Text(
+                    text = "Entrar",
+                    color = CobreCadastro,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
+
+        Spacer(Modifier.height(25.dp))
     }
+}
+
+@Composable
+private fun TextoErroCadastro(
+    mensagem: String
+) {
+    Text(
+        text = mensagem,
+        color = VermelhoCadastro,
+        fontSize = 12.sp,
+        lineHeight = 17.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 5.dp)
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+            }
+    )
 }
