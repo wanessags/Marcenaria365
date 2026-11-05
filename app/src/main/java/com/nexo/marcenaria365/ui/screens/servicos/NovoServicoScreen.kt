@@ -1,3 +1,4 @@
+
 package com.nexo.marcenaria365.ui.screens.servicos
 
 import android.app.DatePickerDialog
@@ -12,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -33,7 +35,15 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,10 +55,11 @@ import java.util.Calendar
 
 private val Fundo = Color(0xFFFAF6F0)
 private val Azul = Color(0xFF193447)
-private val Cobre = Color(0xFFBD906E)
-private val Cinza = Color(0xFF929292)
-private val Borda = Color(0xFFE8DFD4)
-private val Verde = Color(0xFF239B7A)
+private val Cobre = Color(0xFF94613C)
+private val Cinza = Color(0xFF53616A)
+private val Borda = Color(0xFF89969E)
+private val Verde = Color(0xFF237A58)
+private val Vermelho = Color(0xFFB3261E)
 
 @Composable
 fun NovoServicoScreen(
@@ -84,6 +95,10 @@ fun NovoServicoScreen(
         mutableStateOf("")
     }
 
+    var tentouSalvar by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var menuClientes by remember {
         mutableStateOf(false)
     }
@@ -93,9 +108,10 @@ fun NovoServicoScreen(
     }
 
     val context = LocalContext.current
-    val calendario = Calendar.getInstance()
+    val foco = LocalFocusManager.current
+    val teclado = LocalSoftwareKeyboardController.current
 
-    // SELECIONAR OU TROCAR FOTO
+    // SELETOR DE FOTO
     val seletorFoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -104,7 +120,7 @@ fun NovoServicoScreen(
         }
     }
 
-    // CARREGAR PREVIA DA FOTO SELECIONADA
+    // PREVIA DA FOTO REAL
     val imagemSelecionada by produceState<ImageBitmap?>(
         initialValue = null,
         key1 = fotoUri
@@ -154,24 +170,118 @@ fun NovoServicoScreen(
         }
     }
 
-    val seletorData = remember(context) {
-        DatePickerDialog(
-            context,
-            { _, ano, mes, dia ->
-                dataEntrega = "%02d/%02d/%04d".format(
-                    dia,
-                    mes + 1,
-                    ano
-                )
-            },
-            calendario.get(Calendar.YEAR),
-            calendario.get(Calendar.MONTH),
-            calendario.get(Calendar.DAY_OF_MONTH)
-        )
-    }
+    // SELETOR DE DATA
+    val calendario = Calendar.getInstance()
+
+    val seletorData = DatePickerDialog(
+        context,
+        { _, ano, mes, dia ->
+            dataEntrega = "%02d/%02d/%04d".format(
+                dia,
+                mes + 1,
+                ano
+            )
+            erro = ""
+        },
+        calendario.get(Calendar.YEAR),
+        calendario.get(Calendar.MONTH),
+        calendario.get(Calendar.DAY_OF_MONTH)
+    )
 
     val clienteSelecionado = clientes.find {
         it.id == clienteId
+    }
+
+    val clientesDisponiveis = clientes.filter {
+        it.ativo
+    }
+
+    // VALIDACAO
+    val valorNumero = valor
+        .replace("R$", "")
+        .trim()
+        .let { texto ->
+            if (texto.contains(",")) {
+                texto
+                    .replace(".", "")
+                    .replace(",", ".")
+            } else {
+                texto
+            }
+        }
+        .toDoubleOrNull()
+
+    val clienteInvalido =
+        tentouSalvar && clienteSelecionado == null
+
+    val tipoInvalido =
+        tentouSalvar && tipo.isBlank()
+
+    val descricaoInvalida =
+        tentouSalvar && descricao.isBlank()
+
+    val dataInvalida =
+        tentouSalvar && dataEntrega.isBlank()
+
+    val valorInvalido =
+        tentouSalvar && (
+                valorNumero == null ||
+                        !valorNumero.isFinite() ||
+                        valorNumero <= 0.0
+                )
+
+    fun salvarServico() {
+        tentouSalvar = true
+
+        erro = when {
+            clienteSelecionado == null ->
+                "Selecione um cliente."
+
+            tipo.isBlank() ->
+                "Selecione o tipo de serviço."
+
+            descricao.isBlank() ->
+                "Informe a descrição do serviço."
+
+            dataEntrega.isBlank() ->
+                "Selecione a data prevista de entrega."
+
+            valorNumero == null ||
+                    !valorNumero.isFinite() ||
+                    valorNumero <= 0.0 ->
+                "Informe um valor estimado maior que zero."
+
+            else -> ""
+        }
+
+        if (erro.isNotBlank()) {
+            teclado?.hide()
+            foco.clearFocus()
+            return
+        }
+
+        val clienteValido = clienteSelecionado
+            ?: return
+
+        val numeroValido = valorNumero
+            ?: return
+
+        teclado?.hide()
+        foco.clearFocus()
+
+        onSalvar(
+            ServicoUi(
+                id = System.currentTimeMillis(),
+                clienteId = clienteValido.id,
+                clienteNome = clienteValido.nome,
+                titulo = tipo,
+                descricao = descricao.trim(),
+                entrega = dataEntrega,
+                valorEstimado = numeroValido,
+                status = "Orçamento",
+                fotoUri = fotoUri
+            )
+        )
     }
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
@@ -180,7 +290,12 @@ fun NovoServicoScreen(
         focusedBorderColor = Cobre,
         unfocusedBorderColor = Borda,
         focusedTextColor = Azul,
-        unfocusedTextColor = Azul
+        unfocusedTextColor = Azul,
+        focusedLabelColor = Azul,
+        unfocusedLabelColor = Cinza,
+        cursorColor = Azul,
+        errorBorderColor = Vermelho,
+        errorLabelColor = Vermelho
     )
 
     BackHandler(onBack = onVoltar)
@@ -198,11 +313,17 @@ fun NovoServicoScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Azul)
-                .height(58.dp)
+                .heightIn(min = 58.dp)
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onVoltar) {
+            IconButton(
+                onClick = onVoltar,
+                modifier = Modifier.sizeIn(
+                    minWidth = 48.dp,
+                    minHeight = 48.dp
+                )
+            ) {
                 Icon(
                     imageVector =
                         Icons.AutoMirrored.Outlined.ArrowBack,
@@ -229,26 +350,36 @@ fun NovoServicoScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 22.dp)
         ) {
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(22.dp))
 
-            // AREA DE FOTO
+            // FOTO DO SERVICO
+            Text(
+                text = "Foto do serviço (opcional)",
+                color = Azul,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(Modifier.height(9.dp))
+
             if (fotoUri == null) {
-
-                // ANTES DE SELECIONAR
                 Surface(
                     onClick = {
                         seletorFoto.launch("image/*")
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(132.dp),
+                        .heightIn(min = 132.dp),
                     shape = RoundedCornerShape(15.dp),
                     color = Color.White,
                     border = BorderStroke(1.dp, Borda)
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        modifier = Modifier.padding(15.dp),
+                        horizontalAlignment =
+                            Alignment.CenterHorizontally,
+                        verticalArrangement =
+                            Arrangement.Center
                     ) {
                         Icon(
                             imageVector =
@@ -261,25 +392,23 @@ fun NovoServicoScreen(
                         Spacer(Modifier.height(8.dp))
 
                         Text(
-                            text = "Adicionar foto (opcional)",
-                            fontSize = 13.sp,
+                            text = "Adicionar foto",
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Azul
                         )
 
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(5.dp))
 
                         Text(
                             text = "Toque para escolher uma imagem",
-                            fontSize = 11.sp,
-                            color = Cinza
+                            fontSize = 12.sp,
+                            color = Cinza,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
-
             } else {
-
-                // DEPOIS DE SELECIONAR
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(15.dp),
@@ -291,13 +420,11 @@ fun NovoServicoScreen(
                     Column(
                         modifier = Modifier.padding(10.dp)
                     ) {
-
-                        // PREVIA DA FOTO REAL
                         if (imagemSelecionada != null) {
                             Image(
                                 bitmap = imagemSelecionada!!,
                                 contentDescription =
-                                    "Prévia da foto do serviço",
+                                    "Prévia da foto selecionada para o serviço",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -321,16 +448,23 @@ fun NovoServicoScreen(
                                     text = "Carregando foto ou imagem indisponível",
                                     color = Cinza,
                                     fontSize = 12.sp,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .semantics {
+                                            liveRegion =
+                                                LiveRegionMode.Polite
+                                        }
                                 )
                             }
                         }
 
                         Spacer(Modifier.height(10.dp))
 
-                        // CONFIRMACAO DA FOTO
                         Row(
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.semantics {
+                                liveRegion = LiveRegionMode.Polite
+                            }
                         ) {
                             Icon(
                                 imageVector =
@@ -340,19 +474,18 @@ fun NovoServicoScreen(
                                 modifier = Modifier.size(18.dp)
                             )
 
-                            Spacer(Modifier.width(6.dp))
+                            Spacer(Modifier.width(7.dp))
 
                             Text(
                                 text = "Foto selecionada",
                                 color = Azul,
-                                fontSize = 12.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(10.dp))
 
-                        // BOTOES TROCAR E REMOVER
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement =
@@ -362,18 +495,21 @@ fun NovoServicoScreen(
                                 onClick = {
                                     seletorFoto.launch("image/*")
                                 },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp),
                                 shape = RoundedCornerShape(10.dp),
                                 border = BorderStroke(1.dp, Borda),
                                 contentPadding = PaddingValues(
-                                    horizontal = 8.dp
+                                    horizontal = 8.dp,
+                                    vertical = 8.dp
                                 )
                             ) {
                                 Icon(
                                     imageVector =
                                         Icons.Outlined.Refresh,
                                     contentDescription = null,
-                                    modifier = Modifier.size(17.dp),
+                                    modifier = Modifier.size(18.dp),
                                     tint = Azul
                                 )
 
@@ -382,7 +518,7 @@ fun NovoServicoScreen(
                                 Text(
                                     text = "Trocar",
                                     color = Azul,
-                                    fontSize = 12.sp
+                                    fontSize = 13.sp
                                 )
                             }
 
@@ -390,27 +526,30 @@ fun NovoServicoScreen(
                                 onClick = {
                                     fotoUri = null
                                 },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp),
                                 shape = RoundedCornerShape(10.dp),
                                 border = BorderStroke(1.dp, Borda),
                                 contentPadding = PaddingValues(
-                                    horizontal = 8.dp
+                                    horizontal = 8.dp,
+                                    vertical = 8.dp
                                 )
                             ) {
                                 Icon(
                                     imageVector =
                                         Icons.Outlined.DeleteOutline,
                                     contentDescription = null,
-                                    modifier = Modifier.size(17.dp),
-                                    tint = Color(0xFFB34D4D)
+                                    modifier = Modifier.size(18.dp),
+                                    tint = Vermelho
                                 )
 
                                 Spacer(Modifier.width(5.dp))
 
                                 Text(
                                     text = "Remover",
-                                    color = Color(0xFFB34D4D),
-                                    fontSize = 12.sp
+                                    color = Vermelho,
+                                    fontSize = 13.sp
                                 )
                             }
                         }
@@ -418,11 +557,11 @@ fun NovoServicoScreen(
                 }
             }
 
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(19.dp))
 
             // CLIENTE
             Text(
-                text = "Cliente",
+                text = "Cliente *",
                 color = Azul,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -434,16 +573,30 @@ fun NovoServicoScreen(
                 OutlinedButton(
                     onClick = {
                         menuClientes = true
+                        teclado?.hide()
+                        foco.clearFocus()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .heightIn(min = 52.dp)
+                        .then(
+                            if (clienteInvalido) {
+                                Modifier.semantics {
+                                    error("Selecione um cliente.")
+                                }
+                            } else {
+                                Modifier
+                            }
+                        ),
                     shape = RoundedCornerShape(9.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.White,
                         contentColor = Azul
                     ),
-                    border = BorderStroke(1.dp, Borda)
+                    border = BorderStroke(
+                        1.dp,
+                        if (clienteInvalido) Vermelho else Borda
+                    )
                 ) {
                     Text(
                         text = clienteSelecionado?.nome
@@ -458,7 +611,7 @@ fun NovoServicoScreen(
 
                     Icon(
                         imageVector = Icons.Outlined.ExpandMore,
-                        contentDescription = "Selecionar cliente"
+                        contentDescription = null
                     )
                 }
 
@@ -468,26 +621,40 @@ fun NovoServicoScreen(
                         menuClientes = false
                     }
                 ) {
-                    clientes.filter { it.ativo }.forEach { cliente ->
+                    if (clientesDisponiveis.isEmpty()) {
                         DropdownMenuItem(
                             text = {
-                                Text(cliente.nome)
+                                Text("Nenhum cliente disponível")
                             },
-                            onClick = {
-                                clienteId = cliente.id
-                                menuClientes = false
-                                erro = ""
-                            }
+                            enabled = false,
+                            onClick = {}
                         )
+                    } else {
+                        clientesDisponiveis.forEach { cliente ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(cliente.nome)
+                                },
+                                onClick = {
+                                    clienteId = cliente.id
+                                    menuClientes = false
+                                    erro = ""
+                                }
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(Modifier.height(18.dp))
+            if (clienteInvalido) {
+                ErroNovoServico("Selecione um cliente.")
+            }
+
+            Spacer(Modifier.height(19.dp))
 
             // TIPO DE SERVICO
             Text(
-                text = "Tipo de serviço",
+                text = "Tipo de serviço *",
                 color = Azul,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -499,12 +666,28 @@ fun NovoServicoScreen(
                 OutlinedButton(
                     onClick = {
                         menuTipos = true
+                        teclado?.hide()
+                        foco.clearFocus()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .heightIn(min = 52.dp)
+                        .then(
+                            if (tipoInvalido) {
+                                Modifier.semantics {
+                                    error(
+                                        "Selecione o tipo de serviço."
+                                    )
+                                }
+                            } else {
+                                Modifier
+                            }
+                        ),
                     shape = RoundedCornerShape(9.dp),
-                    border = BorderStroke(1.dp, Borda),
+                    border = BorderStroke(
+                        1.dp,
+                        if (tipoInvalido) Vermelho else Borda
+                    ),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.White,
                         contentColor = Azul
@@ -524,7 +707,7 @@ fun NovoServicoScreen(
 
                     Icon(
                         imageVector = Icons.Outlined.ExpandMore,
-                        contentDescription = "Selecionar tipo"
+                        contentDescription = null
                     )
                 }
 
@@ -549,27 +732,38 @@ fun NovoServicoScreen(
                 }
             }
 
-            Spacer(Modifier.height(18.dp))
+            if (tipoInvalido) {
+                ErroNovoServico(
+                    "Selecione o tipo de serviço."
+                )
+            }
+
+            Spacer(Modifier.height(19.dp))
 
             // DESCRICAO
-            Text(
-                text = "Descrição",
-                color = Azul,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.height(7.dp))
-
             OutlinedTextField(
                 value = descricao,
                 onValueChange = {
                     descricao = it
                     erro = ""
                 },
+                label = {
+                    Text("Descrição do serviço *")
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 115.dp),
+                    .heightIn(min = 115.dp)
+                    .then(
+                        if (descricaoInvalida) {
+                            Modifier.semantics {
+                                error(
+                                    "Informe a descrição do serviço."
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 placeholder = {
                     Text(
                         text = "Descreva o serviço...",
@@ -578,15 +772,26 @@ fun NovoServicoScreen(
                     )
                 },
                 minLines = 3,
+                maxLines = 5,
+                isError = descricaoInvalida,
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next
+                ),
                 shape = RoundedCornerShape(9.dp),
                 colors = coresCampo
             )
 
-            Spacer(Modifier.height(18.dp))
+            if (descricaoInvalida) {
+                ErroNovoServico(
+                    "Informe a descrição do serviço."
+                )
+            }
 
-            // DATA DE ENTREGA
+            Spacer(Modifier.height(19.dp))
+
+            // DATA PREVISTA DE ENTREGA
             Text(
-                text = "Data prevista de entrega",
+                text = "Data prevista de entrega *",
                 color = Azul,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -596,13 +801,29 @@ fun NovoServicoScreen(
 
             OutlinedButton(
                 onClick = {
+                    teclado?.hide()
+                    foco.clearFocus()
                     seletorData.show()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .heightIn(min = 52.dp)
+                    .then(
+                        if (dataInvalida) {
+                            Modifier.semantics {
+                                error(
+                                    "Selecione a data prevista de entrega."
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 shape = RoundedCornerShape(9.dp),
-                border = BorderStroke(1.dp, Borda),
+                border = BorderStroke(
+                    1.dp,
+                    if (dataInvalida) Vermelho else Borda
+                ),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
                     contentColor = Azul
@@ -610,7 +831,7 @@ fun NovoServicoScreen(
             ) {
                 Text(
                     text = dataEntrega.ifEmpty {
-                        "DD/MM/AAAA"
+                        "Selecionar data"
                     },
                     color = if (dataEntrega.isEmpty()) {
                         Cinza
@@ -622,56 +843,95 @@ fun NovoServicoScreen(
 
                 Icon(
                     imageVector = Icons.Outlined.CalendarMonth,
-                    contentDescription = "Selecionar data",
+                    contentDescription = null,
                     tint = Cinza
                 )
             }
 
-            Spacer(Modifier.height(18.dp))
+            if (dataInvalida) {
+                ErroNovoServico(
+                    "Selecione a data prevista de entrega."
+                )
+            }
+
+            Spacer(Modifier.height(19.dp))
 
             // VALOR ESTIMADO
-            Text(
-                text = "Valor estimado",
-                color = Azul,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.height(7.dp))
-
             OutlinedTextField(
                 value = valor,
                 onValueChange = {
                     valor = it
                     erro = ""
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (valorInvalido) {
+                            Modifier.semantics {
+                                error(
+                                    "Informe um valor estimado maior que zero."
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    ),
+                label = {
+                    Text("Valor estimado (R$) *")
+                },
                 placeholder = {
                     Text(
-                        text = "R$ 0,00",
+                        text = "0,00",
                         color = Cinza
                     )
                 },
                 singleLine = true,
+                isError = valorInvalido,
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        teclado?.hide()
+                        foco.clearFocus()
+                    }
                 ),
                 shape = RoundedCornerShape(9.dp),
                 colors = coresCampo
             )
 
-            // MENSAGEM DE ERRO
+            if (valorInvalido) {
+                ErroNovoServico(
+                    "Informe um valor estimado maior que zero."
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Text(
+                text = "* Campos obrigatórios",
+                color = Cinza,
+                fontSize = 12.sp
+            )
+
             if (erro.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
 
                 Text(
                     text = erro,
-                    color = Color(0xFFB34D4D),
-                    fontSize = 12.sp
+                    color = Vermelho,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics {
+                            liveRegion = LiveRegionMode.Polite
+                        }
                 )
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(26.dp))
         }
 
         // BOTOES INFERIORES
@@ -685,7 +945,7 @@ fun NovoServicoScreen(
                 onClick = onVoltar,
                 modifier = Modifier
                     .weight(1f)
-                    .height(52.dp),
+                    .heightIn(min = 52.dp),
                 shape = RoundedCornerShape(10.dp),
                 border = BorderStroke(1.dp, Borda),
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -701,52 +961,11 @@ fun NovoServicoScreen(
 
             Button(
                 onClick = {
-                    val numero = valor
-                        .replace(".", "")
-                        .replace(",", ".")
-                        .replace("R$", "")
-                        .trim()
-                        .toDoubleOrNull()
-
-                    erro = when {
-                        clienteSelecionado == null ->
-                            "Selecione um cliente."
-
-                        tipo.isBlank() ->
-                            "Selecione o tipo de serviço."
-
-                        descricao.isBlank() ->
-                            "Informe a descrição."
-
-                        dataEntrega.isBlank() ->
-                            "Selecione a data de entrega."
-
-                        numero == null ||
-                                !numero.isFinite() ||
-                                numero <= 0.0 ->
-                            "Informe um valor estimado válido."
-
-                        else -> {
-                            onSalvar(
-                                ServicoUi(
-                                    id = System.currentTimeMillis(),
-                                    clienteId = clienteSelecionado.id,
-                                    clienteNome = clienteSelecionado.nome,
-                                    titulo = tipo,
-                                    descricao = descricao.trim(),
-                                    entrega = dataEntrega,
-                                    valorEstimado = numero,
-                                    status = "Orçamento",
-                                    fotoUri = fotoUri
-                                )
-                            )
-                            ""
-                        }
-                    }
+                    salvarServico()
                 },
                 modifier = Modifier
                     .weight(1f)
-                    .height(52.dp),
+                    .heightIn(min = 52.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Azul,
@@ -761,4 +980,22 @@ fun NovoServicoScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ErroNovoServico(
+    mensagem: String
+) {
+    Text(
+        text = mensagem,
+        color = Vermelho,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp)
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+            }
+    )
 }
