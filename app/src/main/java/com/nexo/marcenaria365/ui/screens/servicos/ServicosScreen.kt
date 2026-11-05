@@ -2,7 +2,6 @@
 package com.nexo.marcenaria365.ui.screens.servicos
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -33,6 +32,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -40,14 +40,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private val FundoServicos = Color(0xFFFAF6F0)
-private val AzulServicos = Color(0xFF193447)
-private val CobreServicos = Color(0xFF94613C)
-private val CinzaServicos = Color(0xFF53616A)
-private val BordaServicos = Color(0xFFB5B5B0)
-private val VerdeServicos = Color(0xFF237A58)
-private val BrancoServicos = Color.White
 
 @Composable
 fun ServicosScreen(
@@ -58,6 +50,8 @@ fun ServicosScreen(
     onNovoServicoClick: () -> Unit,
     onServicoClick: (ServicoUi) -> Unit
 ) {
+    val cores = MaterialTheme.colorScheme
+
     var pesquisa by rememberSaveable {
         mutableStateOf("")
     }
@@ -71,13 +65,18 @@ fun ServicosScreen(
 
     BackHandler(onBack = onInicioClick)
 
+    // O status interno continua sendo "Orçamento".
+    // Apenas o nome apresentado ao usuário muda.
     val servicosFiltrados = servicos.filter { servico ->
+
         val correspondeFiltro = when (filtro) {
+
             "Em andamento" ->
                 servico.status == "Em produção"
 
-            "Orçamentos" ->
-                servico.status == "Orçamento"
+            "Aguardando" ->
+                servico.status == "Orçamento" ||
+                        servico.status == "AGUARDANDO"
 
             "Concluídos" ->
                 servico.status == "Concluído"
@@ -101,14 +100,19 @@ fun ServicosScreen(
         correspondeFiltro && correspondePesquisa
     }
 
+    // CONTADORES COM DADOS REAIS
     val filtros = listOf(
         "Todos" to servicos.size,
+
         "Em andamento" to servicos.count {
             it.status == "Em produção"
         },
-        "Orçamentos" to servicos.count {
-            it.status == "Orçamento"
+
+        "Aguardando" to servicos.count {
+            it.status == "Orçamento" ||
+                    it.status == "AGUARDANDO"
         },
+
         "Concluídos" to servicos.count {
             it.status == "Concluído"
         }
@@ -118,7 +122,8 @@ fun ServicosScreen(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
-        containerColor = FundoServicos,
+
+        containerColor = cores.background,
 
         floatingActionButton = {
             FloatingActionButton(
@@ -127,8 +132,8 @@ fun ServicosScreen(
                     minWidth = 56.dp,
                     minHeight = 56.dp
                 ),
-                containerColor = AzulServicos,
-                contentColor = BrancoServicos,
+                containerColor = cores.primary,
+                contentColor = cores.onPrimary,
                 shape = RoundedCornerShape(15.dp)
             ) {
                 Icon(
@@ -141,10 +146,11 @@ fun ServicosScreen(
 
         bottomBar = {
             NavigationBar(
-                containerColor = BrancoServicos,
+                containerColor = cores.surface,
                 tonalElevation = 0.dp,
                 modifier = Modifier.heightIn(min = 75.dp)
             ) {
+
                 NavigationBarItem(
                     selected = false,
                     onClick = onInicioClick,
@@ -155,7 +161,10 @@ fun ServicosScreen(
                         )
                     },
                     label = {
-                        Text("Início", fontSize = 12.sp)
+                        Text(
+                            text = "Início",
+                            fontSize = 12.sp
+                        )
                     },
                     colors = coresMenuServicos()
                 )
@@ -171,7 +180,10 @@ fun ServicosScreen(
                         )
                     },
                     label = {
-                        Text("Clientes", fontSize = 12.sp)
+                        Text(
+                            text = "Clientes",
+                            fontSize = 12.sp
+                        )
                     },
                     colors = coresMenuServicos()
                 )
@@ -187,7 +199,10 @@ fun ServicosScreen(
                         )
                     },
                     label = {
-                        Text("Serviços", fontSize = 12.sp)
+                        Text(
+                            text = "Serviços",
+                            fontSize = 12.sp
+                        )
                     },
                     colors = coresMenuServicos()
                 )
@@ -202,19 +217,24 @@ fun ServicosScreen(
                         )
                     },
                     label = {
-                        Text("Mais", fontSize = 12.sp)
+                        Text(
+                            text = "Mais",
+                            fontSize = 12.sp
+                        )
                     },
                     colors = coresMenuServicos()
                 )
             }
         }
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
 
+            // CABEÇALHO
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -225,6 +245,7 @@ fun ServicosScreen(
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 IconButton(
                     onClick = onInicioClick,
                     modifier = Modifier.sizeIn(
@@ -236,7 +257,7 @@ fun ServicosScreen(
                         imageVector =
                             Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Voltar ao início",
-                        tint = AzulServicos
+                        tint = cores.onBackground
                     )
                 }
 
@@ -245,16 +266,19 @@ fun ServicosScreen(
                 Column {
                     Text(
                         text = "Serviços",
-                        color = AzulServicos,
+                        color = cores.onBackground,
                         fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.semantics {
+                            heading()
+                        }
                     )
 
                     Spacer(Modifier.height(4.dp))
 
                     Text(
                         text = "Acompanhe seus projetos e entregas.",
-                        color = CinzaServicos,
+                        color = cores.onSurfaceVariant,
                         fontSize = 13.sp,
                         lineHeight = 19.sp
                     )
@@ -263,60 +287,75 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(17.dp))
 
+            // PESQUISA
             OutlinedTextField(
                 value = pesquisa,
+
                 onValueChange = {
                     pesquisa = it
                 },
+
                 label = {
                     Text(
                         text = "Buscar serviços",
                         fontSize = 13.sp
                     )
                 },
+
                 placeholder = {
                     Text(
                         text = "Nome do serviço ou cliente",
-                        color = CinzaServicos,
                         fontSize = 13.sp
                     )
                 },
+
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Search,
                         contentDescription = null,
-                        tint = CinzaServicos
+                        tint = cores.onSurfaceVariant
                     )
                 },
+
                 singleLine = true,
+
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Search
                 ),
+
                 keyboardActions = KeyboardActions(
                     onSearch = {
                         teclado?.hide()
                         foco.clearFocus()
                     }
                 ),
+
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
+
                 shape = RoundedCornerShape(12.dp),
+
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = BrancoServicos,
-                    unfocusedContainerColor = BrancoServicos,
-                    focusedBorderColor = CobreServicos,
-                    unfocusedBorderColor = BordaServicos,
-                    focusedLabelColor = AzulServicos,
-                    unfocusedLabelColor = CinzaServicos,
-                    focusedTextColor = AzulServicos,
-                    unfocusedTextColor = AzulServicos,
-                    cursorColor = AzulServicos
+                    focusedContainerColor = cores.surface,
+                    unfocusedContainerColor = cores.surface,
+                    focusedBorderColor = cores.secondary,
+                    unfocusedBorderColor = cores.outline,
+                    focusedLabelColor = cores.onSurface,
+                    unfocusedLabelColor = cores.onSurfaceVariant,
+                    focusedTextColor = cores.onSurface,
+                    unfocusedTextColor = cores.onSurface,
+                    focusedPlaceholderColor =
+                        cores.onSurfaceVariant,
+                    unfocusedPlaceholderColor =
+                        cores.onSurfaceVariant,
+                    cursorColor = cores.secondary
                 )
             )
 
             Spacer(Modifier.height(15.dp))
 
+            // FILTROS
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(
@@ -325,21 +364,25 @@ fun ServicosScreen(
                 horizontalArrangement =
                     Arrangement.spacedBy(8.dp)
             ) {
+
                 items(
                     items = filtros,
                     key = { it.first }
                 ) { (nome, quantidade) ->
+
                     var focado by remember {
                         mutableStateOf(false)
                     }
 
                     FilterChip(
                         selected = filtro == nome,
+
                         onClick = {
                             filtro = nome
                             teclado?.hide()
                             foco.clearFocus()
                         },
+
                         label = {
                             Text(
                                 text = "$nome ($quantidade)",
@@ -352,6 +395,7 @@ fun ServicosScreen(
                                     }
                             )
                         },
+
                         modifier = Modifier
                             .heightIn(min = 48.dp)
                             .onFocusChanged {
@@ -361,28 +405,35 @@ fun ServicosScreen(
                                 if (focado) {
                                     Modifier.border(
                                         width = 2.dp,
-                                        color = AzulServicos,
-                                        shape = RoundedCornerShape(16.dp)
+                                        color = cores.primary,
+                                        shape = RoundedCornerShape(
+                                            16.dp
+                                        )
                                     )
                                 } else {
                                     Modifier
                                 }
                             ),
+
                         shape = RoundedCornerShape(16.dp),
+
                         colors =
                             FilterChipDefaults.filterChipColors(
-                                containerColor = BrancoServicos,
+                                containerColor = cores.surface,
                                 selectedContainerColor =
-                                    Color(0xFFF1E4D7),
-                                selectedLabelColor = AzulServicos,
-                                labelColor = AzulServicos
+                                    cores.primaryContainer,
+                                selectedLabelColor =
+                                    cores.onPrimaryContainer,
+                                labelColor = cores.onSurface
                             ),
+
                         border =
                             FilterChipDefaults.filterChipBorder(
                                 enabled = true,
                                 selected = filtro == nome,
-                                borderColor = BordaServicos,
-                                selectedBorderColor = CobreServicos
+                                borderColor = cores.outline,
+                                selectedBorderColor =
+                                    cores.secondary
                             )
                     )
                 }
@@ -390,13 +441,14 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            // QUANTIDADE DE RESULTADOS
             Text(
                 text = if (servicosFiltrados.size == 1) {
                     "1 serviço encontrado"
                 } else {
                     "${servicosFiltrados.size} serviços encontrados"
                 },
-                color = CinzaServicos,
+                color = cores.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
@@ -407,7 +459,9 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            // LISTA
             if (servicosFiltrados.isEmpty()) {
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -415,6 +469,7 @@ fun ServicosScreen(
                         .padding(horizontal = 20.dp),
                     contentAlignment = Alignment.Center
                 ) {
+
                     Text(
                         text = if (pesquisa.isNotBlank()) {
                             "Nenhum serviço encontrado para sua pesquisa."
@@ -423,29 +478,36 @@ fun ServicosScreen(
                         } else {
                             "Nenhum serviço cadastrado."
                         },
-                        color = CinzaServicos,
+
+                        color = cores.onSurfaceVariant,
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
+
                         modifier = Modifier.semantics {
                             liveRegion = LiveRegionMode.Polite
                         }
                     )
                 }
+
             } else {
+
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
+
                     contentPadding = PaddingValues(
                         start = 20.dp,
                         end = 20.dp,
                         bottom = 85.dp
                     )
                 ) {
+
                     items(
                         items = servicosFiltrados,
                         key = { it.id }
                     ) { servico ->
+
                         LinhaServico(
                             servico = servico,
                             onClick = {
@@ -454,7 +516,7 @@ fun ServicosScreen(
                         )
 
                         HorizontalDivider(
-                            color = BordaServicos,
+                            color = cores.outlineVariant,
                             thickness = 0.7.dp
                         )
                     }
@@ -469,15 +531,57 @@ private fun LinhaServico(
     servico: ServicoUi,
     onClick: () -> Unit
 ) {
+    val cores = MaterialTheme.colorScheme
+
     var focado by remember {
         mutableStateOf(false)
     }
+
+    // Apenas muda o texto apresentado.
+    // O status original permanece intacto.
+    val situacaoVisivel = rotuloSituacaoServico(
+        servico.status
+    )
 
     val descricaoAcessivel =
         "Abrir serviço ${servico.titulo}. " +
                 "Cliente: ${servico.clienteNome}. " +
                 "Entrega: ${servico.entrega}. " +
-                "Situação: ${servico.status}."
+                "Situação: $situacaoVisivel."
+
+    val corSituacaoFundo = when (servico.status) {
+        "Concluído" ->
+            cores.tertiaryContainer
+
+        "Em produção" ->
+            cores.primaryContainer
+
+        "Orçamento", "AGUARDANDO" ->
+            cores.secondaryContainer
+
+        "Cancelado" ->
+            cores.errorContainer
+
+        else ->
+            cores.surfaceVariant
+    }
+
+    val corSituacaoTexto = when (servico.status) {
+        "Concluído" ->
+            cores.onTertiaryContainer
+
+        "Em produção" ->
+            cores.onPrimaryContainer
+
+        "Orçamento", "AGUARDANDO" ->
+            cores.onSecondaryContainer
+
+        "Cancelado" ->
+            cores.onErrorContainer
+
+        else ->
+            cores.onSurfaceVariant
+    }
 
     Row(
         modifier = Modifier
@@ -489,7 +593,7 @@ private fun LinhaServico(
                 if (focado) {
                     Modifier.border(
                         width = 2.dp,
-                        color = AzulServicos,
+                        color = cores.primary,
                         shape = RoundedCornerShape(12.dp)
                     )
                 } else {
@@ -508,8 +612,11 @@ private fun LinhaServico(
                 horizontal = 6.dp,
                 vertical = 12.dp
             ),
+
         verticalAlignment = Alignment.CenterVertically
     ) {
+
+        // FOTO ORIGINAL DO SERVIÇO
         FotoServico(
             fotoUri = servico.fotoUri,
             modifier = Modifier.size(52.dp)
@@ -522,9 +629,10 @@ private fun LinhaServico(
             verticalArrangement =
                 Arrangement.spacedBy(6.dp)
         ) {
+
             Text(
                 text = servico.titulo,
-                color = AzulServicos,
+                color = cores.onBackground,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
@@ -533,7 +641,7 @@ private fun LinhaServico(
 
             Text(
                 text = servico.clienteNome,
-                color = CinzaServicos,
+                color = cores.onSurfaceVariant,
                 fontSize = 13.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -541,30 +649,24 @@ private fun LinhaServico(
 
             Text(
                 text = "Entrega: ${servico.entrega}",
-                color = CinzaServicos,
+                color = cores.onSurfaceVariant,
                 fontSize = 12.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
+            // SITUAÇÃO COM NOVO RÓTULO
             Surface(
-                modifier = Modifier.align(Alignment.Start),
-                color = when (servico.status) {
-                    "Concluído" -> Color(0xFFE5F4EC)
-                    "Em produção" -> Color(0xFFF6E8D8)
-                    "Orçamento" -> Color(0xFFFFF3E2)
-                    else -> Color(0xFFF1EEEE)
-                },
+                modifier = Modifier.align(
+                    Alignment.Start
+                ),
+                color = corSituacaoFundo,
                 shape = RoundedCornerShape(7.dp)
             ) {
+
                 Text(
-                    text = servico.status,
-                    color = when (servico.status) {
-                        "Concluído" -> VerdeServicos
-                        "Em produção" -> CobreServicos
-                        "Orçamento" -> Color(0xFF825B12)
-                        else -> AzulServicos
-                    },
+                    text = situacaoVisivel,
+                    color = corSituacaoTexto,
                     fontSize = 12.sp,
                     lineHeight = 17.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -581,18 +683,21 @@ private fun LinhaServico(
         Icon(
             imageVector = Icons.Outlined.ChevronRight,
             contentDescription = null,
-            tint = CinzaServicos,
+            tint = cores.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
     }
 }
 
 @Composable
-private fun coresMenuServicos() =
-    NavigationBarItemDefaults.colors(
-        selectedIconColor = AzulServicos,
-        selectedTextColor = AzulServicos,
-        indicatorColor = Color(0xFFF1E8DE),
-        unselectedIconColor = CinzaServicos,
-        unselectedTextColor = CinzaServicos
+private fun coresMenuServicos(): NavigationBarItemColors {
+    val cores = MaterialTheme.colorScheme
+
+    return NavigationBarItemDefaults.colors(
+        selectedIconColor = cores.primary,
+        selectedTextColor = cores.onSurface,
+        indicatorColor = cores.primaryContainer,
+        unselectedIconColor = cores.onSurfaceVariant,
+        unselectedTextColor = cores.onSurfaceVariant
     )
+}
