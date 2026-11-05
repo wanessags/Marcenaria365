@@ -12,7 +12,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Phone
@@ -145,18 +144,14 @@ fun ClienteEdicaoScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(ClienteCores.Fundo)
-            .windowInsetsPadding(
-                WindowInsets.safeDrawing
-            )
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .imePadding()
-            .verticalScroll(
-                rememberScrollState()
-            )
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
     ) {
         Spacer(Modifier.height(12.dp))
 
-        // CABECALHO ORIGINAL
+        // CABEÇALHO ORIGINAL
         ClienteCabecalho(
             titulo = "Editar cliente",
             subtitulo = "Atualize os dados de contato.",
@@ -391,7 +386,7 @@ fun ClienteEdicaoScreen(
 
         Spacer(Modifier.height(22.dp))
 
-        // SITUACAO DO CLIENTE
+        // SITUAÇÃO DO CLIENTE
         ClienteTituloSecao(
             titulo = "Situação do cliente"
         )
@@ -480,7 +475,7 @@ fun ClienteEdicaoScreen(
 
         Spacer(Modifier.height(26.dp))
 
-        // SALVAR ALTERACOES
+        // SALVAR ALTERAÇÕES
         Button(
             onClick = {
                 validarAlteracoes()
@@ -531,117 +526,221 @@ fun ClienteEdicaoScreen(
         Spacer(Modifier.height(24.dp))
     }
 
-    // CONFIRMACAO ANTES DE SALVAR
+    // NOVO DESIGN DA CONFIRMAÇÃO
     if (mostrarConfirmacao) {
         AlertDialog(
             onDismissRequest = {
                 mostrarConfirmacao = false
             },
-            icon = {
-                Icon(
-                    imageVector =
-                        Icons.Outlined.CheckCircleOutline,
-                    contentDescription = null,
-                    tint = VerdeEdicao
-                )
-            },
+
             title = {
-                Text(
-                    text = "Salvar alterações?",
-                    color = ClienteCores.Azul,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
                 Column(
-                    verticalArrangement =
-                        Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    Text(
+                        text = "Salvar alterações?",
+                        color = ClienteCores.Azul,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 26.sp
+                    )
+
+                    Spacer(Modifier.height(7.dp))
+
                     Text(
                         text = "Confira os dados antes de confirmar.",
-                        color = CinzaEdicao
+                        color = CinzaEdicao,
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp,
+                        fontWeight = FontWeight.Normal
                     )
+                }
+            },
 
-                    HorizontalDivider(
-                        color = BordaEdicao
+            text = {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = ClienteCores.Fundo,
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = ClienteCores.Borda
                     )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement =
+                            Arrangement.spacedBy(12.dp)
+                    ) {
+                        DadoConfirmacaoEdicao(
+                            rotulo = "Nome completo",
+                            valor = nome.trim()
+                        )
 
-                    Text(
-                        text = "Nome: ${nome.trim()}",
-                        color = ClienteCores.Azul,
-                        fontSize = 13.sp
-                    )
+                        HorizontalDivider(
+                            color = ClienteCores.Borda
+                        )
 
-                    Text(
-                        text = "Telefone: ${telefone.trim()}",
-                        color = ClienteCores.Azul,
-                        fontSize = 13.sp
-                    )
+                        DadoConfirmacaoEdicao(
+                            rotulo = "Telefone",
+                            valor = telefone.trim()
+                        )
 
-                    Text(
-                        text = "E-mail: ${
-                            emailLimpo.ifBlank {
+                        HorizontalDivider(
+                            color = ClienteCores.Borda
+                        )
+
+                        DadoConfirmacaoEdicao(
+                            rotulo = "E-mail",
+                            valor = emailLimpo.ifBlank {
                                 "Não informado"
                             }
-                        }",
-                        color = ClienteCores.Azul,
-                        fontSize = 13.sp
-                    )
-
-                    Text(
-                        text = if (ativo) {
-                            "Situação selecionada: Ativo"
-                        } else {
-                            "Situação selecionada: Inativo"
-                        },
-                        color = ClienteCores.Azul,
-                        fontSize = 13.sp
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarConfirmacao = false
-
-                        onSalvar(
-                            cliente.copy(
-                                nome = nome.trim(),
-                                telefone = telefone.trim(),
-                                email = emailLimpo,
-                                ativo = ativo
-                            )
                         )
-                    },
-                    modifier = Modifier.heightIn(
-                        min = 48.dp
-                    )
-                ) {
-                    Text(
-                        text = "Confirmar",
-                        color = ClienteCores.Azul,
-                        fontWeight = FontWeight.Bold
-                    )
+
+                        HorizontalDivider(
+                            color = ClienteCores.Borda
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Situação",
+                                color = CinzaEdicao,
+                                fontSize = 12.sp
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (ativo) {
+                                    Color(0xFFE5F4EC)
+                                } else {
+                                    Color(0xFFF1EEEE)
+                                }
+                            ) {
+                                Text(
+                                    text = if (ativo) {
+                                        "Ativo"
+                                    } else {
+                                        "Inativo"
+                                    },
+                                    color = if (ativo) {
+                                        VerdeEdicao
+                                    } else {
+                                        ClienteCores.Azul
+                                    },
+                                    fontSize = 12.sp,
+                                    fontWeight =
+                                        FontWeight.SemiBold,
+                                    modifier = Modifier.padding(
+                                        horizontal = 12.dp,
+                                        vertical = 6.dp
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
             },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        mostrarConfirmacao = false
-                    },
-                    modifier = Modifier.heightIn(
-                        min = 48.dp
-                    )
+
+            confirmButton = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 12.dp,
+                            vertical = 4.dp
+                        ),
+                    verticalArrangement =
+                        Arrangement.spacedBy(9.dp)
                 ) {
-                    Text(
-                        text = "Corrigir",
-                        color = CinzaEdicao,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Button(
+                        onClick = {
+                            mostrarConfirmacao = false
+
+                            onSalvar(
+                                cliente.copy(
+                                    nome = nome.trim(),
+                                    telefone = telefone.trim(),
+                                    email = emailLimpo,
+                                    ativo = ativo
+                                )
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 50.dp),
+                        shape = RoundedCornerShape(11.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ClienteCores.Azul,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = "Confirmar alterações",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            mostrarConfirmacao = false
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp),
+                        shape = RoundedCornerShape(11.dp),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = ClienteCores.Borda
+                        ),
+                        colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White,
+                                contentColor = ClienteCores.Azul
+                            )
+                    ) {
+                        Text(
+                            text = "Corrigir",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             },
+
             containerColor = Color.White,
-            shape = RoundedCornerShape(18.dp)
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun DadoConfirmacaoEdicao(
+    rotulo: String,
+    valor: String
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = rotulo,
+            color = CinzaEdicao,
+            fontSize = 12.sp,
+            lineHeight = 17.sp
+        )
+
+        Text(
+            text = valor,
+            color = ClienteCores.Azul,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            lineHeight = 20.sp
         )
     }
 }
