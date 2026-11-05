@@ -1,34 +1,46 @@
-
 package com.nexo.marcenaria365.ui.screens.servicos
 
 import android.app.DatePickerDialog
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.CheckCircleOutline
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 private val Fundo = Color(0xFFFAF6F0)
@@ -36,6 +48,7 @@ private val Azul = Color(0xFF193447)
 private val Cobre = Color(0xFFBD906E)
 private val Cinza = Color(0xFF929292)
 private val Borda = Color(0xFFE8DFD4)
+private val Verde = Color(0xFF239B7A)
 
 @Composable
 fun NovoServicoScreen(
@@ -43,40 +56,123 @@ fun NovoServicoScreen(
     onVoltar: () -> Unit,
     onSalvar: (ServicoUi) -> Unit
 ) {
-    var clienteId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var tipo by rememberSaveable { mutableStateOf("") }
-    var descricao by rememberSaveable { mutableStateOf("") }
-    var dataEntrega by rememberSaveable { mutableStateOf("") }
-    var valor by rememberSaveable { mutableStateOf("") }
-    var fotoUri by rememberSaveable { mutableStateOf<String?>(null) }
-    var erro by rememberSaveable { mutableStateOf("") }
-    var menuClientes by remember { mutableStateOf(false) }
-    var menuTipos by remember { mutableStateOf(false) }
+    var clienteId by rememberSaveable {
+        mutableStateOf<Long?>(null)
+    }
+
+    var tipo by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var descricao by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var dataEntrega by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var valor by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var fotoUri by rememberSaveable {
+        mutableStateOf<String?>(null)
+    }
+
+    var erro by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var menuClientes by remember {
+        mutableStateOf(false)
+    }
+
+    var menuTipos by remember {
+        mutableStateOf(false)
+    }
 
     val context = LocalContext.current
     val calendario = Calendar.getInstance()
 
+    // SELECIONAR OU TROCAR FOTO
     val seletorFoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        fotoUri = uri?.toString()
+        if (uri != null) {
+            fotoUri = uri.toString()
+        }
     }
 
-    val seletorData = DatePickerDialog(
-        context,
-        { _, ano, mes, dia ->
-            dataEntrega = "%02d/%02d/%04d".format(
-                dia,
-                mes + 1,
-                ano
-            )
-        },
-        calendario.get(Calendar.YEAR),
-        calendario.get(Calendar.MONTH),
-        calendario.get(Calendar.DAY_OF_MONTH)
-    )
+    // CARREGAR PREVIA DA FOTO SELECIONADA
+    val imagemSelecionada by produceState<ImageBitmap?>(
+        initialValue = null,
+        key1 = fotoUri
+    ) {
+        value = null
 
-    val clienteSelecionado = clientes.find { it.id == clienteId }
+        val uriAtual = fotoUri ?: return@produceState
+
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val uri = Uri.parse(uriAtual)
+                val resolver = context.contentResolver
+
+                val limites = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+
+                resolver.openInputStream(uri)?.use { entrada ->
+                    BitmapFactory.decodeStream(
+                        entrada,
+                        null,
+                        limites
+                    )
+                }
+
+                var amostragem = 1
+
+                while (
+                    limites.outWidth / amostragem > 1200 ||
+                    limites.outHeight / amostragem > 1200
+                ) {
+                    amostragem *= 2
+                }
+
+                val opcoes = BitmapFactory.Options().apply {
+                    inSampleSize = amostragem
+                }
+
+                resolver.openInputStream(uri)?.use { entrada ->
+                    BitmapFactory.decodeStream(
+                        entrada,
+                        null,
+                        opcoes
+                    )
+                }?.asImageBitmap()
+            }.getOrNull()
+        }
+    }
+
+    val seletorData = remember(context) {
+        DatePickerDialog(
+            context,
+            { _, ano, mes, dia ->
+                dataEntrega = "%02d/%02d/%04d".format(
+                    dia,
+                    mes + 1,
+                    ano
+                )
+            },
+            calendario.get(Calendar.YEAR),
+            calendario.get(Calendar.MONTH),
+            calendario.get(Calendar.DAY_OF_MONTH)
+        )
+    }
+
+    val clienteSelecionado = clientes.find {
+        it.id == clienteId
+    }
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
@@ -96,6 +192,8 @@ fun NovoServicoScreen(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .imePadding()
     ) {
+
+        // CABECALHO
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -106,7 +204,8 @@ fun NovoServicoScreen(
         ) {
             IconButton(onClick = onVoltar) {
                 Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    imageVector =
+                        Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Voltar",
                     tint = Color.White
                 )
@@ -118,7 +217,7 @@ fun NovoServicoScreen(
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.width(48.dp))
@@ -132,39 +231,196 @@ fun NovoServicoScreen(
         ) {
             Spacer(Modifier.height(24.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .clickable {
+            // AREA DE FOTO
+            if (fotoUri == null) {
+
+                // ANTES DE SELECIONAR
+                Surface(
+                    onClick = {
                         seletorFoto.launch("image/*")
                     },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    Icons.Outlined.AddPhotoAlternate,
-                    contentDescription = "Selecionar foto",
-                    tint = Cinza,
-                    modifier = Modifier.size(43.dp)
-                )
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(132.dp),
+                    shape = RoundedCornerShape(15.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Borda)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Outlined.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint = Cobre,
+                            modifier = Modifier.size(36.dp)
+                        )
 
-                Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(8.dp))
 
-                Text(
-                    text = if (fotoUri == null) {
-                        "Adicionar foto (opcional)"
-                    } else {
-                        "Foto selecionada • Toque para trocar"
-                    },
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Cinza
-                )
+                        Text(
+                            text = "Adicionar foto (opcional)",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Azul
+                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        Text(
+                            text = "Toque para escolher uma imagem",
+                            fontSize = 11.sp,
+                            color = Cinza
+                        )
+                    }
+                }
+
+            } else {
+
+                // DEPOIS DE SELECIONAR
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(15.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    ),
+                    border = BorderStroke(1.dp, Borda)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(10.dp)
+                    ) {
+
+                        // PREVIA DA FOTO REAL
+                        if (imagemSelecionada != null) {
+                            Image(
+                                bitmap = imagemSelecionada!!,
+                                contentDescription =
+                                    "Prévia da foto do serviço",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(165.dp)
+                                    .clip(
+                                        RoundedCornerShape(11.dp)
+                                    )
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(165.dp)
+                                    .background(
+                                        Fundo,
+                                        RoundedCornerShape(11.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Carregando foto ou imagem indisponível",
+                                    color = Cinza,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(10.dp))
+
+                        // CONFIRMACAO DA FOTO
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Outlined.CheckCircleOutline,
+                                contentDescription = null,
+                                tint = Verde,
+                                modifier = Modifier.size(18.dp)
+                            )
+
+                            Spacer(Modifier.width(6.dp))
+
+                            Text(
+                                text = "Foto selecionada",
+                                color = Azul,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // BOTOES TROCAR E REMOVER
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    seletorFoto.launch("image/*")
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Borda),
+                                contentPadding = PaddingValues(
+                                    horizontal = 8.dp
+                                )
+                            ) {
+                                Icon(
+                                    imageVector =
+                                        Icons.Outlined.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(17.dp),
+                                    tint = Azul
+                                )
+
+                                Spacer(Modifier.width(5.dp))
+
+                                Text(
+                                    text = "Trocar",
+                                    color = Azul,
+                                    fontSize = 12.sp
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    fotoUri = null
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Borda),
+                                contentPadding = PaddingValues(
+                                    horizontal = 8.dp
+                                )
+                            ) {
+                                Icon(
+                                    imageVector =
+                                        Icons.Outlined.DeleteOutline,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(17.dp),
+                                    tint = Color(0xFFB34D4D)
+                                )
+
+                                Spacer(Modifier.width(5.dp))
+
+                                Text(
+                                    text = "Remover",
+                                    color = Color(0xFFB34D4D),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.height(18.dp))
 
+            // CLIENTE
             Text(
                 text = "Cliente",
                 color = Azul,
@@ -176,7 +432,9 @@ fun NovoServicoScreen(
 
             Box {
                 OutlinedButton(
-                    onClick = { menuClientes = true },
+                    onClick = {
+                        menuClientes = true
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -185,28 +443,36 @@ fun NovoServicoScreen(
                         containerColor = Color.White,
                         contentColor = Azul
                     ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        Borda
-                    )
+                    border = BorderStroke(1.dp, Borda)
                 ) {
                     Text(
                         text = clienteSelecionado?.nome
                             ?: "Selecione o cliente",
                         modifier = Modifier.weight(1f),
-                        color = if (clienteSelecionado == null) Cinza else Azul
+                        color = if (clienteSelecionado == null) {
+                            Cinza
+                        } else {
+                            Azul
+                        }
                     )
 
-                    Icon(Icons.Outlined.ExpandMore, null)
+                    Icon(
+                        imageVector = Icons.Outlined.ExpandMore,
+                        contentDescription = "Selecionar cliente"
+                    )
                 }
 
                 DropdownMenu(
                     expanded = menuClientes,
-                    onDismissRequest = { menuClientes = false }
+                    onDismissRequest = {
+                        menuClientes = false
+                    }
                 ) {
                     clientes.filter { it.ativo }.forEach { cliente ->
                         DropdownMenuItem(
-                            text = { Text(cliente.nome) },
+                            text = {
+                                Text(cliente.nome)
+                            },
                             onClick = {
                                 clienteId = cliente.id
                                 menuClientes = false
@@ -219,8 +485,9 @@ fun NovoServicoScreen(
 
             Spacer(Modifier.height(18.dp))
 
+            // TIPO DE SERVICO
             Text(
-                "Tipo de serviço",
+                text = "Tipo de serviço",
                 color = Azul,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -230,33 +497,48 @@ fun NovoServicoScreen(
 
             Box {
                 OutlinedButton(
-                    onClick = { menuTipos = true },
+                    onClick = {
+                        menuTipos = true
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                     shape = RoundedCornerShape(9.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Borda),
+                    border = BorderStroke(1.dp, Borda),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.White,
                         contentColor = Azul
                     )
                 ) {
                     Text(
-                        text = tipo.ifEmpty { "Selecione o tipo" },
+                        text = tipo.ifEmpty {
+                            "Selecione o tipo"
+                        },
                         modifier = Modifier.weight(1f),
-                        color = if (tipo.isEmpty()) Cinza else Azul
+                        color = if (tipo.isEmpty()) {
+                            Cinza
+                        } else {
+                            Azul
+                        }
                     )
 
-                    Icon(Icons.Outlined.ExpandMore, null)
+                    Icon(
+                        imageVector = Icons.Outlined.ExpandMore,
+                        contentDescription = "Selecionar tipo"
+                    )
                 }
 
                 DropdownMenu(
                     expanded = menuTipos,
-                    onDismissRequest = { menuTipos = false }
+                    onDismissRequest = {
+                        menuTipos = false
+                    }
                 ) {
                     tiposServico.forEach { item ->
                         DropdownMenuItem(
-                            text = { Text(item) },
+                            text = {
+                                Text(item)
+                            },
                             onClick = {
                                 tipo = item
                                 menuTipos = false
@@ -269,8 +551,9 @@ fun NovoServicoScreen(
 
             Spacer(Modifier.height(18.dp))
 
+            // DESCRICAO
             Text(
-                "Descrição",
+                text = "Descrição",
                 color = Azul,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -280,13 +563,16 @@ fun NovoServicoScreen(
 
             OutlinedTextField(
                 value = descricao,
-                onValueChange = { descricao = it; erro = "" },
+                onValueChange = {
+                    descricao = it
+                    erro = ""
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 115.dp),
                 placeholder = {
                     Text(
-                        "Descreva o serviço...",
+                        text = "Descreva o serviço...",
                         color = Cinza,
                         fontSize = 13.sp
                     )
@@ -298,8 +584,9 @@ fun NovoServicoScreen(
 
             Spacer(Modifier.height(18.dp))
 
+            // DATA DE ENTREGA
             Text(
-                "Data prevista de entrega",
+                text = "Data prevista de entrega",
                 color = Azul,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -308,25 +595,33 @@ fun NovoServicoScreen(
             Spacer(Modifier.height(7.dp))
 
             OutlinedButton(
-                onClick = { seletorData.show() },
+                onClick = {
+                    seletorData.show()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(9.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Borda),
+                border = BorderStroke(1.dp, Borda),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
                     contentColor = Azul
                 )
             ) {
                 Text(
-                    dataEntrega.ifEmpty { "DD/MM/AAAA" },
-                    color = if (dataEntrega.isEmpty()) Cinza else Azul,
+                    text = dataEntrega.ifEmpty {
+                        "DD/MM/AAAA"
+                    },
+                    color = if (dataEntrega.isEmpty()) {
+                        Cinza
+                    } else {
+                        Azul
+                    },
                     modifier = Modifier.weight(1f)
                 )
 
                 Icon(
-                    Icons.Outlined.CalendarMonth,
+                    imageVector = Icons.Outlined.CalendarMonth,
                     contentDescription = "Selecionar data",
                     tint = Cinza
                 )
@@ -334,8 +629,9 @@ fun NovoServicoScreen(
 
             Spacer(Modifier.height(18.dp))
 
+            // VALOR ESTIMADO
             Text(
-                "Valor estimado",
+                text = "Valor estimado",
                 color = Azul,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -345,10 +641,16 @@ fun NovoServicoScreen(
 
             OutlinedTextField(
                 value = valor,
-                onValueChange = { valor = it; erro = "" },
+                onValueChange = {
+                    valor = it
+                    erro = ""
+                },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
-                    Text("R$ 0,00", color = Cinza)
+                    Text(
+                        text = "R$ 0,00",
+                        color = Cinza
+                    )
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
@@ -358,11 +660,12 @@ fun NovoServicoScreen(
                 colors = coresCampo
             )
 
+            // MENSAGEM DE ERRO
             if (erro.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
 
                 Text(
-                    erro,
+                    text = erro,
                     color = Color(0xFFB34D4D),
                     fontSize = 12.sp
                 )
@@ -371,6 +674,7 @@ fun NovoServicoScreen(
             Spacer(Modifier.height(28.dp))
         }
 
+        // BOTOES INFERIORES
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -383,13 +687,16 @@ fun NovoServicoScreen(
                     .weight(1f)
                     .height(52.dp),
                 shape = RoundedCornerShape(10.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Borda),
+                border = BorderStroke(1.dp, Borda),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = Azul,
                     containerColor = Color.White
                 )
             ) {
-                Text("Cancelar", fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = "Cancelar",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
             Button(
@@ -414,7 +721,9 @@ fun NovoServicoScreen(
                         dataEntrega.isBlank() ->
                             "Selecione a data de entrega."
 
-                        numero == null || numero <= 0.0 ->
+                        numero == null ||
+                                !numero.isFinite() ||
+                                numero <= 0.0 ->
                             "Informe um valor estimado válido."
 
                         else -> {
@@ -445,7 +754,7 @@ fun NovoServicoScreen(
                 )
             ) {
                 Text(
-                    "Salvar",
+                    text = "Salvar",
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold
                 )
