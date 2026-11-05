@@ -2,6 +2,7 @@
 package com.nexo.marcenaria365.ui.screens.materiais
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,11 +24,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.nexo.marcenaria365.data.repository.MaterialDados
 import com.nexo.marcenaria365.data.repository.MaterialItem
 import com.nexo.marcenaria365.data.repository.MaterialRepository
@@ -39,6 +45,8 @@ private val Fundo = Color(0xFFFAF6F0)
 private val Azul = Color(0xFF193447)
 private val Marrom = Color(0xFFB88966)
 private val Cinza = Color(0xFF66727B)
+private val Borda = Color(0xFFE9E3DD)
+private val Branco = Color.White
 
 private fun numero(valor: Double): String {
     return if (valor % 1.0 == 0.0) {
@@ -152,7 +160,6 @@ fun MateriaisScreen(
     Scaffold(
         containerColor = Fundo,
 
-        // CABECALHO SEM O BOTAO +
         topBar = {
             Row(
                 modifier = Modifier
@@ -170,13 +177,13 @@ fun MateriaisScreen(
                         imageVector =
                             Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Voltar",
-                        tint = Color.White
+                        tint = Branco
                     )
                 }
 
                 Text(
                     text = "Materiais",
-                    color = Color.White,
+                    color = Branco,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
@@ -186,7 +193,7 @@ fun MateriaisScreen(
             }
         },
 
-        // NOVO BOTAO + NA PARTE INFERIOR
+        // BOTAO + NA PARTE INFERIOR
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -194,7 +201,7 @@ fun MateriaisScreen(
                     mostrarFormulario = true
                 },
                 containerColor = Azul,
-                contentColor = Color.White,
+                contentColor = Branco,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(
@@ -217,7 +224,7 @@ fun MateriaisScreen(
         ) {
             Spacer(Modifier.height(18.dp))
 
-            // CAMPO DE BUSCA
+            // BUSCAR MATERIAIS
             OutlinedTextField(
                 value = pesquisa,
                 onValueChange = {
@@ -237,20 +244,22 @@ fun MateriaisScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = Azul
+                    focusedContainerColor = Branco,
+                    unfocusedContainerColor = Branco,
+                    focusedBorderColor = Azul,
+                    unfocusedBorderColor = Borda
                 )
             )
 
             Spacer(Modifier.height(12.dp))
 
-            // FILTROS DE CATEGORIA
+            // FILTROS POR CATEGORIA
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement =
+                    Arrangement.spacedBy(8.dp)
             ) {
                 categorias.forEach { item ->
                     FilterChip(
@@ -266,9 +275,9 @@ fun MateriaisScreen(
                         },
                         shape = RoundedCornerShape(12.dp),
                         colors = FilterChipDefaults.filterChipColors(
-                            containerColor = Color.White,
+                            containerColor = Branco,
                             selectedContainerColor = Azul,
-                            selectedLabelColor = Color.White,
+                            selectedLabelColor = Branco,
                             labelColor = Azul
                         )
                     )
@@ -314,7 +323,11 @@ fun MateriaisScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            if (!carregando && erro == null && filtrados.isEmpty()) {
+            if (
+                !carregando &&
+                erro == null &&
+                filtrados.isEmpty()
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -322,11 +335,14 @@ fun MateriaisScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalAlignment =
+                            Alignment.CenterHorizontally,
+                        verticalArrangement =
+                            Arrangement.spacedBy(12.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Inventory2,
+                            imageVector =
+                                Icons.Outlined.Inventory2,
                             contentDescription = null,
                             tint = Color(0xFFB8B4AE),
                             modifier = Modifier.size(44.dp)
@@ -334,7 +350,8 @@ fun MateriaisScreen(
 
                         Text(
                             text = if (materiais.isEmpty()) {
-                                "Nenhum material cadastrado.\nToque no + abaixo para adicionar."
+                                "Nenhum material cadastrado.\n" +
+                                        "Toque no + abaixo para adicionar."
                             } else {
                                 "Nenhum material encontrado."
                             },
@@ -350,7 +367,8 @@ fun MateriaisScreen(
             // LISTA DE MATERIAIS
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement =
+                    Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(
                     top = 8.dp,
                     bottom = 95.dp
@@ -364,7 +382,7 @@ fun MateriaisScreen(
                     Card(
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = Branco
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -375,10 +393,12 @@ fun MateriaisScreen(
                     ) {
                         Row(
                             modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment =
+                                Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Inventory2,
+                                imageVector =
+                                    Icons.Outlined.Inventory2,
                                 contentDescription = null,
                                 tint = Marrom,
                                 modifier = Modifier.size(32.dp)
@@ -393,7 +413,8 @@ fun MateriaisScreen(
                                     text = material.nome,
                                     color = Azul,
                                     fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight =
+                                        FontWeight.SemiBold
                                 )
 
                                 Text(
@@ -406,7 +427,9 @@ fun MateriaisScreen(
 
                                 Text(
                                     text = "Estoque: " +
-                                            numero(material.quantidadeEstoque) +
+                                            numero(
+                                                material.quantidadeEstoque
+                                            ) +
                                             " ${material.unidade}",
                                     fontSize = 12.sp
                                 )
@@ -438,7 +461,8 @@ fun MateriaisScreen(
                             ) {
                                 Text(
                                     text = "Excluir",
-                                    color = MaterialTheme.colorScheme.error
+                                    color = MaterialTheme
+                                        .colorScheme.error
                                 )
                             }
                         }
@@ -465,7 +489,9 @@ fun MateriaisScreen(
 
                     val atual = materialEditando
 
-                    val resultado = withContext(Dispatchers.IO) {
+                    val resultado = withContext(
+                        Dispatchers.IO
+                    ) {
                         if (atual == null) {
                             MaterialRepository.cadastrar(dados)
                         } else {
@@ -518,7 +544,9 @@ fun MateriaisScreen(
                             val resultado = withContext(
                                 Dispatchers.IO
                             ) {
-                                MaterialRepository.excluir(material.id)
+                                MaterialRepository.excluir(
+                                    material.id
+                                )
                             }
 
                             resultado.onSuccess {
@@ -550,6 +578,7 @@ fun MateriaisScreen(
     }
 }
 
+// FORMULARIO COMPLETO COM TECLADO AJUSTADO
 @Composable
 private fun FormularioMaterial(
     material: MaterialItem?,
@@ -557,6 +586,8 @@ private fun FormularioMaterial(
     onFechar: () -> Unit,
     onSalvar: (MaterialDados) -> Unit
 ) {
+    val teclado = LocalSoftwareKeyboardController.current
+
     var nome by remember(material?.id) {
         mutableStateOf(material?.nome ?: "")
     }
@@ -587,7 +618,7 @@ private fun FormularioMaterial(
         )
     }
 
-    var erroFormulario by remember {
+    var erroFormulario by remember(material?.id) {
         mutableStateOf<String?>(null)
     }
 
@@ -598,219 +629,414 @@ private fun FormularioMaterial(
             .toDoubleOrNull()
     }
 
-    AlertDialog(
-        onDismissRequest = onFechar,
+    fun salvarMaterial() {
+        val qtd = converterNumero(quantidade)
+        val estoqueMinimo = converterNumero(minimo)
+        val valor = converterNumero(custo)
 
-        title = {
-            Text(
-                text = if (material == null) {
-                    "Cadastrar material"
-                } else {
-                    "Editar material"
-                },
-                color = Azul,
-                fontWeight = FontWeight.Bold
-            )
-        },
+        when {
+            nome.isBlank() -> {
+                erroFormulario = "Informe o nome do material."
+            }
 
-        text = {
-            Column(
-                modifier = Modifier
-                    .heightIn(max = 450.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedTextField(
-                    value = nome,
-                    onValueChange = {
-                        nome = it
-                        erroFormulario = null
-                    },
-                    label = {
-                        Text("Nome do material")
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            nome.trim().length > 120 -> {
+                erroFormulario = "Nome muito longo."
+            }
 
-                OutlinedTextField(
-                    value = categoria,
-                    onValueChange = {
-                        categoria = it
-                    },
-                    label = {
-                        Text("Categoria")
-                    },
-                    placeholder = {
-                        Text("Ex.: Madeiras")
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            categoria.length > 60 -> {
+                erroFormulario = "Categoria muito longa."
+            }
 
-                OutlinedTextField(
-                    value = unidade,
-                    onValueChange = {
-                        unidade = it
-                    },
-                    label = {
-                        Text("Unidade")
-                    },
-                    placeholder = {
-                        Text("UN, M, M², KG")
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            unidade.isBlank() ||
+                    unidade.length > 20 -> {
+                erroFormulario =
+                    "Informe uma unidade válida."
+            }
 
-                OutlinedTextField(
-                    value = quantidade,
-                    onValueChange = {
-                        quantidade = it
-                    },
-                    label = {
-                        Text("Quantidade em estoque")
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            qtd == null ||
+                    !qtd.isFinite() ||
+                    qtd < 0 -> {
+                erroFormulario =
+                    "Informe uma quantidade válida."
+            }
 
-                OutlinedTextField(
-                    value = minimo,
-                    onValueChange = {
-                        minimo = it
-                    },
-                    label = {
-                        Text("Estoque mínimo")
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            estoqueMinimo == null ||
+                    !estoqueMinimo.isFinite() ||
+                    estoqueMinimo < 0 -> {
+                erroFormulario =
+                    "Informe um estoque mínimo válido."
+            }
 
-                OutlinedTextField(
-                    value = custo,
-                    onValueChange = {
-                        custo = it
-                    },
-                    label = {
-                        Text("Custo unitário (R$)")
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Decimal
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            valor == null ||
+                    !valor.isFinite() ||
+                    valor < 0 -> {
+                erroFormulario =
+                    "Informe um custo válido."
+            }
 
-                erroFormulario?.let {
-                    Text(
-                        text = it,
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 12.sp
+            else -> {
+                teclado?.hide()
+                erroFormulario = null
+
+                onSalvar(
+                    MaterialDados(
+                        nome = nome.trim(),
+                        categoria = categoria.trim(),
+                        unidade = unidade.trim(),
+                        quantidadeEstoque = qtd,
+                        estoqueMinimo = estoqueMinimo,
+                        custoUnitario = valor
                     )
-                }
+                )
+            }
+        }
+    }
 
-                if (salvando) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Azul
-                    )
-                }
+    val coresCampo = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = Branco,
+        unfocusedContainerColor = Branco,
+        focusedBorderColor = Marrom,
+        unfocusedBorderColor = Borda,
+        focusedTextColor = Azul,
+        unfocusedTextColor = Azul
+    )
+
+    Dialog(
+        onDismissRequest = {
+            if (!salvando) {
+                onFechar()
             }
         },
+        properties = DialogProperties(
+            dismissOnBackPress = !salvando,
+            dismissOnClickOutside = !salvando,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        // USA O ESPACO DISPONIVEL QUANDO
+        // O TECLADO ESTIVER ABERTO
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding()
+                .padding(
+                    horizontal = 16.dp,
+                    vertical = 16.dp
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(
+                        max = maxHeight
+                    ),
+                shape = RoundedCornerShape(22.dp),
+                color = Fundo,
+                shadowElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp)
+                ) {
 
-        confirmButton = {
-            TextButton(
-                enabled = !salvando,
-                onClick = {
-                    val qtd = converterNumero(quantidade)
-                    val estoqueMinimo = converterNumero(minimo)
-                    val valor = converterNumero(custo)
+                    // CABECALHO
+                    Text(
+                        text = if (material == null) {
+                            "Cadastrar material"
+                        } else {
+                            "Editar material"
+                        },
+                        color = Azul,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
 
-                    when {
-                        nome.isBlank() -> {
-                            erroFormulario = "Informe o nome."
-                        }
+                    Spacer(Modifier.height(5.dp))
 
-                        nome.trim().length > 120 -> {
-                            erroFormulario = "Nome muito longo."
-                        }
+                    Text(
+                        text = if (material == null) {
+                            "Adicione um material ao seu estoque."
+                        } else {
+                            "Atualize os dados do material."
+                        },
+                        color = Cinza,
+                        fontSize = 12.sp
+                    )
 
-                        categoria.length > 60 -> {
-                            erroFormulario = "Categoria muito longa."
-                        }
+                    Spacer(Modifier.height(16.dp))
 
-                        unidade.isBlank() ||
-                                unidade.length > 20 -> {
-                            erroFormulario =
-                                "Informe uma unidade válida."
-                        }
-
-                        qtd == null ||
-                                !qtd.isFinite() ||
-                                qtd < 0 -> {
-                            erroFormulario =
-                                "Informe uma quantidade válida."
-                        }
-
-                        estoqueMinimo == null ||
-                                !estoqueMinimo.isFinite() ||
-                                estoqueMinimo < 0 -> {
-                            erroFormulario =
-                                "Informe um estoque mínimo válido."
-                        }
-
-                        valor == null ||
-                                !valor.isFinite() ||
-                                valor < 0 -> {
-                            erroFormulario =
-                                "Informe um custo válido."
-                        }
-
-                        else -> {
-                            erroFormulario = null
-
-                            onSalvar(
-                                MaterialDados(
-                                    nome = nome.trim(),
-                                    categoria = categoria.trim(),
-                                    unidade = unidade.trim(),
-                                    quantidadeEstoque = qtd,
-                                    estoqueMinimo = estoqueMinimo,
-                                    custoUnitario = valor
-                                )
+                    // CAMPOS COM ROLAGEM INDEPENDENTE
+                    Column(
+                        modifier = Modifier
+                            .weight(
+                                weight = 1f,
+                                fill = false
                             )
+                            .verticalScroll(
+                                rememberScrollState()
+                            ),
+                        verticalArrangement =
+                            Arrangement.spacedBy(11.dp)
+                    ) {
+
+                        Text(
+                            text = "Nome do material",
+                            color = Azul,
+                            fontWeight =
+                                FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+
+                        OutlinedTextField(
+                            value = nome,
+                            onValueChange = {
+                                nome = it
+                                erroFormulario = null
+                            },
+                            placeholder = {
+                                Text("Ex.: MDF branco")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !salvando,
+                            shape = RoundedCornerShape(11.dp),
+                            colors = coresCampo,
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Next
+                            )
+                        )
+
+                        Text(
+                            text = "Categoria",
+                            color = Azul,
+                            fontWeight =
+                                FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+
+                        OutlinedTextField(
+                            value = categoria,
+                            onValueChange = {
+                                categoria = it
+                            },
+                            placeholder = {
+                                Text("Ex.: Madeiras")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !salvando,
+                            shape = RoundedCornerShape(11.dp),
+                            colors = coresCampo,
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Next
+                            )
+                        )
+
+                        Text(
+                            text = "Unidade de medida",
+                            color = Azul,
+                            fontWeight =
+                                FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+
+                        OutlinedTextField(
+                            value = unidade,
+                            onValueChange = {
+                                unidade = it
+                            },
+                            placeholder = {
+                                Text("UN, M, M², KG")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !salvando,
+                            shape = RoundedCornerShape(11.dp),
+                            colors = coresCampo,
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Next
+                            )
+                        )
+
+                        Text(
+                            text = "Quantidade em estoque",
+                            color = Azul,
+                            fontWeight =
+                                FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+
+                        OutlinedTextField(
+                            value = quantidade,
+                            onValueChange = {
+                                quantidade = it
+                            },
+                            placeholder = {
+                                Text("0")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !salvando,
+                            shape = RoundedCornerShape(11.dp),
+                            colors = coresCampo,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType =
+                                    KeyboardType.Decimal,
+                                imeAction = ImeAction.Next
+                            )
+                        )
+
+                        Text(
+                            text = "Estoque mínimo",
+                            color = Azul,
+                            fontWeight =
+                                FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+
+                        OutlinedTextField(
+                            value = minimo,
+                            onValueChange = {
+                                minimo = it
+                            },
+                            placeholder = {
+                                Text("0")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !salvando,
+                            shape = RoundedCornerShape(11.dp),
+                            colors = coresCampo,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType =
+                                    KeyboardType.Decimal,
+                                imeAction = ImeAction.Next
+                            )
+                        )
+
+                        Text(
+                            text = "Custo unitário (R$)",
+                            color = Azul,
+                            fontWeight =
+                                FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+
+                        OutlinedTextField(
+                            value = custo,
+                            onValueChange = {
+                                custo = it
+                                erroFormulario = null
+                            },
+                            placeholder = {
+                                Text("0,00")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !salvando,
+                            shape = RoundedCornerShape(11.dp),
+                            colors = coresCampo,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType =
+                                    KeyboardType.Decimal,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    teclado?.hide()
+                                }
+                            )
+                        )
+
+                        erroFormulario?.let { mensagem ->
+                            Text(
+                                text = mensagem,
+                                color = MaterialTheme
+                                    .colorScheme.error,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        Spacer(Modifier.height(5.dp))
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    HorizontalDivider(
+                        color = Borda
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // BOTOES SEMPRE FORA DA ROLAGEM
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                teclado?.hide()
+                                onFechar()
+                            },
+                            enabled = !salvando,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(11.dp),
+                            colors =
+                                ButtonDefaults.outlinedButtonColors(
+                                    containerColor = Branco,
+                                    contentColor = Azul
+                                ),
+                            border = BorderStroke(
+                                1.dp,
+                                Borda
+                            )
+                        ) {
+                            Text(
+                                text = "Cancelar",
+                                fontSize = 13.sp,
+                                fontWeight =
+                                    FontWeight.SemiBold
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                salvarMaterial()
+                            },
+                            enabled = !salvando,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(11.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Azul,
+                                contentColor = Branco
+                            )
+                        ) {
+                            if (salvando) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(19.dp),
+                                    color = Branco,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(
+                                    text = "Salvar",
+                                    fontSize = 13.sp,
+                                    fontWeight =
+                                        FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }
-            ) {
-                Text(
-                    text = "Salvar",
-                    color = Azul,
-                    fontWeight = FontWeight.Bold
-                )
             }
-        },
-
-        dismissButton = {
-            TextButton(
-                enabled = !salvando,
-                onClick = onFechar
-            ) {
-                Text(
-                    text = "Cancelar",
-                    color = Cinza
-                )
-            }
-        },
-
-        shape = RoundedCornerShape(18.dp),
-        containerColor = Color.White
-    )
+        }
+    }
 }
