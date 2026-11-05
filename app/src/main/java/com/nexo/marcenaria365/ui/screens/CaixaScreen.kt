@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,18 +19,24 @@ import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.ShoppingBag
-import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -46,68 +52,51 @@ import java.time.LocalDate
 import java.util.Calendar
 import java.util.Locale
 
-private val Azul = Color(0xFF193447)
-private val Fundo = Color(0xFFFAF6F0)
-private val Verde = Color(0xFF239B7A)
-private val Laranja = Color(0xFFC08B60)
-private val Cinza = Color(0xFF66727B)
-private val Borda = Color(0xFFE9E3DD)
-private val Branco = Color.White
+private val CaixaAzul = Color(0xFF193447)
+private val CaixaFundo = Color(0xFFFAF6F0)
+private val CaixaVerde = Color(0xFF237A58)
+private val CaixaLaranja = Color(0xFF94613C)
+private val CaixaCinza = Color(0xFF53616A)
+private val CaixaBorda = Color(0xFF89969E)
+private val CaixaVermelho = Color(0xFFB3261E)
+
+private fun valorCaixaDigitado(texto: String): Double? {
+    val limpo = texto.replace("R$", "").replace(" ", "").trim()
+    val normalizado = if (limpo.contains(",")) {
+        limpo.replace(".", "").replace(",", ".")
+    } else {
+        limpo
+    }
+    return normalizado.toDoubleOrNull()
+}
 
 @Composable
 fun CaixaScreen(
     onVoltar: () -> Unit,
     servicos: List<ServicoUi>
 ) {
+    val scope = rememberCoroutineScope()
     val movimentacoes = remember {
         mutableStateListOf<MovimentacaoUi>()
     }
 
-    var erroCaixa by remember {
-        mutableStateOf<String?>(null)
-    }
+    var erroCaixa by remember { mutableStateOf<String?>(null) }
+    var carregandoCaixa by remember { mutableStateOf(true) }
+    var salvando by remember { mutableStateOf(false) }
+    var atualizacao by remember { mutableIntStateOf(0) }
+    var mostrarCadastro by remember { mutableStateOf(false) }
 
-    var carregandoCaixa by remember {
-        mutableStateOf(true)
-    }
-
-    var atualizacaoCaixa by remember {
-        mutableIntStateOf(0)
-    }
-
-    var salvandoMovimentacao by remember {
-        mutableStateOf(false)
-    }
-
-    var mostrarCadastro by remember {
-        mutableStateOf(false)
-    }
-
-    var periodo by rememberSaveable {
-        mutableIntStateOf(0)
-    }
-
-    var menuPeriodoAberto by remember {
-        mutableStateOf(false)
-    }
-
-    var mostrarTodas by rememberSaveable {
-        mutableStateOf(false)
-    }
-
+    var periodo by rememberSaveable { mutableIntStateOf(0) }
+    var menuPeriodo by remember { mutableStateOf(false) }
+    var mostrarTodas by rememberSaveable { mutableStateOf(false) }
     var visualizacao by rememberSaveable {
         mutableStateOf("Todas")
     }
 
-    val scope = rememberCoroutineScope()
-
-    // CARREGA AS MOVIMENTACOES DO BACKEND
-    LaunchedEffect(atualizacaoCaixa) {
+    LaunchedEffect(atualizacao, servicos) {
         carregandoCaixa = true
 
-        val servicosPorId = servicos.associateBy {
-            it.id
-        }
+        val servicosPorId = servicos.associateBy { it.id }
 
         val resultado = withContext(Dispatchers.IO) {
             runCatching {
@@ -115,90 +104,76 @@ fun CaixaScreen(
                     RecebimentoRepository.listar().getOrThrow()
 
                 val avulsas =
-                    MovimentacaoCaixaRepository.listar()
-                        .getOrThrow()
+                    MovimentacaoCaixaRepository.listar().getOrThrow()
 
-                val entradasRecebidas =
-                    recebimentos.mapNotNull { recebimento ->
-
-                        if (
-                            !recebimento.status.equals(
-                                "RECEBIDO",
-                                ignoreCase = true
-                            )
-                        ) {
-                            return@mapNotNull null
-                        }
-
-                        val data = recebimento.dataRecebimento
-                            ?.let {
-                                runCatching {
-                                    LocalDate.parse(it)
-                                }.getOrNull()
-                            }
-                            ?: return@mapNotNull null
-
-                        val servico =
-                            servicosPorId[recebimento.servicoId]
-
-                        MovimentacaoUi(
-                            id = recebimento.id,
-                            titulo = "Pagamento recebido",
-                            descricao = servico?.let {
-                                "${it.clienteNome} - ${it.titulo}"
-                            } ?: "Serviço #${recebimento.servicoId}",
-                            valor = recebimento.valor,
-                            tipo = TipoMovimentacao.ENTRADA,
-                            dia = data.dayOfMonth,
-                            mes = data.monthValue,
-                            ano = data.year,
-                            servicoId = recebimento.servicoId
-                        )
+                val entradasRecebidas = recebimentos.mapNotNull {
+                        recebimento ->
+                    if (!recebimento.status.equals("RECEBIDO", true)) {
+                        return@mapNotNull null
                     }
 
-                val movimentosAvulsos =
-                    avulsas.mapNotNull { movimento ->
+                    val data = recebimento.dataRecebimento
+                        ?.let {
+                            runCatching {
+                                LocalDate.parse(it)
+                            }.getOrNull()
+                        } ?: return@mapNotNull null
 
-                        if (movimento.recebimentoId != null) {
-                            return@mapNotNull null
-                        }
+                    val servico = servicosPorId[recebimento.servicoId]
 
-                        val data = runCatching {
-                            LocalDate.parse(
-                                movimento.dataMovimentacao
-                            )
-                        }.getOrNull() ?: return@mapNotNull null
+                    MovimentacaoUi(
+                        id = recebimento.id,
+                        titulo = "Pagamento recebido",
+                        descricao = servico?.let {
+                            "${it.clienteNome} - ${it.titulo}"
+                        } ?: "Serviço #${recebimento.servicoId}",
+                        valor = recebimento.valor,
+                        tipo = TipoMovimentacao.ENTRADA,
+                        dia = data.dayOfMonth,
+                        mes = data.monthValue,
+                        ano = data.year,
+                        servicoId = recebimento.servicoId
+                    )
+                }
 
-                        MovimentacaoUi(
-                            id = -movimento.id,
-                            titulo = movimento.categoria,
-                            descricao = movimento.descricao,
-                            valor = movimento.valor,
-                            tipo = if (
-                                movimento.tipo == "ENTRADA"
-                            ) {
-                                TipoMovimentacao.ENTRADA
-                            } else {
-                                TipoMovimentacao.SAIDA
-                            },
-                            dia = data.dayOfMonth,
-                            mes = data.monthValue,
-                            ano = data.year
-                        )
+                val movimentosAvulsos = avulsas.mapNotNull {
+                        movimento ->
+                    if (movimento.recebimentoId != null) {
+                        return@mapNotNull null
                     }
+
+                    val data = runCatching {
+                        LocalDate.parse(movimento.dataMovimentacao)
+                    }.getOrNull() ?: return@mapNotNull null
+
+                    MovimentacaoUi(
+                        id = -movimento.id,
+                        titulo = movimento.categoria,
+                        descricao = movimento.descricao,
+                        valor = movimento.valor,
+                        tipo = if (movimento.tipo == "ENTRADA") {
+                            TipoMovimentacao.ENTRADA
+                        } else {
+                            TipoMovimentacao.SAIDA
+                        },
+                        dia = data.dayOfMonth,
+                        mes = data.monthValue,
+                        ano = data.year
+                    )
+                }
 
                 entradasRecebidas + movimentosAvulsos
             }
         }
 
         resultado.fold(
-            onSuccess = { lista ->
+            onSuccess = {
                 movimentacoes.clear()
-                movimentacoes.addAll(lista)
+                movimentacoes.addAll(it)
                 erroCaixa = null
             },
-            onFailure = { erro ->
-                erroCaixa = erro.message
+            onFailure = {
+                erroCaixa = it.message
                     ?: "Não foi possível carregar o caixa."
             }
         )
@@ -206,15 +181,10 @@ fun CaixaScreen(
         carregandoCaixa = false
     }
 
-    // PERIODOS
     val periodos = remember {
         (0..5).map { deslocamento ->
             val calendario = Calendar.getInstance()
-
-            calendario.add(
-                Calendar.MONTH,
-                -deslocamento
-            )
+            calendario.add(Calendar.MONTH, -deslocamento)
 
             Triple(
                 calendario.get(Calendar.YEAR),
@@ -226,9 +196,7 @@ fun CaixaScreen(
                         "MMMM yyyy",
                         Locale.forLanguageTag("pt-BR")
                     ).format(calendario.time)
-                        .replaceFirstChar {
-                            it.uppercase()
-                        }
+                        .replaceFirstChar { it.uppercase() }
                 }
             )
         }
@@ -243,56 +211,41 @@ fun CaixaScreen(
                     it.mes == mesSelecionado
         }
         .sortedWith(
-            compareByDescending<MovimentacaoUi> {
-                it.ano
-            }
+            compareByDescending<MovimentacaoUi> { it.ano }
                 .thenByDescending { it.mes }
                 .thenByDescending { it.dia }
                 .thenByDescending { it.id }
         )
 
     val entradas = filtradas
-        .filter {
-            it.tipo == TipoMovimentacao.ENTRADA
-        }
-        .sumOf {
-            it.valor
-        }
+        .filter { it.tipo == TipoMovimentacao.ENTRADA }
+        .sumOf { it.valor }
 
     val saidas = filtradas
-        .filter {
-            it.tipo == TipoMovimentacao.SAIDA
-        }
-        .sumOf {
-            it.valor
-        }
+        .filter { it.tipo == TipoMovimentacao.SAIDA }
+        .sumOf { it.valor }
 
     val saldo = entradas - saidas
 
-    val movimentacoesSelecionadas = when (visualizacao) {
+    val selecionadas = when (visualizacao) {
         "Entradas" -> filtradas.filter {
             it.tipo == TipoMovimentacao.ENTRADA
         }
-
         "Saídas" -> filtradas.filter {
             it.tipo == TipoMovimentacao.SAIDA
         }
-
         else -> filtradas
     }
 
-    val exibidas = when {
-        visualizacao != "Todas" ->
-            movimentacoesSelecionadas
-
-        mostrarTodas ->
-            movimentacoesSelecionadas
-
-        else ->
-            movimentacoesSelecionadas.take(4)
+    val exibidas = if (
+        visualizacao != "Todas" || mostrarTodas
+    ) {
+        selecionadas
+    } else {
+        selecionadas.take(4)
     }
 
-    fun voltarTela() {
+    fun voltar() {
         if (visualizacao != "Todas" || mostrarTodas) {
             visualizacao = "Todas"
             mostrarTodas = false
@@ -301,37 +254,34 @@ fun CaixaScreen(
         }
     }
 
-    BackHandler(
-        enabled = !mostrarCadastro
-    ) {
-        voltarTela()
+    BackHandler(enabled = !mostrarCadastro) {
+        voltar()
     }
 
-    // MENSAGENS DE ERRO
     if (erroCaixa != null) {
         AlertDialog(
-            onDismissRequest = {
-                erroCaixa = null
-            },
+            onDismissRequest = { erroCaixa = null },
             title = {
-                Text("Caixa")
+                Text(
+                    "Erro no caixa",
+                    color = CaixaAzul
+                )
             },
             text = {
                 Text(
-                    erroCaixa
-                        ?: "Erro ao carregar movimentações."
+                    erroCaixa ?: "Não foi possível acessar o caixa.",
+                    color = CaixaCinza
                 )
             },
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        erroCaixa = null
-                    }
+                    onClick = { erroCaixa = null },
+                    modifier = Modifier.heightIn(min = 48.dp)
                 ) {
-                    Text("Entendi")
+                    Text("Entendi", color = CaixaAzul)
                 }
             },
-            containerColor = Branco
+            containerColor = Color.White
         )
     }
 
@@ -339,44 +289,43 @@ fun CaixaScreen(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
-        containerColor = Fundo,
-
+        containerColor = CaixaFundo,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
                     mostrarCadastro = true
                 },
-                containerColor = Azul,
-                contentColor = Branco,
-                shape = RoundedCornerShape(16.dp)
+                containerColor = CaixaAzul,
+                contentColor = Color.White,
+                shape = RoundedCornerShape(15.dp)
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Add,
-                    contentDescription =
-                        "Registrar movimentação"
+                    contentDescription = "Registrar nova movimentação"
                 )
             }
         },
-
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(62.dp)
-                    .background(Azul)
+                    .heightIn(min = 62.dp)
+                    .background(CaixaAzul)
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = {
-                        voltarTela()
-                    }
+                    onClick = { voltar() },
+                    modifier = Modifier.sizeIn(
+                        minWidth = 48.dp,
+                        minHeight = 48.dp
+                    )
                 ) {
                     Icon(
                         imageVector =
                             Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Voltar",
-                        tint = Branco
+                        tint = Color.White
                     )
                 }
 
@@ -390,152 +339,125 @@ fun CaixaScreen(
                             "Caixa"
                         }
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { heading() },
                     textAlign = TextAlign.Center,
-                    color = Branco,
+                    color = Color.White,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(
-                    modifier = Modifier.width(48.dp)
-                )
+                Spacer(Modifier.width(48.dp))
             }
         }
     ) { padding ->
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(
-                top = 22.dp,
+                top = 20.dp,
                 bottom = 95.dp
             ),
             verticalArrangement =
-                Arrangement.spacedBy(17.dp)
+                Arrangement.spacedBy(16.dp)
         ) {
-
-            // RESUMO FINANCEIRO
-            if (
-                visualizacao == "Todas" &&
-                !mostrarTodas
-            ) {
+            if (visualizacao == "Todas" && !mostrarTodas) {
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement =
-                            Arrangement.SpaceBetween,
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = "Resumo financeiro",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Azul,
-                            modifier = Modifier.weight(1f)
+                            color = CaixaAzul,
+                            modifier = Modifier
+                                .weight(1f)
+                                .semantics { heading() }
                         )
 
-                        SeletorPeriodoCaixa(
+                        CaixaPeriodoAcessivel(
                             titulo = periodos[periodo].third,
-                            aberto = menuPeriodoAberto,
-                            periodos = periodos.map {
-                                it.third
-                            },
+                            periodos = periodos.map { it.third },
                             selecionado = periodo,
-                            onAbrir = {
-                                menuPeriodoAberto = true
-                            },
-                            onFechar = {
-                                menuPeriodoAberto = false
-                            },
-                            onSelecionar = { indice ->
-                                periodo = indice
-                                menuPeriodoAberto = false
+                            aberto = menuPeriodo,
+                            onAbrir = { menuPeriodo = true },
+                            onFechar = { menuPeriodo = false },
+                            onSelecionar = {
+                                periodo = it
+                                menuPeriodo = false
                             }
                         )
                     }
                 }
 
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement =
-                            Arrangement.spacedBy(8.dp)
+                    Column(
+                        verticalArrangement =
+                            Arrangement.spacedBy(10.dp)
                     ) {
-                        ResumoCaixaCard(
-                            titulo = "Entradas",
-                            valor = entradas,
-                            cor = Verde,
-                            fundo = Color(0xFFE2F3EC),
-                            entrada = true,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                visualizacao = "Entradas"
-                            }
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(10.dp)
+                        ) {
+                            CaixaResumoAcessivel(
+                                titulo = "Entradas",
+                                valor = entradas,
+                                cor = CaixaVerde,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    visualizacao = "Entradas"
+                                }
+                            )
 
-                        ResumoCaixaCard(
-                            titulo = "Saídas",
-                            valor = saidas,
-                            cor = Laranja,
-                            fundo = Color(0xFFF8E8D7),
-                            entrada = false,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                visualizacao = "Saídas"
-                            }
-                        )
+                            CaixaResumoAcessivel(
+                                titulo = "Saídas",
+                                valor = saidas,
+                                cor = CaixaLaranja,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    visualizacao = "Saídas"
+                                }
+                            )
+                        }
 
-                        Card(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(142.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor =
-                                    Color(0xFFEFEFED)
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color.White,
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                CaixaBorda
                             )
                         ) {
                             Column(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 5.dp),
-                                horizontalAlignment =
-                                    Alignment.CenterHorizontally,
-                                verticalArrangement =
-                                    Arrangement.Center
+                                    .padding(16.dp)
+                                    .semantics(
+                                        mergeDescendants = true
+                                    ) {
+                                        contentDescription =
+                                            "Saldo do período: ${moedaCaixa(saldo)}"
+                                    }
                             ) {
-                                Icon(
-                                    imageVector =
-                                        Icons.Outlined.Wallet,
-                                    contentDescription = null,
-                                    tint = Azul,
-                                    modifier = Modifier.size(24.dp)
-                                )
-
-                                Spacer(Modifier.height(10.dp))
-
                                 Text(
-                                    text = "Saldo",
-                                    fontSize = 12.sp,
-                                    fontWeight =
-                                        FontWeight.SemiBold,
-                                    color = Azul
+                                    text = "Saldo do período",
+                                    color = CaixaCinza,
+                                    fontSize = 13.sp
                                 )
 
-                                Spacer(Modifier.height(9.dp))
+                                Spacer(Modifier.height(6.dp))
 
                                 Text(
                                     text = moedaCaixa(saldo),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Azul,
-                                    maxLines = 2,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 16.sp
+                                    color = CaixaAzul,
+                                    fontSize = 23.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -543,7 +465,6 @@ fun CaixaScreen(
                 }
             }
 
-            // TITULO DAS MOVIMENTACOES
             item {
                 Column(
                     verticalArrangement =
@@ -551,29 +472,24 @@ fun CaixaScreen(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement =
-                            Arrangement.SpaceBetween,
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = when (visualizacao) {
-                                "Entradas" ->
-                                    "Entradas recebidas"
-
-                                "Saídas" ->
-                                    "Saídas registradas"
-
+                                "Entradas" -> "Entradas recebidas"
+                                "Saídas" -> "Saídas registradas"
                                 else -> if (mostrarTodas) {
                                     "Todas as movimentações"
                                 } else {
                                     "Últimas movimentações"
                                 }
                             },
-                            color = Azul,
-                            fontWeight = FontWeight.Bold,
+                            color = CaixaAzul,
                             fontSize = 17.sp,
-                            modifier = Modifier.weight(1f)
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .weight(1f)
+                                .semantics { heading() }
                         )
 
                         if (
@@ -584,12 +500,14 @@ fun CaixaScreen(
                             TextButton(
                                 onClick = {
                                     mostrarTodas = true
-                                }
+                                },
+                                modifier = Modifier.heightIn(
+                                    min = 48.dp
+                                )
                             ) {
                                 Text(
-                                    text = "Ver todas",
-                                    color = Azul,
-                                    fontSize = 12.sp
+                                    "Ver todas",
+                                    color = CaixaAzul
                                 )
                             }
                         }
@@ -597,78 +515,62 @@ fun CaixaScreen(
 
                     if (visualizacao != "Todas") {
                         Text(
-                            text = if (
-                                visualizacao == "Entradas"
-                            ) {
-                                "Total recebido: ${
-                                    moedaCaixa(entradas)
-                                }"
+                            text = if (visualizacao == "Entradas") {
+                                "Total recebido: ${moedaCaixa(entradas)}"
                             } else {
-                                "Total gasto: ${
-                                    moedaCaixa(saidas)
-                                }"
+                                "Total gasto: ${moedaCaixa(saidas)}"
                             },
-                            color = if (
-                                visualizacao == "Entradas"
-                            ) {
-                                Verde
-                            } else {
-                                Laranja
-                            },
-                            fontWeight =
-                                FontWeight.SemiBold,
+                            color = CaixaAzul,
+                            fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp
                         )
                     }
 
-                    if (
-                        visualizacao != "Todas" ||
-                        mostrarTodas
-                    ) {
-                        SeletorPeriodoCaixa(
+                    if (visualizacao != "Todas" || mostrarTodas) {
+                        CaixaPeriodoAcessivel(
                             titulo = periodos[periodo].third,
-                            aberto = menuPeriodoAberto,
-                            periodos = periodos.map {
-                                it.third
-                            },
+                            periodos = periodos.map { it.third },
                             selecionado = periodo,
-                            onAbrir = {
-                                menuPeriodoAberto = true
-                            },
-                            onFechar = {
-                                menuPeriodoAberto = false
-                            },
-                            onSelecionar = { indice ->
-                                periodo = indice
-                                menuPeriodoAberto = false
+                            aberto = menuPeriodo,
+                            onAbrir = { menuPeriodo = true },
+                            onFechar = { menuPeriodo = false },
+                            onSelecionar = {
+                                periodo = it
+                                menuPeriodo = false
                             }
                         )
                     }
+
+                    Text(
+                        text = "${selecionadas.size} movimentações neste período",
+                        color = CaixaCinza,
+                        fontSize = 12.sp,
+                        modifier = Modifier.semantics {
+                            liveRegion = LiveRegionMode.Polite
+                        }
+                    )
                 }
             }
 
-            // LISTA
             if (carregandoCaixa) {
                 item {
                     Row(
-                        modifier = Modifier.padding(
-                            vertical = 12.dp
-                        ),
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Azul,
-                            strokeWidth = 2.dp
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                            color = CaixaAzul
                         )
 
                         Spacer(Modifier.width(12.dp))
 
                         Text(
                             text = "Carregando movimentações...",
-                            color = Cinza,
-                            fontSize = 12.sp
+                            color = CaixaCinza,
+                            modifier = Modifier.semantics {
+                                liveRegion = LiveRegionMode.Polite
+                            }
                         )
                     }
                 }
@@ -678,18 +580,18 @@ fun CaixaScreen(
                         text = when (visualizacao) {
                             "Entradas" ->
                                 "Nenhuma entrada neste período."
-
                             "Saídas" ->
                                 "Nenhuma saída neste período."
-
                             else ->
                                 "Nenhuma movimentação neste período."
                         },
-                        color = Cinza,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(
-                            vertical = 25.dp
-                        )
+                        color = CaixaCinza,
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            .padding(vertical = 24.dp)
+                            .semantics {
+                                liveRegion = LiveRegionMode.Polite
+                            }
                     )
                 }
             } else {
@@ -697,61 +599,61 @@ fun CaixaScreen(
                     items = exibidas,
                     key = { it.id }
                 ) { movimentacao ->
-                    LinhaMovimentacao(movimentacao)
+                    CaixaLinhaAcessivel(movimentacao)
+
+                    HorizontalDivider(
+                        color = CaixaBorda.copy(alpha = 0.6f)
+                    )
                 }
             }
         }
     }
 
-    // FORMULARIO NOVO E MAIS LARGO
     if (mostrarCadastro) {
-        CadastroMovimentacaoDialog(
-            salvando = salvandoMovimentacao,
+        CaixaCadastroAcessivel(
+            salvando = salvando,
             onCancelar = {
-                if (!salvandoMovimentacao) {
+                if (!salvando) {
                     mostrarCadastro = false
                 }
             },
             onSalvar = { titulo, descricao, valor, tipo ->
-                if (!salvandoMovimentacao) {
-                    salvandoMovimentacao = true
+                if (!salvando) {
+                    salvando = true
 
                     scope.launch {
-                        val resultado =
-                            withContext(Dispatchers.IO) {
-                                MovimentacaoCaixaRepository
-                                    .cadastrar(
-                                        tipo = tipo.name,
-                                        categoria = titulo,
-                                        descricao =
-                                            descricao.ifBlank {
-                                                titulo
-                                            },
-                                        valor = valor
-                                    )
-                            }
+                        val resultado = withContext(
+                            Dispatchers.IO
+                        ) {
+                            MovimentacaoCaixaRepository.cadastrar(
+                                tipo = tipo.name,
+                                categoria = titulo,
+                                descricao = descricao.ifBlank {
+                                    titulo
+                                },
+                                valor = valor
+                            )
+                        }
 
-                        salvandoMovimentacao = false
+                        salvando = false
 
                         resultado.fold(
                             onSuccess = {
                                 mostrarCadastro = false
                                 periodo = 0
-
                                 visualizacao = if (
-                                    tipo ==
-                                    TipoMovimentacao.ENTRADA
+                                    tipo == TipoMovimentacao.ENTRADA
                                 ) {
                                     "Entradas"
                                 } else {
                                     "Saídas"
                                 }
-
-                                atualizacaoCaixa++
+                                mostrarTodas = false
+                                atualizacao++
                             },
-                            onFailure = { erro ->
-                                erroCaixa = erro.message
-                                    ?: "Não foi possível salvar."
+                            onFailure = {
+                                erroCaixa = it.message
+                                    ?: "Não foi possível salvar a movimentação."
                             }
                         )
                     }
@@ -761,77 +663,63 @@ fun CaixaScreen(
     }
 }
 
-// SELETOR DE MES
 @Composable
-private fun SeletorPeriodoCaixa(
+private fun CaixaPeriodoAcessivel(
     titulo: String,
-    aberto: Boolean,
     periodos: List<String>,
     selecionado: Int,
+    aberto: Boolean,
     onAbrir: () -> Unit,
     onFechar: () -> Unit,
     onSelecionar: (Int) -> Unit
 ) {
     Box {
-        Surface(
+        OutlinedButton(
             onClick = onAbrir,
-            shape = RoundedCornerShape(12.dp),
-            color = Branco,
-            border = BorderStroke(1.dp, Borda)
+            modifier = Modifier.heightIn(min = 48.dp),
+            shape = RoundedCornerShape(11.dp),
+            border = BorderStroke(1.dp, CaixaBorda),
+            contentPadding = PaddingValues(
+                horizontal = 10.dp,
+                vertical = 5.dp
+            ),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = CaixaAzul,
+                containerColor = Color.White
+            )
         ) {
-            Row(
-                modifier = Modifier.padding(
-                    horizontal = 11.dp,
-                    vertical = 10.dp
-                ),
-                verticalAlignment =
-                    Alignment.CenterVertically,
-                horizontalArrangement =
-                    Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector =
-                        Icons.Outlined.CalendarMonth,
-                    contentDescription = null,
-                    tint = Laranja,
-                    modifier = Modifier.size(17.dp)
-                )
+            Icon(
+                imageVector = Icons.Outlined.CalendarMonth,
+                contentDescription = null,
+                modifier = Modifier.size(17.dp)
+            )
 
-                Text(
-                    text = titulo,
-                    color = Azul,
-                    fontSize = 12.sp,
-                    fontWeight =
-                        FontWeight.SemiBold,
-                    maxLines = 1
-                )
+            Spacer(Modifier.width(6.dp))
 
-                Icon(
-                    imageVector =
-                        Icons.Outlined.KeyboardArrowDown,
-                    contentDescription =
-                        "Selecionar período",
-                    tint = Cinza,
-                    modifier = Modifier.size(17.dp)
-                )
-            }
+            Text(
+                titulo,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Icon(
+                imageVector = Icons.Outlined.KeyboardArrowDown,
+                contentDescription = null,
+                modifier = Modifier.size(17.dp)
+            )
         }
 
         DropdownMenu(
             expanded = aberto,
-            onDismissRequest = onFechar,
-            modifier = Modifier.background(Branco)
+            onDismissRequest = onFechar
         ) {
             periodos.forEachIndexed { indice, nome ->
                 DropdownMenuItem(
                     text = {
                         Text(
                             text = nome,
-                            color = Azul,
-                            fontSize = 13.sp,
-                            fontWeight = if (
-                                indice == selecionado
-                            ) {
+                            color = CaixaAzul,
+                            fontWeight = if (indice == selecionado) {
                                 FontWeight.Bold
                             } else {
                                 FontWeight.Normal
@@ -844,8 +732,9 @@ private fun SeletorPeriodoCaixa(
                     trailingIcon = {
                         if (indice == selecionado) {
                             Text(
-                                text = "✓",
-                                color = Verde
+                                "Selecionado",
+                                color = CaixaVerde,
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -855,157 +744,162 @@ private fun SeletorPeriodoCaixa(
     }
 }
 
-// CARTOES DO RESUMO
 @Composable
-private fun ResumoCaixaCard(
+private fun CaixaResumoAcessivel(
     titulo: String,
     valor: Double,
     cor: Color,
-    fundo: Color,
-    entrada: Boolean,
     modifier: Modifier,
     onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(142.dp),
-        shape = RoundedCornerShape(14.dp),
+        modifier = modifier
+            .heightIn(min = 120.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription =
+                    "Ver $titulo. Total: ${moedaCaixa(valor)}"
+            },
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = fundo
+            containerColor = if (titulo == "Entradas") {
+                Color(0xFFE5F4EC)
+            } else {
+                Color(0xFFF6E8D8)
+            }
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    horizontal = 6.dp,
-                    vertical = 12.dp
-                ),
-            horizontalAlignment =
-                Alignment.CenterHorizontally,
+                .padding(12.dp),
             verticalArrangement =
                 Arrangement.Center
         ) {
             Icon(
-                imageVector = if (entrada) {
+                imageVector = if (titulo == "Entradas") {
                     Icons.Outlined.ArrowDownward
                 } else {
                     Icons.Outlined.ArrowUpward
                 },
                 contentDescription = null,
-                tint = cor,
-                modifier = Modifier.size(24.dp)
+                tint = cor
             )
 
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = titulo,
-                color = Azul,
-                fontSize = 12.sp,
+                color = CaixaAzul,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
             )
 
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(5.dp))
 
             Text(
                 text = moedaCaixa(valor),
-                color = Azul,
-                fontSize = 13.sp,
+                color = CaixaAzul,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                lineHeight = 16.sp,
-                textAlign = TextAlign.Center
+                lineHeight = 21.sp
             )
         }
     }
 }
 
-// ITEM DA LISTA
 @Composable
-private fun LinhaMovimentacao(
+private fun CaixaLinhaAcessivel(
     movimentacao: MovimentacaoUi
 ) {
-    val entrada =
+    val tipoTexto = if (
         movimentacao.tipo == TipoMovimentacao.ENTRADA
-
-    val cor = if (entrada) {
-        Verde
+    ) {
+        "Entrada"
     } else {
-        Laranja
+        "Saída"
     }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 11.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription =
+                    "$tipoTexto. ${movimentacao.titulo}. " +
+                            "${movimentacao.descricao}. " +
+                            "Valor: ${moedaCaixa(movimentacao.valor)}. " +
+                            "Data: ${dataCaixa(movimentacao)}."
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .background(cor, CircleShape),
-            contentAlignment = Alignment.Center
+        Surface(
+            color = if (tipoTexto == "Entrada") {
+                Color(0xFFE5F4EC)
+            } else {
+                Color(0xFFF6E8D8)
+            },
+            shape = RoundedCornerShape(10.dp)
         ) {
             Icon(
-                imageVector = if (entrada) {
+                imageVector = if (tipoTexto == "Entrada") {
                     Icons.Outlined.ArrowDownward
                 } else {
-                    Icons.Outlined.ShoppingBag
+                    Icons.Outlined.ArrowUpward
                 },
                 contentDescription = null,
-                tint = Branco,
-                modifier = Modifier.size(20.dp)
+                tint = if (tipoTexto == "Entrada") {
+                    CaixaVerde
+                } else {
+                    CaixaLaranja
+                },
+                modifier = Modifier
+                    .padding(10.dp)
+                    .size(21.dp)
             )
         }
 
         Spacer(Modifier.width(12.dp))
 
         Column(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            verticalArrangement =
+                Arrangement.spacedBy(5.dp)
         ) {
             Text(
                 text = movimentacao.titulo,
-                color = Azul,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                color = CaixaAzul,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
             )
-
-            Spacer(Modifier.height(4.dp))
 
             Text(
                 text = movimentacao.descricao,
-                color = Cinza,
-                fontSize = 11.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                color = CaixaCinza,
+                fontSize = 12.sp,
+                lineHeight = 17.sp
             )
 
-            Spacer(Modifier.height(5.dp))
-
             Text(
-                text = moedaCaixa(movimentacao.valor),
-                color = cor,
+                text = "$tipoTexto: ${moedaCaixa(movimentacao.valor)}",
+                color = CaixaAzul,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        Spacer(Modifier.width(5.dp))
+        Spacer(Modifier.width(8.dp))
 
         Text(
             text = dataCaixa(movimentacao),
-            color = Cinza,
-            fontSize = 10.sp
+            color = CaixaCinza,
+            fontSize = 12.sp
         )
     }
 }
 
-// NOVO FORMULARIO DE MOVIMENTACAO
 @Composable
-private fun CadastroMovimentacaoDialog(
+private fun CaixaCadastroAcessivel(
     salvando: Boolean,
     onCancelar: () -> Unit,
     onSalvar: (
@@ -1019,29 +913,61 @@ private fun CadastroMovimentacaoDialog(
         mutableStateOf(TipoMovimentacao.ENTRADA)
     }
 
-    var titulo by remember {
-        mutableStateOf("")
+    var titulo by remember { mutableStateOf("") }
+    var descricao by remember { mutableStateOf("") }
+    var valor by remember { mutableStateOf("") }
+    var tentouSalvar by remember { mutableStateOf(false) }
+    var erro by remember { mutableStateOf("") }
+    var confirmar by remember { mutableStateOf(false) }
+
+    val teclado = LocalSoftwareKeyboardController.current
+    val foco = LocalFocusManager.current
+
+    val valorConvertido = valorCaixaDigitado(valor)
+    val tituloInvalido = tentouSalvar && titulo.isBlank()
+    val valorInvalido = tentouSalvar && (
+            valorConvertido == null ||
+                    !valorConvertido.isFinite() ||
+                    valorConvertido <= 0.0
+            )
+
+    val tipoTexto = if (tipo == TipoMovimentacao.ENTRADA) {
+        "Entrada"
+    } else {
+        "Saída"
     }
 
-    var descricao by remember {
-        mutableStateOf("")
+    fun validar() {
+        tentouSalvar = true
+
+        erro = when {
+            titulo.isBlank() -> "Informe o título da movimentação."
+            valorConvertido == null ||
+                    !valorConvertido.isFinite() ||
+                    valorConvertido <= 0.0 ->
+                "Informe um valor maior que zero."
+            else -> ""
+        }
+
+        if (erro.isBlank()) {
+            teclado?.hide()
+            foco.clearFocus()
+            confirmar = true
+        }
     }
 
-    var valor by remember {
-        mutableStateOf("")
-    }
-
-    var erro by remember {
-        mutableStateOf("")
-    }
-
-    val coresCampo = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Branco,
-        unfocusedContainerColor = Branco,
-        focusedBorderColor = Laranja,
-        unfocusedBorderColor = Borda,
-        focusedTextColor = Azul,
-        unfocusedTextColor = Azul
+    val cores = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        focusedBorderColor = CaixaLaranja,
+        unfocusedBorderColor = CaixaBorda,
+        focusedLabelColor = CaixaAzul,
+        unfocusedLabelColor = CaixaCinza,
+        focusedTextColor = CaixaAzul,
+        unfocusedTextColor = CaixaAzul,
+        cursorColor = CaixaAzul,
+        errorBorderColor = CaixaVermelho,
+        errorLabelColor = CaixaVermelho
     )
 
     Dialog(
@@ -1060,84 +986,90 @@ private fun CadastroMovimentacaoDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .imePadding(),
-            shape = RoundedCornerShape(22.dp),
-            color = Fundo,
-            shadowElevation = 8.dp
+            shape = RoundedCornerShape(20.dp),
+            color = CaixaFundo
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
+                modifier = Modifier.padding(18.dp)
             ) {
-                // TITULO
                 Text(
                     text = "Nova movimentação",
-                    color = Azul,
+                    color = CaixaAzul,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 1
+                    modifier = Modifier.semantics { heading() }
                 )
 
-                Spacer(Modifier.height(5.dp))
+                Spacer(Modifier.height(6.dp))
 
                 Text(
                     text = "Registre uma entrada ou saída.",
-                    color = Cinza,
-                    fontSize = 12.sp
+                    color = CaixaCinza,
+                    fontSize = 13.sp
                 )
 
-                Spacer(Modifier.height(19.dp))
+                Spacer(Modifier.height(14.dp))
 
-                // CONTEUDO ROLAVEL
                 Column(
                     modifier = Modifier
-                        .heightIn(max = 420.dp)
-                        .verticalScroll(
-                            rememberScrollState()
-                        ),
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement =
                         Arrangement.spacedBy(12.dp)
                 ) {
-                    // SELETOR DE ENTRADA OU SAIDA
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement =
-                            Arrangement.spacedBy(9.dp)
-                    ) {
-                        TipoCaixaBotao(
-                            titulo = "Entrada",
-                            selecionado =
-                                tipo == TipoMovimentacao.ENTRADA,
-                            cor = Verde,
-                            iconeEntrada = true,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                tipo = TipoMovimentacao.ENTRADA
-                                erro = ""
-                            }
-                        )
-
-                        TipoCaixaBotao(
-                            titulo = "Saída",
-                            selecionado =
-                                tipo == TipoMovimentacao.SAIDA,
-                            cor = Laranja,
-                            iconeEntrada = false,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                tipo = TipoMovimentacao.SAIDA
-                                erro = ""
-                            }
-                        )
-                    }
-
-                    // TITULO
                     Text(
-                        text = "Título",
-                        color = Azul,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
+                        text = "Tipo de movimentação",
+                        color = CaixaAzul,
+                        fontWeight = FontWeight.SemiBold
                     )
+
+                    Row(
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            TipoMovimentacao.ENTRADA,
+                            TipoMovimentacao.SAIDA
+                        ).forEach { opcao ->
+                            val selecionada = tipo == opcao
+                            val nome = if (
+                                opcao == TipoMovimentacao.ENTRADA
+                            ) {
+                                "Entrada"
+                            } else {
+                                "Saída"
+                            }
+
+                            FilterChip(
+                                selected = selecionada,
+                                onClick = {
+                                    tipo = opcao
+                                    erro = ""
+                                },
+                                label = {
+                                    Text(nome)
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp),
+                                colors =
+                                    FilterChipDefaults.filterChipColors(
+                                        containerColor = Color.White,
+                                        selectedContainerColor =
+                                            Color(0xFFF6E8D8),
+                                        labelColor = CaixaAzul,
+                                        selectedLabelColor = CaixaAzul
+                                    ),
+                                border =
+                                    FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = selecionada,
+                                        borderColor = CaixaBorda,
+                                        selectedBorderColor = CaixaLaranja
+                                    )
+                            )
+                        }
+                    }
 
                     OutlinedTextField(
                         value = titulo,
@@ -1145,58 +1077,63 @@ private fun CadastroMovimentacaoDialog(
                             titulo = it
                             erro = ""
                         },
+                        label = {
+                            Text("Título *")
+                        },
                         placeholder = {
                             Text(
-                                text = if (
+                                if (
                                     tipo == TipoMovimentacao.ENTRADA
                                 ) {
                                     "Ex.: Pagamento recebido"
                                 } else {
                                     "Ex.: Compra de materiais"
-                                },
-                                fontSize = 12.sp
+                                }
                             )
                         },
                         singleLine = true,
                         enabled = !salvando,
-                        shape = RoundedCornerShape(11.dp),
-                        colors = coresCampo,
-                        modifier = Modifier.fillMaxWidth()
+                        isError = tituloInvalido,
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Next
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (tituloInvalido) {
+                                    Modifier.semantics {
+                                        error(
+                                            "Informe o título da movimentação."
+                                        )
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            ),
+                        colors = cores,
+                        shape = RoundedCornerShape(10.dp)
                     )
 
-                    // DESCRICAO
-                    Text(
-                        text = "Descrição",
-                        color = Azul,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
-                    )
+                    if (tituloInvalido) {
+                        CaixaMensagemErro(
+                            "Informe o título da movimentação."
+                        )
+                    }
 
                     OutlinedTextField(
                         value = descricao,
                         onValueChange = {
                             descricao = it
                         },
-                        placeholder = {
-                            Text(
-                                text = "Detalhes da movimentação",
-                                fontSize = 12.sp
-                            )
+                        label = {
+                            Text("Descrição (opcional)")
                         },
                         minLines = 2,
                         maxLines = 3,
                         enabled = !salvando,
-                        shape = RoundedCornerShape(11.dp),
-                        colors = coresCampo,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // VALOR
-                    Text(
-                        text = "Valor (R$)",
-                        color = Azul,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = cores,
+                        shape = RoundedCornerShape(10.dp)
                     )
 
                     OutlinedTextField(
@@ -1205,194 +1142,207 @@ private fun CadastroMovimentacaoDialog(
                             valor = it
                             erro = ""
                         },
-                        placeholder = {
-                            Text(
-                                "0,00",
-                                fontSize = 12.sp
-                            )
+                        label = {
+                            Text("Valor (R$) *")
                         },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Decimal
-                        ),
+                        placeholder = {
+                            Text("0,00")
+                        },
                         singleLine = true,
                         enabled = !salvando,
-                        shape = RoundedCornerShape(11.dp),
-                        colors = coresCampo,
-                        modifier = Modifier.fillMaxWidth()
+                        isError = valorInvalido,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                teclado?.hide()
+                                foco.clearFocus()
+                            }
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (valorInvalido) {
+                                    Modifier.semantics {
+                                        error(
+                                            "Informe um valor maior que zero."
+                                        )
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            ),
+                        colors = cores,
+                        shape = RoundedCornerShape(10.dp)
                     )
 
-                    if (erro.isNotBlank()) {
-                        Text(
-                            text = erro,
-                            color = Color(0xFFB34D4D),
-                            fontSize = 12.sp
+                    if (valorInvalido) {
+                        CaixaMensagemErro(
+                            "Informe um valor maior que zero."
                         )
                     }
+
+                    if (erro.isNotBlank()) {
+                        CaixaMensagemErro(erro)
+                    }
+
+                    Text(
+                        text = "* Campos obrigatórios",
+                        color = CaixaCinza,
+                        fontSize = 12.sp
+                    )
                 }
-
-                Spacer(Modifier.height(20.dp))
-
-                HorizontalDivider(
-                    color = Borda
-                )
 
                 Spacer(Modifier.height(16.dp))
 
-                // BOTOES INFERIORES
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement =
-                        Arrangement.spacedBy(10.dp)
+                        Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedButton(
                         onClick = onCancelar,
                         enabled = !salvando,
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(11.dp),
-                        colors =
-                            ButtonDefaults.outlinedButtonColors(
-                                containerColor = Branco,
-                                contentColor = Azul
-                            ),
-                        border = BorderStroke(1.dp, Borda)
+                            .heightIn(min = 50.dp),
+                        border = BorderStroke(1.dp, CaixaBorda)
                     ) {
-                        Text(
-                            text = "Cancelar",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Text("Cancelar", color = CaixaAzul)
                     }
 
                     Button(
-                        onClick = {
-                            val numero = valor
-                                .replace("R$", "")
-                                .trim()
-                                .let { texto ->
-                                    if (texto.contains(",")) {
-                                        texto
-                                            .replace(".", "")
-                                            .replace(",", ".")
-                                    } else {
-                                        texto
-                                    }
-                                }
-                                .toDoubleOrNull()
-
-                            when {
-                                titulo.isBlank() -> {
-                                    erro = "Informe o título."
-                                }
-
-                                numero == null ||
-                                        !numero.isFinite() ||
-                                        numero <= 0.0 -> {
-                                    erro =
-                                        "Informe um valor válido."
-                                }
-
-                                else -> {
-                                    onSalvar(
-                                        titulo.trim(),
-                                        descricao.trim(),
-                                        numero,
-                                        tipo
-                                    )
-                                }
-                            }
-                        },
+                        onClick = { validar() },
                         enabled = !salvando,
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(11.dp),
+                            .heightIn(min = 50.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Azul,
-                            contentColor = Branco
+                            containerColor = CaixaAzul
                         )
                     ) {
                         if (salvando) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(19.dp),
-                                color = Branco,
-                                strokeWidth = 2.dp
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
                             )
                         } else {
-                            Text(
-                                text = "Salvar",
-                                fontSize = 13.sp,
-                                fontWeight =
-                                    FontWeight.SemiBold
-                            )
+                            Text("Continuar")
                         }
                     }
                 }
             }
         }
     }
+
+    if (confirmar) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!salvando) {
+                    confirmar = false
+                }
+            },
+            title = {
+                Text(
+                    text = "Confirmar $tipoTexto?",
+                    color = CaixaAzul,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement =
+                        Arrangement.spacedBy(9.dp)
+                ) {
+                    Text(
+                        text = "Confira os dados antes de registrar.",
+                        color = CaixaCinza
+                    )
+
+                    Text(
+                        text = "Tipo: $tipoTexto",
+                        color = CaixaAzul
+                    )
+
+                    Text(
+                        text = "Título: ${titulo.trim()}",
+                        color = CaixaAzul
+                    )
+
+                    Text(
+                        text = "Valor: ${
+                            moedaCaixa(valorConvertido ?: 0.0)
+                        }",
+                        color = CaixaAzul,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    if (descricao.isNotBlank()) {
+                        Text(
+                            text = "Descrição: ${descricao.trim()}",
+                            color = CaixaCinza
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val numero = valorConvertido
+
+                        if (
+                            numero != null &&
+                            numero.isFinite() &&
+                            numero > 0.0 &&
+                            titulo.isNotBlank() &&
+                            !salvando
+                        ) {
+                            confirmar = false
+                            onSalvar(
+                                titulo.trim(),
+                                descricao.trim(),
+                                numero,
+                                tipo
+                            )
+                        }
+                    },
+                    enabled = !salvando,
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CaixaAzul
+                    )
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        confirmar = false
+                    },
+                    enabled = !salvando,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text("Corrigir", color = CaixaCinza)
+                }
+            },
+            containerColor = Color.White
+        )
+    }
 }
 
-// BOTOES PARA SELECIONAR O TIPO
 @Composable
-private fun TipoCaixaBotao(
-    titulo: String,
-    selecionado: Boolean,
-    cor: Color,
-    iconeEntrada: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(47.dp),
-        shape = RoundedCornerShape(11.dp),
-        color = if (selecionado) {
-            cor
-        } else {
-            Branco
-        },
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (selecionado) {
-                cor
-            } else {
-                Borda
-            }
-        )
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = if (iconeEntrada) {
-                    Icons.Outlined.ArrowDownward
-                } else {
-                    Icons.Outlined.ArrowUpward
-                },
-                contentDescription = null,
-                tint = if (selecionado) {
-                    Branco
-                } else {
-                    cor
-                },
-                modifier = Modifier.size(18.dp)
-            )
-
-            Spacer(Modifier.width(6.dp))
-
-            Text(
-                text = titulo,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (selecionado) {
-                    Branco
-                } else {
-                    Azul
-                }
-            )
+private fun CaixaMensagemErro(mensagem: String) {
+    Text(
+        text = mensagem,
+        color = CaixaVermelho,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+        modifier = Modifier.semantics {
+            liveRegion = LiveRegionMode.Polite
         }
-    }
+    )
 }
