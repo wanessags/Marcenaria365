@@ -8,10 +8,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,7 +26,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,10 +43,24 @@ import java.util.Calendar
 
 private val FundoEdicao = Color(0xFFFAF6F0)
 private val AzulEdicao = Color(0xFF193447)
-private val CobreEdicao = Color(0xFFBD906E)
-private val CinzaEdicao = Color(0xFF929292)
-private val BordaEdicao = Color(0xFFE8DFD4)
-private val VermelhoEdicao = Color(0xFFB34D4D)
+private val CobreEdicao = Color(0xFF94613C)
+private val CinzaEdicao = Color(0xFF53616A)
+private val BordaEdicao = Color(0xFF89969E)
+private val VermelhoEdicao = Color(0xFFB3261E)
+
+private fun converterValorEdicao(texto: String): Double? {
+    val limpo = texto
+        .replace("R$", "")
+        .trim()
+
+    val normalizado = if (limpo.contains(",")) {
+        limpo.replace(".", "").replace(",", ".")
+    } else {
+        limpo
+    }
+
+    return normalizado.toDoubleOrNull()
+}
 
 @Composable
 fun EditarServicoScreen(
@@ -47,6 +69,8 @@ fun EditarServicoScreen(
     onSalvar: (ServicoUi) -> Unit
 ) {
     val context = LocalContext.current
+    val foco = LocalFocusManager.current
+    val teclado = LocalSoftwareKeyboardController.current
 
     var tipo by rememberSaveable(servico.id) {
         mutableStateOf(servico.titulo)
@@ -74,7 +98,11 @@ fun EditarServicoScreen(
         mutableStateOf(servico.fotoUri)
     }
 
-    var erro by rememberSaveable {
+    var tentouSalvar by rememberSaveable(servico.id) {
+        mutableStateOf(false)
+    }
+
+    var erroGeral by rememberSaveable(servico.id) {
         mutableStateOf("")
     }
 
@@ -86,6 +114,7 @@ fun EditarServicoScreen(
         mutableStateOf(false)
     }
 
+    // Mantém o acesso persistente à foto selecionada.
     val seletorFoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -99,10 +128,10 @@ fun EditarServicoScreen(
 
             if (acessoPersistente) {
                 fotoUri = uri.toString()
-                erro = ""
+                erroGeral = ""
             } else {
-                erro = "Não foi possível manter acesso à imagem. " +
-                        "Escolha outra foto."
+                erroGeral =
+                    "Não foi possível manter acesso à imagem. Escolha outra foto."
             }
         }
     }
@@ -111,8 +140,8 @@ fun EditarServicoScreen(
         Calendar.getInstance()
     }
 
-    val dataInicial = remember(servico.entrega) {
-        val partes = servico.entrega.split("/")
+    val dataInicial = remember(entrega) {
+        val partes = entrega.split("/")
 
         runCatching {
             Triple(
@@ -129,13 +158,91 @@ fun EditarServicoScreen(
         }
     }
 
+    val valorNumero = converterValorEdicao(valor)
+
+    val tipoInvalido =
+        tentouSalvar && tipo.isBlank()
+
+    val descricaoInvalida =
+        tentouSalvar && descricao.isBlank()
+
+    val entregaInvalida =
+        tentouSalvar && entrega.isBlank()
+
+    val valorInvalido =
+        tentouSalvar && (
+                valorNumero == null ||
+                        !valorNumero.isFinite() ||
+                        valorNumero <= 0.0 ||
+                        valorNumero < servico.valorRecebido
+                )
+
+    val erroValor = when {
+        valorNumero == null ||
+                !valorNumero.isFinite() ||
+                valorNumero <= 0.0 ->
+            "Informe um valor estimado maior que zero."
+
+        valorNumero < servico.valorRecebido ->
+            "O valor estimado não pode ser menor que o total já recebido."
+
+        else -> ""
+    }
+
+    fun salvarAlteracoes() {
+        tentouSalvar = true
+
+        erroGeral = when {
+            tipo.isBlank() ->
+                "Selecione o tipo de serviço."
+
+            descricao.isBlank() ->
+                "Informe a descrição do serviço."
+
+            entrega.isBlank() ->
+                "Selecione a data prevista de entrega."
+
+            erroValor.isNotBlank() ->
+                erroValor
+
+            else -> ""
+        }
+
+        if (erroGeral.isNotEmpty()) {
+            teclado?.hide()
+            foco.clearFocus()
+            return
+        }
+
+        val numeroValido = valorNumero ?: return
+
+        teclado?.hide()
+        foco.clearFocus()
+
+        onSalvar(
+            servico.copy(
+                titulo = tipo,
+                descricao = descricao.trim(),
+                entrega = entrega,
+                status = status,
+                valorEstimado = numeroValido,
+                fotoUri = fotoUri
+            )
+        )
+    }
+
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         focusedBorderColor = CobreEdicao,
         unfocusedBorderColor = BordaEdicao,
         focusedTextColor = AzulEdicao,
-        unfocusedTextColor = AzulEdicao
+        unfocusedTextColor = AzulEdicao,
+        focusedLabelColor = AzulEdicao,
+        unfocusedLabelColor = CinzaEdicao,
+        cursorColor = AzulEdicao,
+        errorBorderColor = VermelhoEdicao,
+        errorLabelColor = VermelhoEdicao
     )
 
     BackHandler(onBack = onVoltar)
@@ -147,18 +254,26 @@ fun EditarServicoScreen(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .imePadding()
     ) {
+        // CABEÇALHO
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(58.dp)
+                .heightIn(min = 58.dp)
                 .background(AzulEdicao)
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onVoltar) {
+            IconButton(
+                onClick = onVoltar,
+                modifier = Modifier.sizeIn(
+                    minWidth = 48.dp,
+                    minHeight = 48.dp
+                )
+            ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Voltar",
+                    imageVector =
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Voltar aos detalhes do serviço",
                     tint = Color.White
                 )
             }
@@ -169,7 +284,9 @@ fun EditarServicoScreen(
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { heading() }
             )
 
             Spacer(Modifier.width(48.dp))
@@ -183,102 +300,176 @@ fun EditarServicoScreen(
         ) {
             Spacer(Modifier.height(22.dp))
 
-            // FOTO: PERMITE ADICIONAR DEPOIS DO CADASTRO
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(165.dp)
-                    .clickable {
-                        seletorFoto.launch(arrayOf("image/*"))
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                if (!fotoUri.isNullOrBlank()) {
-                    FotoServico(
-                        fotoUri = fotoUri,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.AddPhotoAlternate,
-                            contentDescription = "Adicionar foto",
-                            tint = CinzaEdicao,
-                            modifier = Modifier.size(42.dp)
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-
-                        Text(
-                            text = "Adicionar foto do serviço",
-                            color = CinzaEdicao,
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-            }
-
-            if (!fotoUri.isNullOrBlank()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    TextButton(
-                        onClick = {
-                            seletorFoto.launch(arrayOf("image/*"))
-                        }
-                    ) {
-                        Text("Trocar foto", color = CobreEdicao)
-                    }
-
-                    TextButton(
-                        onClick = {
-                            fotoUri = null
-                        }
-                    ) {
-                        Text("Remover foto", color = VermelhoEdicao)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(17.dp))
-
-            // CLIENTE VINCULADO - NÃO EDITÁVEL
+            // FOTO
             Text(
-                text = "Cliente",
-                color = AzulEdicao,
+                text = "Foto do serviço (opcional)",
                 fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = AzulEdicao
             )
 
-            Spacer(Modifier.height(7.dp))
+            Spacer(Modifier.height(9.dp))
 
+            if (fotoUri.isNullOrBlank()) {
+                OutlinedButton(
+                    onClick = {
+                        seletorFoto.launch(arrayOf("image/*"))
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 135.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        BordaEdicao
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = AzulEdicao
+                    )
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Outlined.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint = CobreEdicao,
+                            modifier = Modifier.size(36.dp)
+                        )
+
+                        Spacer(Modifier.height(10.dp))
+
+                        Text(
+                            text = "Adicionar foto",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(Modifier.height(5.dp))
+
+                        Text(
+                            text = "Escolher uma imagem do dispositivo",
+                            fontSize = 12.sp,
+                            color = CinzaEdicao,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        BordaEdicao
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        FotoServico(
+                            fotoUri = fotoUri,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(165.dp)
+                        )
+
+                        Spacer(Modifier.height(10.dp))
+
+                        Text(
+                            text = "Foto selecionada",
+                            color = AzulEdicao,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(Modifier.height(10.dp))
+
+                        Row(
+                            horizontalArrangement =
+                                Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    seletorFoto.launch(
+                                        arrayOf("image/*")
+                                    )
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp),
+                                shape = RoundedCornerShape(9.dp),
+                                border = BorderStroke(
+                                    1.dp,
+                                    BordaEdicao
+                                ),
+                                contentPadding = PaddingValues(6.dp)
+                            ) {
+                                Text(
+                                    text = "Trocar foto",
+                                    color = AzulEdicao,
+                                    fontSize = 13.sp
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    fotoUri = null
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp),
+                                shape = RoundedCornerShape(9.dp),
+                                border = BorderStroke(
+                                    1.dp,
+                                    BordaEdicao
+                                ),
+                                contentPadding = PaddingValues(6.dp)
+                            ) {
+                                Text(
+                                    text = "Remover foto",
+                                    color = VermelhoEdicao,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // CLIENTE VINCULADO
             OutlinedTextField(
                 value = servico.clienteNome,
                 onValueChange = {},
                 readOnly = true,
+                label = {
+                    Text("Cliente vinculado")
+                },
+                supportingText = {
+                    Text(
+                        text = "O cliente vinculado não pode ser alterado aqui.",
+                        color = CinzaEdicao,
+                        fontSize = 12.sp
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(9.dp),
                 colors = coresCampo
             )
 
-            Spacer(Modifier.height(7.dp))
-
-            Text(
-                text = "O cliente vinculado não pode ser alterado aqui.",
-                color = CinzaEdicao,
-                fontSize = 11.sp
-            )
-
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(17.dp))
 
             // TIPO DE SERVIÇO
             Text(
-                text = "Tipo de serviço",
+                text = "Tipo de serviço *",
                 color = AzulEdicao,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -288,24 +479,49 @@ fun EditarServicoScreen(
 
             Box {
                 OutlinedButton(
-                    onClick = { menuTipos = true },
+                    onClick = {
+                        menuTipos = true
+                        teclado?.hide()
+                        foco.clearFocus()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .heightIn(min = 52.dp)
+                        .then(
+                            if (tipoInvalido) {
+                                Modifier.semantics {
+                                    error("Selecione o tipo de serviço.")
+                                }
+                            } else {
+                                Modifier
+                            }
+                        ),
                     shape = RoundedCornerShape(9.dp),
-                    border = BorderStroke(1.dp, BordaEdicao),
+                    border = BorderStroke(
+                        1.dp,
+                        if (tipoInvalido) {
+                            VermelhoEdicao
+                        } else {
+                            BordaEdicao
+                        }
+                    ),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.White,
                         contentColor = AzulEdicao
                     )
                 ) {
                     Text(
-                        text = tipo.ifBlank { "Selecione o tipo" },
+                        text = tipo.ifBlank {
+                            "Selecione o tipo"
+                        },
                         color = AzulEdicao,
                         modifier = Modifier.weight(1f)
                     )
 
-                    Icon(Icons.Outlined.ExpandMore, null)
+                    Icon(
+                        imageVector = Icons.Outlined.ExpandMore,
+                        contentDescription = null
+                    )
                 }
 
                 DropdownMenu(
@@ -315,51 +531,76 @@ fun EditarServicoScreen(
                     }
                 ) {
                     (tiposServico + tipo)
+                        .filter { it.isNotBlank() }
                         .distinct()
                         .forEach { item ->
                             DropdownMenuItem(
-                                text = { Text(item) },
+                                text = {
+                                    Text(item)
+                                },
                                 onClick = {
                                     tipo = item
                                     menuTipos = false
-                                    erro = ""
+                                    erroGeral = ""
                                 }
                             )
                         }
                 }
             }
 
+            if (tipoInvalido) {
+                ErroCampoEdicao(
+                    "Selecione o tipo de serviço."
+                )
+            }
+
             Spacer(Modifier.height(20.dp))
 
             // DESCRIÇÃO
-            Text(
-                text = "Descrição",
-                color = AzulEdicao,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.height(7.dp))
-
             OutlinedTextField(
                 value = descricao,
                 onValueChange = {
                     descricao = it
-                    erro = ""
+                    erroGeral = ""
+                },
+                label = {
+                    Text("Descrição do serviço *")
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 115.dp),
+                    .heightIn(min = 115.dp)
+                    .then(
+                        if (descricaoInvalida) {
+                            Modifier.semantics {
+                                error(
+                                    "Informe a descrição do serviço."
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 minLines = 3,
+                maxLines = 5,
+                isError = descricaoInvalida,
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next
+                ),
                 shape = RoundedCornerShape(9.dp),
                 colors = coresCampo
             )
 
+            if (descricaoInvalida) {
+                ErroCampoEdicao(
+                    "Informe a descrição do serviço."
+                )
+            }
+
             Spacer(Modifier.height(20.dp))
 
-            // PRAZO
+            // DATA DE ENTREGA
             Text(
-                text = "Data prevista de entrega",
+                text = "Data prevista de entrega *",
                 color = AzulEdicao,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
@@ -369,6 +610,9 @@ fun EditarServicoScreen(
 
             OutlinedButton(
                 onClick = {
+                    teclado?.hide()
+                    foco.clearFocus()
+
                     DatePickerDialog(
                         context,
                         { _, ano, mes, dia ->
@@ -377,7 +621,7 @@ fun EditarServicoScreen(
                                 mes + 1,
                                 ano
                             )
-                            erro = ""
+                            erroGeral = ""
                         },
                         dataInicial.first,
                         dataInicial.second,
@@ -386,28 +630,57 @@ fun EditarServicoScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .heightIn(min = 52.dp)
+                    .then(
+                        if (entregaInvalida) {
+                            Modifier.semantics {
+                                error(
+                                    "Selecione a data prevista de entrega."
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 shape = RoundedCornerShape(9.dp),
-                border = BorderStroke(1.dp, BordaEdicao),
+                border = BorderStroke(
+                    1.dp,
+                    if (entregaInvalida) {
+                        VermelhoEdicao
+                    } else {
+                        BordaEdicao
+                    }
+                ),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
                     contentColor = AzulEdicao
                 )
             ) {
                 Text(
-                    text = entrega.ifBlank { "DD/MM/AAAA" },
-                    modifier = Modifier.weight(1f)
+                    text = if (entrega.isBlank()) {
+                        "Selecionar data"
+                    } else {
+                        "Entrega: $entrega"
+                    },
+                    modifier = Modifier.weight(1f),
+                    color = AzulEdicao
                 )
 
                 Icon(
                     imageVector = Icons.Outlined.CalendarMonth,
-                    contentDescription = "Alterar data"
+                    contentDescription = null
+                )
+            }
+
+            if (entregaInvalida) {
+                ErroCampoEdicao(
+                    "Selecione a data prevista de entrega."
                 )
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // STATUS
+            // SITUAÇÃO
             Text(
                 text = "Situação do serviço",
                 color = AzulEdicao,
@@ -419,23 +692,34 @@ fun EditarServicoScreen(
 
             Box {
                 OutlinedButton(
-                    onClick = { menuStatus = true },
+                    onClick = {
+                        menuStatus = true
+                        teclado?.hide()
+                        foco.clearFocus()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .heightIn(min = 52.dp),
                     shape = RoundedCornerShape(9.dp),
-                    border = BorderStroke(1.dp, BordaEdicao),
+                    border = BorderStroke(
+                        1.dp,
+                        BordaEdicao
+                    ),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.White,
                         contentColor = AzulEdicao
                     )
                 ) {
                     Text(
-                        text = status,
-                        modifier = Modifier.weight(1f)
+                        text = "Situação: $status",
+                        modifier = Modifier.weight(1f),
+                        color = AzulEdicao
                     )
 
-                    Icon(Icons.Outlined.ExpandMore, null)
+                    Icon(
+                        imageVector = Icons.Outlined.ExpandMore,
+                        contentDescription = null
+                    )
                 }
 
                 DropdownMenu(
@@ -444,75 +728,116 @@ fun EditarServicoScreen(
                         menuStatus = false
                     }
                 ) {
-                    listOf(
-                        "Orçamento",
-                        "Em produção",
-                        "Concluído",
-                        "Cancelado"
-                    ).forEach { situacao ->
-                        DropdownMenuItem(
-                            text = { Text(situacao) },
-                            onClick = {
-                                status = situacao
-                                menuStatus = false
-                                erro = ""
-                            }
-                        )
-                    }
+                    (
+                            listOf(
+                                "Orçamento",
+                                "Em produção",
+                                "Concluído",
+                                "Cancelado"
+                            ) + status
+                            )
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                        .forEach { situacao ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(situacao)
+                                },
+                                onClick = {
+                                    status = situacao
+                                    menuStatus = false
+                                    erroGeral = ""
+                                }
+                            )
+                        }
                 }
             }
 
             Spacer(Modifier.height(20.dp))
 
             // VALOR ESTIMADO
-            Text(
-                text = "Valor estimado",
-                color = AzulEdicao,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(Modifier.height(7.dp))
-
             OutlinedTextField(
                 value = valor,
                 onValueChange = {
                     valor = it
-                    erro = ""
+                    erroGeral = ""
                 },
-                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Valor estimado (R$) *")
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (valorInvalido) {
+                            Modifier.semantics {
+                                error(erroValor)
+                            }
+                        } else {
+                            Modifier
+                        }
+                    ),
                 singleLine = true,
+                isError = valorInvalido,
                 shape = RoundedCornerShape(9.dp),
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Decimal
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        teclado?.hide()
+                        foco.clearFocus()
+                    }
                 ),
                 colors = coresCampo
             )
 
-            Spacer(Modifier.height(8.dp))
+            if (valorInvalido && erroValor.isNotBlank()) {
+                ErroCampoEdicao(erroValor)
+            }
+
+            Spacer(Modifier.height(9.dp))
 
             Text(
                 text = "Já recebido: ${
                     moedaServico(servico.valorRecebido)
                 }",
+                color = AzulEdicao,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(Modifier.height(5.dp))
+
+            Text(
+                text = "O valor estimado não pode ser menor que o valor já recebido.",
+                color = CinzaEdicao,
+                fontSize = 12.sp,
+                lineHeight = 18.sp
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            Text(
+                text = "* Campos obrigatórios",
                 color = CinzaEdicao,
                 fontSize = 12.sp
             )
 
-            Text(
-                text = "O valor estimado não pode ser menor " +
-                        "que o valor já recebido.",
-                color = CinzaEdicao,
-                fontSize = 11.sp
-            )
-
-            if (erro.isNotBlank()) {
-                Spacer(Modifier.height(15.dp))
+            // MENSAGEM GERAL PARA LEITORES DE TELA
+            if (erroGeral.isNotBlank()) {
+                Spacer(Modifier.height(13.dp))
 
                 Text(
-                    text = erro,
+                    text = erroGeral,
                     color = VermelhoEdicao,
-                    fontSize = 12.sp
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics {
+                            liveRegion = LiveRegionMode.Polite
+                        }
                 )
             }
 
@@ -530,9 +855,12 @@ fun EditarServicoScreen(
                 onClick = onVoltar,
                 modifier = Modifier
                     .weight(1f)
-                    .height(52.dp),
+                    .heightIn(min = 52.dp),
                 shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, BordaEdicao),
+                border = BorderStroke(
+                    1.dp,
+                    BordaEdicao
+                ),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
                     contentColor = AzulEdicao
@@ -546,48 +874,11 @@ fun EditarServicoScreen(
 
             Button(
                 onClick = {
-                    val numero = valor
-                        .replace("R$", "")
-                        .replace(".", "")
-                        .replace(",", ".")
-                        .trim()
-                        .toDoubleOrNull()
-
-                    erro = when {
-                        tipo.isBlank() ->
-                            "Selecione um tipo de serviço."
-
-                        descricao.isBlank() ->
-                            "Informe a descrição."
-
-                        entrega.isBlank() ->
-                            "Selecione a data de entrega."
-
-                        numero == null || numero <= 0.0 ->
-                            "Informe um valor válido."
-
-                        numero < servico.valorRecebido ->
-                            "O valor não pode ser menor " +
-                                    "que o total já recebido."
-
-                        else -> {
-                            onSalvar(
-                                servico.copy(
-                                    titulo = tipo,
-                                    descricao = descricao.trim(),
-                                    entrega = entrega,
-                                    status = status,
-                                    valorEstimado = numero,
-                                    fotoUri = fotoUri
-                                )
-                            )
-                            ""
-                        }
-                    }
+                    salvarAlteracoes()
                 },
                 modifier = Modifier
                     .weight(1f)
-                    .height(52.dp),
+                    .heightIn(min = 52.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AzulEdicao,
@@ -596,10 +887,28 @@ fun EditarServicoScreen(
             ) {
                 Text(
                     text = "Salvar",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
                 )
             }
         }
     }
+}
+
+@Composable
+private fun ErroCampoEdicao(
+    mensagem: String
+) {
+    Text(
+        text = mensagem,
+        color = VermelhoEdicao,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp)
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+            }
+    )
 }
