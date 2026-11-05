@@ -44,6 +44,7 @@ import com.nexo.marcenaria365.data.repository.ClienteRepository
 import com.nexo.marcenaria365.data.repository.ServicoRepository
 import com.nexo.marcenaria365.data.repository.RecebimentoRepository
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
+import com.nexo.marcenaria365.ui.screens.servicos.rotuloSituacaoServico
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
@@ -79,7 +80,7 @@ data class ResumoDashboard(
     val entregas: List<EntregaResumo>
 )
 
-// LÓGICA ORIGINAL: FORMATAÇÃO DOS VALORES
+// FORMATAÇÃO DOS VALORES
 private fun formatarMoeda(valor: Double): String {
     return NumberFormat
         .getCurrencyInstance(
@@ -88,7 +89,7 @@ private fun formatarMoeda(valor: Double): String {
         .format(valor)
 }
 
-// LÓGICA ORIGINAL: CLASSIFICAÇÃO DOS SERVIÇOS
+// CLASSIFICAÇÃO DOS SERVIÇOS
 private fun classificarServico(status: String): String {
     val texto = status.trim().lowercase(Locale.ROOT)
 
@@ -101,14 +102,17 @@ private fun classificarServico(status: String): String {
                 texto.contains("andamento") ||
                 texto.contains("execu") -> "producao"
 
-        texto.contains("orç") ||
-                texto.contains("orc") -> "orcamentos"
+        texto.contains("cancel") -> "cancelados"
+
+        texto.contains("aguard") ||
+                texto.contains("orç") ||
+                texto.contains("orc") -> "aguardando"
 
         else -> "pendentes"
     }
 }
 
-// LÓGICA ORIGINAL: ORDENAÇÃO DAS ENTREGAS
+// ORDENAÇÃO DAS ENTREGAS
 private fun ordenarData(prazo: String): Long {
     return try {
         val formato = SimpleDateFormat(
@@ -125,7 +129,7 @@ private fun ordenarData(prazo: String): Long {
     }
 }
 
-// LÓGICA ORIGINAL: DASHBOARD COM DADOS CADASTRADOS
+// DASHBOARD COM DADOS REAIS
 private fun montarResumoDashboard(
     quantidadeClientes: Int,
     servicos: List<ServicoUi>
@@ -139,8 +143,12 @@ private fun montarResumoDashboard(
         classificarServico(it.status) == "concluidos"
     }
 
-    val orcamentos = servicos.count {
-        classificarServico(it.status) == "orcamentos"
+    val aguardando = servicos.count {
+        classificarServico(it.status) == "aguardando"
+    }
+
+    val cancelados = servicos.count {
+        classificarServico(it.status) == "cancelados"
     }
 
     val pendentes = servicos.count {
@@ -153,7 +161,9 @@ private fun montarResumoDashboard(
 
     val proximasEntregas = servicos
         .filter {
-            classificarServico(it.status) != "concluidos" &&
+            val situacao = classificarServico(it.status)
+            situacao != "concluidos" &&
+                    situacao != "cancelados" &&
                     it.entrega.isNotBlank()
         }
         .sortedBy {
@@ -174,28 +184,49 @@ private fun montarResumoDashboard(
         clientes = quantidadeClientes,
         emAndamento = emAndamento,
         concluidos = concluidos,
-        status = listOf(
-            StatusServico(
-                nome = "Orçamentos",
-                quantidade = orcamentos,
-                cor = LaranjaHome
-            ),
-            StatusServico(
-                nome = "Produção",
-                quantidade = emAndamento,
-                cor = CinzaGraficoHome
-            ),
-            StatusServico(
-                nome = "Concluídos",
-                quantidade = concluidos,
-                cor = VerdeHome
-            ),
-            StatusServico(
-                nome = "Pendentes",
-                quantidade = pendentes,
-                cor = VermelhoHome
+        status = buildList {
+            add(
+                StatusServico(
+                    nome = "Aguardando",
+                    quantidade = aguardando,
+                    cor = LaranjaHome
+                )
             )
-        ),
+
+            add(
+                StatusServico(
+                    nome = "Produção",
+                    quantidade = emAndamento,
+                    cor = CinzaGraficoHome
+                )
+            )
+
+            add(
+                StatusServico(
+                    nome = "Concluídos",
+                    quantidade = concluidos,
+                    cor = VerdeHome
+                )
+            )
+
+            add(
+                StatusServico(
+                    nome = "Cancelados",
+                    quantidade = cancelados,
+                    cor = VermelhoHome
+                )
+            )
+
+            if (pendentes > 0) {
+                add(
+                    StatusServico(
+                        nome = "Outros status",
+                        quantidade = pendentes,
+                        cor = Color(0xFF9174AE)
+                    )
+                )
+            }
+        },
         entregas = proximasEntregas
     )
 }
@@ -210,7 +241,7 @@ fun HomeScreen(
     onMaisClick: () -> Unit,
     quantidadeClientes: Int = 0
 ) {
-    // CORES DINÂMICAS: acompanham o tema global.
+    // CORES DINÂMICAS
     val cores = MaterialTheme.colorScheme
     val corFundo = cores.background
     val corCartao = cores.surface
@@ -223,7 +254,6 @@ fun HomeScreen(
         .substringBefore(" ")
         .ifBlank { "Usuário" }
 
-    // ESTADOS ORIGINAIS
     var totalClientes by remember {
         mutableIntStateOf(0)
     }
@@ -242,7 +272,7 @@ fun HomeScreen(
 
     val tokenAtual = AuthRepository.sessaoAtual?.token
 
-    // INTEGRAÇÃO ORIGINAL COM A API
+    // INTEGRAÇÃO COM API
     LaunchedEffect(tokenAtual) {
         carregando = true
         mensagemErro = null
@@ -385,7 +415,7 @@ fun HomeScreen(
                 }
             }
 
-            // MENSAGEM ORIGINAL DE ERRO
+            // MENSAGEM DE ERRO
             if (mensagemErro != null) {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -412,7 +442,7 @@ fun HomeScreen(
 
             if (!carregando && mensagemErro == null) {
 
-                // TOTAL RECEBIDO - VALOR REAL DA API
+                // TOTAL RECEBIDO DA API
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -464,7 +494,7 @@ fun HomeScreen(
 
                         Spacer(Modifier.height(10.dp))
 
-                        // MANTÉM A NAVEGAÇÃO PARA CAIXA
+                        // NAVEGAÇÃO PARA CAIXA
                         Row(
                             modifier = Modifier
                                 .clickable(
@@ -498,7 +528,7 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(11.dp))
 
-                // INDICADORES ORIGINAIS - CLICÁVEIS
+                // INDICADORES CLICÁVEIS
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement =
@@ -624,7 +654,7 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(11.dp))
 
-                // PRÓXIMAS ENTREGAS REAIS
+                // PRÓXIMAS ENTREGAS
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -669,7 +699,7 @@ fun HomeScreen(
                                                 "Serviço: ${entrega.titulo}. " +
                                                         "Cliente: ${entrega.cliente}. " +
                                                         "Prazo: ${entrega.prazo}. " +
-                                                        "Situação: ${entrega.status}."
+                                                        "Situação: ${rotuloSituacaoServico(entrega.status)}."
                                         }
                                         .padding(bottom = 12.dp),
                                     verticalAlignment =
@@ -725,7 +755,9 @@ fun HomeScreen(
                                     Spacer(Modifier.width(5.dp))
 
                                     Text(
-                                        text = entrega.status,
+                                        text = rotuloSituacaoServico(
+                                            entrega.status
+                                        ),
                                         color = corDestaque,
                                         fontSize = 11.sp,
                                         maxLines = 2,
@@ -743,7 +775,7 @@ fun HomeScreen(
             }
         }
 
-        // MENU INFERIOR ORIGINAL
+        // MENU INFERIOR
         NavigationBar(
             containerColor = corCartao,
             tonalElevation = 0.dp,
