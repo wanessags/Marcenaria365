@@ -1,57 +1,113 @@
+
 package com.nexo.marcenaria365.ui.theme
 
-import android.app.Activity
-import android.os.Build
+import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+enum class ModoAparencia {
+    CLARO,
+    ESCURO,
+    AUTOMATICO
+}
+
+object PreferenciasAparencia {
+    private const val ARQUIVO = "marcenaria365_aparencia"
+    private const val CHAVE = "modo"
+
+    var modo by mutableStateOf(ModoAparencia.CLARO)
+        private set
+
+    fun inicializar(context: Context) {
+        val preferencias = context.getSharedPreferences(
+            ARQUIVO,
+            Context.MODE_PRIVATE
+        )
+
+        val valor = preferencias.getString(
+            CHAVE,
+            ModoAparencia.CLARO.name
+        )
+
+        modo = runCatching {
+            ModoAparencia.valueOf(
+                valor ?: ModoAparencia.CLARO.name
+            )
+        }.getOrDefault(ModoAparencia.CLARO)
+    }
+
+    fun alterar(
+        context: Context,
+        novoModo: ModoAparencia
+    ) {
+        context.getSharedPreferences(
+            ARQUIVO,
+            Context.MODE_PRIVATE
+        ).edit()
+            .putString(CHAVE, novoModo.name)
+            .apply()
+
+        modo = novoModo
+    }
+}
+
+private val EsquemaClaro = lightColorScheme(
+    primary = Color(0xFF193447),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFF1E4D7),
+    onPrimaryContainer = Color(0xFF193447),
+    secondary = Color(0xFF94613C),
+    onSecondary = Color.White,
+    background = Color(0xFFFAF6F0),
+    onBackground = Color(0xFF193447),
+    surface = Color.White,
+    onSurface = Color(0xFF193447),
+    surfaceVariant = Color(0xFFF1E8DE),
+    onSurfaceVariant = Color(0xFF53616A),
+    outline = Color(0xFF89969E),
+    error = Color(0xFFB3261E),
+    onError = Color.White
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val EsquemaEscuro = darkColorScheme(
+    primary = Color(0xFFE9B47C),
+    onPrimary = Color(0xFF1B252D),
+    primaryContainer = Color(0xFF344755),
+    onPrimaryContainer = Color.White,
+    secondary = Color(0xFFE9B47C),
+    onSecondary = Color(0xFF1B252D),
+    background = Color(0xFF0D1922),
+    onBackground = Color(0xFFF5F5F5),
+    surface = Color(0xFF192934),
+    onSurface = Color(0xFFF5F5F5),
+    surfaceVariant = Color(0xFF263946),
+    onSurfaceVariant = Color(0xFFD1DCE3),
+    outline = Color(0xFF788F9D),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005)
 )
 
 @Composable
 fun Marcenaria365Theme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val esquema = if (darkTheme) {
+        EsquemaEscuro
+    } else {
+        EsquemaClaro
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = esquema,
         typography = Typography,
         content = content
     )

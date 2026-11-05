@@ -4,34 +4,37 @@ package com.nexo.marcenaria365.ui.screens.mais
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Message
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PeopleOutline
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -39,13 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nexo.marcenaria365.ui.screens.perfil.FotoPerfil
-
-private val FundoMais = Color(0xFFFAF6F0)
-private val AzulMais = Color(0xFF193447)
-private val CobreMais = Color(0xFF94613C)
-private val CinzaMais = Color(0xFF53616A)
-private val BordaMais = Color(0xFF89969E)
-private val VermelhoMais = Color(0xFFB3261E)
+import com.nexo.marcenaria365.ui.theme.ModoAparencia
+import com.nexo.marcenaria365.ui.theme.PreferenciasAparencia
 
 @Composable
 fun MaisScreen(
@@ -61,511 +59,402 @@ fun MaisScreen(
     onPoliticaClick: () -> Unit,
     onSair: () -> Unit
 ) {
+    val context = LocalContext.current
+    val cores = MaterialTheme.colorScheme
+
+    var mostrandoAparencia by remember {
+        mutableStateOf(false)
+    }
+
     var confirmarSaida by remember {
         mutableStateOf(false)
     }
 
-    var mostrarConfiguracoes by remember {
+    var mostrarAtendimento by remember {
         mutableStateOf(false)
     }
 
-    var opcaoSelecionada by remember {
-        mutableStateOf<String?>(null)
-    }
+    val modoAtual = PreferenciasAparencia.modo
 
     BackHandler(
-        enabled = !confirmarSaida &&
-                !mostrarConfiguracoes &&
-                opcaoSelecionada == null,
-        onBack = onInicioClick
-    )
+        enabled = mostrandoAparencia ||
+                !confirmarSaida && !mostrarAtendimento
+    ) {
+        if (mostrandoAparencia) {
+            mostrandoAparencia = false
+        } else {
+            onInicioClick()
+        }
+    }
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
-        containerColor = FundoMais,
-
+        containerColor = cores.background,
         topBar = {
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(Color(0xFF193447))
                     .heightIn(min = 62.dp)
-                    .background(AzulMais)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = onInicioClick,
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 8.dp)
-                        .sizeIn(
-                            minWidth = 48.dp,
-                            minHeight = 48.dp
-                        )
+                    onClick = {
+                        if (mostrandoAparencia) {
+                            mostrandoAparencia = false
+                        } else {
+                            onInicioClick()
+                        }
+                    },
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector =
                             Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Voltar ao início",
+                        contentDescription = if (
+                            mostrandoAparencia
+                        ) {
+                            "Voltar para Mais"
+                        } else {
+                            "Voltar ao início"
+                        },
                         tint = Color.White
                     )
                 }
 
+                Spacer(Modifier.width(8.dp))
+
                 Text(
-                    text = "Mais",
-                    color = Color.White,
-                    fontSize = 19.sp,
+                    text = if (mostrandoAparencia) {
+                        "Aparência"
+                    } else {
+                        "Mais"
+                    },
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .semantics {
-                            heading()
-                        }
+                    color = Color.White,
+                    modifier = Modifier.semantics {
+                        heading()
+                    }
                 )
             }
         },
-
         bottomBar = {
-            NavigationBar(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 75.dp),
-                containerColor = Color.White,
-                tonalElevation = 0.dp
-            ) {
-                ItemMenuMais(
-                    titulo = "Início",
-                    icone = Icons.Outlined.Home,
-                    selecionado = false,
-                    onClick = onInicioClick
-                )
-
-                ItemMenuMais(
-                    titulo = "Clientes",
-                    icone = Icons.Outlined.PeopleOutline,
-                    selecionado = false,
-                    onClick = onClientesClick
-                )
-
-                ItemMenuMais(
-                    titulo = "Serviços",
-                    icone =
-                        Icons.AutoMirrored.Outlined.Assignment,
-                    selecionado = false,
-                    onClick = onServicosClick
-                )
-
-                ItemMenuMais(
-                    titulo = "Mais",
-                    icone = Icons.Outlined.Menu,
-                    selecionado = true,
-                    onClick = {}
-                )
+            if (!mostrandoAparencia) {
+                NavigationBar(
+                    containerColor = cores.surface,
+                    tonalElevation = 0.dp
+                ) {
+                    ItemMenuMais(
+                        titulo = "Início",
+                        icone = Icons.Outlined.Home,
+                        selecionado = false,
+                        onClick = onInicioClick
+                    )
+                    ItemMenuMais(
+                        titulo = "Clientes",
+                        icone = Icons.Outlined.PeopleOutline,
+                        selecionado = false,
+                        onClick = onClientesClick
+                    )
+                    ItemMenuMais(
+                        titulo = "Serviços",
+                        icone =
+                            Icons.AutoMirrored.Outlined.Assignment,
+                        selecionado = false,
+                        onClick = onServicosClick
+                    )
+                    ItemMenuMais(
+                        titulo = "Mais",
+                        icone = Icons.Outlined.Menu,
+                        selecionado = true,
+                        onClick = {}
+                    )
+                }
             }
         }
     ) { paddingValues ->
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-        ) {
-            Spacer(Modifier.height(20.dp))
+        if (mostrandoAparencia) {
 
-            // ACESSO AO PERFIL
-            var perfilFocado by remember {
-                mutableStateOf(false)
-            }
-
-            Card(
+            // TELA APARÊNCIA
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged {
-                        perfilFocado = it.isFocused
-                    }
-                    .then(
-                        if (perfilFocado) {
-                            Modifier.border(
-                                width = 2.dp,
-                                color = AzulMais,
-                                shape = RoundedCornerShape(15.dp)
-                            )
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .clickable(
-                        role = Role.Button,
-                        onClick = onPerfilClick
-                    )
-                    .semantics(mergeDescendants = true) {
-                        contentDescription = buildString {
-                            append("Abrir meu perfil. ")
-                            append(
-                                "Nome: ${
-                                    nomeUsuario.ifBlank {
-                                        "Não informado"
-                                    }
-                                }. "
-                            )
-                            append(
-                                "E-mail: ${
-                                    emailUsuario.ifBlank {
-                                        "Não informado"
-                                    }
-                                }."
-                            )
-                        }
-                    },
-                shape = RoundedCornerShape(15.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = BordaMais
-                )
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(17.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Text(
+                    text = "Escolha o visual do aplicativo.",
+                    color = cores.onBackground,
+                    fontSize = 15.sp
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                Column(
+                    modifier = Modifier.selectableGroup(),
+                    verticalArrangement =
+                        Arrangement.spacedBy(12.dp)
                 ) {
-                    FotoPerfil(
-                        nome = nomeUsuario,
-                        fotoUri = fotoUsuario,
-                        modifier = Modifier.size(54.dp)
-                    )
-
-                    Spacer(Modifier.width(14.dp))
-
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = nomeUsuario.ifBlank {
-                                "Meu perfil"
-                            },
-                            color = AzulMais,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Spacer(Modifier.height(5.dp))
-
-                        Text(
-                            text = emailUsuario.ifBlank {
-                                "Toque para acessar seu perfil"
-                            },
-                            color = CinzaMais,
-                            fontSize = 12.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Spacer(Modifier.width(8.dp))
-
-                    Icon(
-                        imageVector =
-                            Icons.Outlined.ChevronRight,
-                        contentDescription = null,
-                        tint = CinzaMais,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Text(
-                text = "Ferramentas e configurações",
-                color = AzulMais,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                modifier = Modifier.semantics {
-                    heading()
-                }
-            )
-
-            Spacer(Modifier.height(9.dp))
-
-            OpcaoMais(
-                titulo = "Materiais",
-                icone = Icons.Outlined.Inventory2,
-                onClick = onMateriaisClick
-            )
-
-            OpcaoMais(
-                titulo = "Configurações",
-                icone = Icons.Outlined.Settings,
-                onClick = {
-                    mostrarConfiguracoes = true
-                }
-            )
-
-            OpcaoMais(
-                titulo = "Central de atendimento",
-                icone = Icons.Outlined.Message,
-                onClick = {
-                    opcaoSelecionada =
-                        "Central de atendimento"
-                }
-            )
-
-            OpcaoMais(
-                titulo = "Ajuda e suporte",
-                icone = Icons.Outlined.HelpOutline,
-                onClick = onAjudaClick
-            )
-
-            OpcaoMais(
-                titulo = "Política de Privacidade",
-                icone = Icons.Outlined.Description,
-                onClick = onPoliticaClick
-            )
-
-            Spacer(Modifier.height(25.dp))
-
-            // SAIR DA CONTA
-            var sairFocado by remember {
-                mutableStateOf(false)
-            }
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged {
-                        sairFocado = it.isFocused
-                    }
-                    .then(
-                        if (sairFocado) {
-                            Modifier.border(
-                                width = 2.dp,
-                                color = AzulMais,
-                                shape = RoundedCornerShape(11.dp)
-                            )
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .clickable(
-                        role = Role.Button,
+                    OpcaoAparencia(
+                        titulo = "Modo claro",
+                        descricao = "Visual claro do aplicativo",
+                        icone = Icons.Outlined.LightMode,
+                        selecionado =
+                            modoAtual == ModoAparencia.CLARO,
                         onClick = {
-                            confirmarSaida = true
+                            PreferenciasAparencia.alterar(
+                                context,
+                                ModoAparencia.CLARO
+                            )
                         }
-                    ),
-                shape = RoundedCornerShape(11.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = BordaMais
+                    )
+
+                    OpcaoAparencia(
+                        titulo = "Modo escuro",
+                        descricao = "Fundo escuro e textos claros",
+                        icone = Icons.Outlined.DarkMode,
+                        selecionado =
+                            modoAtual == ModoAparencia.ESCURO,
+                        onClick = {
+                            PreferenciasAparencia.alterar(
+                                context,
+                                ModoAparencia.ESCURO
+                            )
+                        }
+                    )
+
+                    OpcaoAparencia(
+                        titulo = "Automático",
+                        descricao =
+                            "Segue a configuração do celular",
+                        icone = Icons.Outlined.BrightnessAuto,
+                        selecionado =
+                            modoAtual == ModoAparencia.AUTOMATICO,
+                        onClick = {
+                            PreferenciasAparencia.alterar(
+                                context,
+                                ModoAparencia.AUTOMATICO
+                            )
+                        }
+                    )
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    text = "Você pode alterar essa opção quando quiser.",
+                    color = cores.onSurfaceVariant,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp
                 )
+            }
+
+        } else {
+
+            // TELA MAIS
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
             ) {
-                Row(
+                Spacer(Modifier.height(20.dp))
+
+                // PERFIL
+                Card(
+                    onClick = onPerfilClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(15.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = cores.surface
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(17.dp),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        FotoPerfil(
+                            nome = nomeUsuario,
+                            fotoUri = fotoUsuario,
+                            modifier = Modifier.size(54.dp)
+                        )
+
+                        Spacer(Modifier.width(14.dp))
+
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = nomeUsuario.ifBlank {
+                                    "Meu perfil"
+                                },
+                                color = cores.onSurface,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            Spacer(Modifier.height(5.dp))
+
+                            Text(
+                                text = emailUsuario.ifBlank {
+                                    "Acessar meu perfil"
+                                },
+                                color = cores.onSurfaceVariant,
+                                fontSize = 12.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Icon(
+                            imageVector =
+                                Icons.Outlined.ChevronRight,
+                            contentDescription = null,
+                            tint = cores.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    text = "Ferramentas e preferências",
+                    color = cores.onBackground,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.semantics {
+                        heading()
+                    }
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                OpcaoMais(
+                    titulo = "Materiais",
+                    icone = Icons.Outlined.Inventory2,
+                    onClick = onMateriaisClick
+                )
+
+                OpcaoMais(
+                    titulo = "Aparência",
+                    subtitulo = when (modoAtual) {
+                        ModoAparencia.CLARO -> "Modo claro"
+                        ModoAparencia.ESCURO -> "Modo escuro"
+                        ModoAparencia.AUTOMATICO -> "Automático"
+                    },
+                    icone = Icons.Outlined.Palette,
+                    onClick = {
+                        mostrandoAparencia = true
+                    }
+                )
+
+                OpcaoMais(
+                    titulo = "Central de atendimento",
+                    icone = Icons.Outlined.Message,
+                    onClick = {
+                        mostrarAtendimento = true
+                    }
+                )
+
+                OpcaoMais(
+                    titulo = "Ajuda e suporte",
+                    icone = Icons.Outlined.HelpOutline,
+                    onClick = onAjudaClick
+                )
+
+                OpcaoMais(
+                    titulo = "Política de Privacidade",
+                    icone = Icons.Outlined.Description,
+                    onClick = onPoliticaClick
+                )
+
+                Spacer(Modifier.height(25.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        confirmarSaida = true
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 52.dp)
-                        .padding(
-                            horizontal = 16.dp,
-                            vertical = 12.dp
-                        ),
-                    horizontalArrangement =
-                        Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                        .heightIn(min = 52.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        cores.outline
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = cores.surface,
+                        contentColor = cores.error
+                    )
                 ) {
                     Icon(
                         imageVector =
                             Icons.AutoMirrored.Outlined.Logout,
-                        contentDescription = null,
-                        tint = VermelhoMais,
-                        modifier = Modifier.size(19.dp)
+                        contentDescription = null
                     )
 
                     Spacer(Modifier.width(9.dp))
 
                     Text(
                         text = "Sair da conta",
-                        color = VermelhoMais,
-                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-            }
 
-            Spacer(Modifier.height(25.dp))
+                Spacer(Modifier.height(24.dp))
+            }
         }
     }
 
-    // CONFIGURAÇÕES
-    if (mostrarConfiguracoes) {
+    if (mostrarAtendimento) {
         AlertDialog(
             onDismissRequest = {
-                mostrarConfiguracoes = false
+                mostrarAtendimento = false
             },
             title = {
-                Text(
-                    text = "Configurações",
-                    color = AzulMais,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(
-                    verticalArrangement =
-                        Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Minha conta",
-                        fontWeight = FontWeight.SemiBold,
-                        color = AzulMais,
-                        modifier = Modifier.semantics {
-                            heading()
-                        }
-                    )
-
-                    Text(
-                        text = "Nome: ${
-                            nomeUsuario.ifBlank {
-                                "Não informado"
-                            }
-                        }",
-                        color = CinzaMais,
-                        fontSize = 14.sp
-                    )
-
-                    Text(
-                        text = "E-mail: ${
-                            emailUsuario.ifBlank {
-                                "Não informado"
-                            }
-                        }",
-                        color = CinzaMais,
-                        fontSize = 14.sp
-                    )
-
-                    HorizontalDivider(
-                        color = BordaMais
-                    )
-
-                    TextButton(
-                        onClick = {
-                            mostrarConfiguracoes = false
-                            onPerfilClick()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                    ) {
-                        Text(
-                            text = "Acessar meu perfil",
-                            color = AzulMais
-                        )
-                    }
-
-                    TextButton(
-                        onClick = {
-                            mostrarConfiguracoes = false
-                            onPoliticaClick()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                    ) {
-                        Text(
-                            text = "Política de Privacidade",
-                            color = AzulMais
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarConfiguracoes = false
-                    },
-                    modifier = Modifier.heightIn(
-                        min = 48.dp
-                    )
-                ) {
-                    Text(
-                        text = "Fechar",
-                        color = AzulMais
-                    )
-                }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(17.dp)
-        )
-    }
-
-    // CENTRAL DE ATENDIMENTO
-    if (opcaoSelecionada != null) {
-        AlertDialog(
-            onDismissRequest = {
-                opcaoSelecionada = null
-            },
-            title = {
-                Text(
-                    text = opcaoSelecionada.orEmpty(),
-                    color = AzulMais,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Central de atendimento")
             },
             text = {
                 Text(
-                    text = "Esta funcionalidade ainda não está disponível.",
-                    color = CinzaMais,
-                    fontSize = 14.sp,
-                    lineHeight = 21.sp
+                    "Esta funcionalidade ainda não está disponível."
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        opcaoSelecionada = null
+                        mostrarAtendimento = false
                     },
-                    modifier = Modifier.heightIn(
-                        min = 48.dp
-                    )
+                    modifier = Modifier.heightIn(min = 48.dp)
                 ) {
-                    Text(
-                        text = "Entendi",
-                        color = AzulMais
-                    )
+                    Text("Entendi")
                 }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(17.dp)
+            }
         )
     }
 
-    // CONFIRMAÇÃO DE SAÍDA
     if (confirmarSaida) {
         AlertDialog(
             onDismissRequest = {
                 confirmarSaida = false
             },
             title = {
-                Text(
-                    text = "Sair da conta?",
-                    color = AzulMais,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Sair da conta?")
             },
             text = {
                 Text(
-                    text = "Deseja encerrar sua sessão e voltar para a tela de login?",
-                    color = CinzaMais,
-                    fontSize = 14.sp,
-                    lineHeight = 21.sp
+                    "Deseja encerrar a sessão e voltar para o login?"
                 )
             },
             confirmButton = {
@@ -574,13 +463,11 @@ fun MaisScreen(
                         confirmarSaida = false
                         onSair()
                     },
-                    modifier = Modifier.heightIn(
-                        min = 48.dp
-                    )
+                    modifier = Modifier.heightIn(min = 48.dp)
                 ) {
                     Text(
                         text = "Sair",
-                        color = VermelhoMais,
+                        color = cores.error,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -590,19 +477,86 @@ fun MaisScreen(
                     onClick = {
                         confirmarSaida = false
                     },
-                    modifier = Modifier.heightIn(
-                        min = 48.dp
-                    )
+                    modifier = Modifier.heightIn(min = 48.dp)
                 ) {
-                    Text(
-                        text = "Cancelar",
-                        color = AzulMais
-                    )
+                    Text("Cancelar")
                 }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(17.dp)
+            }
         )
+    }
+}
+
+@Composable
+private fun OpcaoAparencia(
+    titulo: String,
+    descricao: String,
+    icone: ImageVector,
+    selecionado: Boolean,
+    onClick: () -> Unit
+) {
+    val cores = MaterialTheme.colorScheme
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = cores.surface,
+        border = BorderStroke(
+            width = if (selecionado) 2.dp else 1.dp,
+            color = if (selecionado) {
+                cores.primary
+            } else {
+                cores.outline
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .selectable(
+                    selected = selecionado,
+                    onClick = onClick,
+                    role = Role.RadioButton
+                )
+                .heightIn(min = 76.dp)
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icone,
+                contentDescription = null,
+                tint = cores.secondary,
+                modifier = Modifier.size(25.dp)
+            )
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = titulo,
+                    color = cores.onSurface,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                Text(
+                    text = descricao,
+                    color = cores.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp
+                )
+            }
+
+            Spacer(Modifier.width(10.dp))
+
+            RadioButton(
+                selected = selecionado,
+                onClick = null
+            )
+        }
     }
 }
 
@@ -610,64 +564,56 @@ fun MaisScreen(
 private fun OpcaoMais(
     titulo: String,
     icone: ImageVector,
+    subtitulo: String? = null,
     onClick: () -> Unit
 ) {
-    var focado by remember {
-        mutableStateOf(false)
-    }
+    val cores = MaterialTheme.colorScheme
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .onFocusChanged {
-                focado = it.isFocused
-            }
-            .then(
-                if (focado) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = AzulMais,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                } else {
-                    Modifier
-                }
-            )
             .clickable(
                 role = Role.Button,
                 onClick = onClick
             )
-            .semantics(mergeDescendants = true) {
-                contentDescription = "Abrir $titulo"
-            }
-            .heightIn(min = 62.dp)
+            .heightIn(min = 64.dp)
             .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icone,
             contentDescription = null,
-            tint = CobreMais,
-            modifier = Modifier.size(22.dp)
+            tint = cores.secondary,
+            modifier = Modifier.size(23.dp)
         )
 
-        Spacer(Modifier.width(19.dp))
+        Spacer(Modifier.width(18.dp))
 
-        Text(
-            text = titulo,
-            color = AzulMais,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.Medium,
+        Column(
             modifier = Modifier.weight(1f)
-        )
+        ) {
+            Text(
+                text = titulo,
+                color = cores.onBackground,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
 
-        Spacer(Modifier.width(8.dp))
+            if (subtitulo != null) {
+                Spacer(Modifier.height(4.dp))
+
+                Text(
+                    text = subtitulo,
+                    color = cores.onSurfaceVariant,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         Icon(
             imageVector = Icons.Outlined.ChevronRight,
             contentDescription = null,
-            tint = CinzaMais,
+            tint = cores.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
     }
@@ -680,14 +626,15 @@ private fun RowScope.ItemMenuMais(
     selecionado: Boolean,
     onClick: () -> Unit
 ) {
+    val cores = MaterialTheme.colorScheme
+
     NavigationBarItem(
         selected = selecionado,
         onClick = onClick,
         icon = {
             Icon(
                 imageVector = icone,
-                contentDescription = null,
-                modifier = Modifier.size(22.dp)
+                contentDescription = null
             )
         },
         label = {
@@ -698,11 +645,11 @@ private fun RowScope.ItemMenuMais(
         },
         alwaysShowLabel = true,
         colors = NavigationBarItemDefaults.colors(
-            selectedIconColor = AzulMais,
-            selectedTextColor = AzulMais,
-            indicatorColor = Color(0xFFF1E8DE),
-            unselectedIconColor = CinzaMais,
-            unselectedTextColor = CinzaMais
+            selectedIconColor = cores.primary,
+            selectedTextColor = cores.onSurface,
+            indicatorColor = cores.primaryContainer,
+            unselectedIconColor = cores.onSurfaceVariant,
+            unselectedTextColor = cores.onSurfaceVariant
         )
     )
 }
