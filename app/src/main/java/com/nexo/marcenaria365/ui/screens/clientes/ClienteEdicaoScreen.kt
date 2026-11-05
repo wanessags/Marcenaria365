@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,11 +22,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+private val CinzaEdicao = Color(0xFF53616A)
+private val BordaEdicao = Color(0xFF89969E)
+private val VermelhoEdicao = Color(0xFFB3261E)
+private val VerdeEdicao = Color(0xFF237A58)
 
 @Composable
 fun ClienteEdicaoScreen(
@@ -53,11 +66,62 @@ fun ClienteEdicaoScreen(
         mutableStateOf("")
     }
 
+    var tentouSalvar by rememberSaveable(cliente.id) {
+        mutableStateOf(false)
+    }
+
     var mostrarConfirmacao by remember {
         mutableStateOf(false)
     }
 
-    BackHandler(enabled = !mostrarConfirmacao) {
+    val foco = LocalFocusManager.current
+    val teclado = LocalSoftwareKeyboardController.current
+
+    val numerosTelefone = telefone.filter {
+        it.isDigit()
+    }
+
+    val emailLimpo = email.trim()
+
+    val nomeInvalido =
+        tentouSalvar && nome.isBlank()
+
+    val telefoneInvalido =
+        tentouSalvar &&
+                numerosTelefone.length !in 10..11
+
+    val emailInvalido =
+        emailLimpo.isNotEmpty() &&
+                !Patterns.EMAIL_ADDRESS
+                    .matcher(emailLimpo)
+                    .matches()
+
+    fun validarAlteracoes() {
+        tentouSalvar = true
+
+        erro = when {
+            nome.isBlank() ->
+                "Informe o nome do cliente."
+
+            numerosTelefone.length !in 10..11 ->
+                "Informe um telefone válido com DDD."
+
+            emailInvalido ->
+                "Informe um e-mail válido."
+
+            else -> ""
+        }
+
+        if (erro.isEmpty()) {
+            teclado?.hide()
+            foco.clearFocus()
+            mostrarConfirmacao = true
+        }
+    }
+
+    BackHandler(
+        enabled = !mostrarConfirmacao
+    ) {
         onVoltar()
     }
 
@@ -67,23 +131,32 @@ fun ClienteEdicaoScreen(
         focusedContainerColor = Color.White,
         unfocusedContainerColor = Color.White,
         focusedBorderColor = ClienteCores.Cobre,
-        unfocusedBorderColor = ClienteCores.Borda,
+        unfocusedBorderColor = BordaEdicao,
         focusedLabelColor = ClienteCores.Azul,
-        unfocusedLabelColor = ClienteCores.Cinza,
-        cursorColor = ClienteCores.Cobre
+        unfocusedLabelColor = CinzaEdicao,
+        focusedLeadingIconColor = ClienteCores.Azul,
+        unfocusedLeadingIconColor = CinzaEdicao,
+        cursorColor = ClienteCores.Cobre,
+        errorBorderColor = VermelhoEdicao,
+        errorLabelColor = VermelhoEdicao
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(ClienteCores.Fundo)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .windowInsetsPadding(
+                WindowInsets.safeDrawing
+            )
             .imePadding()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(
+                rememberScrollState()
+            )
             .padding(horizontal = 20.dp)
     ) {
         Spacer(Modifier.height(12.dp))
 
+        // CABECALHO ORIGINAL
         ClienteCabecalho(
             titulo = "Editar cliente",
             subtitulo = "Atualize os dados de contato.",
@@ -98,6 +171,7 @@ fun ClienteEdicaoScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        // DADOS DO CLIENTE
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -113,103 +187,196 @@ fun ClienteEdicaoScreen(
                     horizontal = 16.dp,
                     vertical = 18.dp
                 ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement =
+                    Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedTextField(
-                    value = nome,
-                    onValueChange = {
-                        nome = it
-                        erro = ""
-                    },
-                    label = {
-                        Text(
-                            "Nome completo *",
-                            fontSize = 13.sp
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.PersonOutline,
-                            contentDescription = null,
-                            tint = ClienteCores.Cobre,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = coresCampo,
-                    textStyle = TextStyle(
-                        fontSize = 14.sp,
-                        color = ClienteCores.Azul
-                    )
-                )
 
-                OutlinedTextField(
-                    value = telefone,
-                    onValueChange = {
-                        telefone = it
-                        erro = ""
-                    },
-                    label = {
-                        Text(
-                            "Telefone *",
-                            fontSize = 13.sp
+                // NOME COMPLETO
+                Column {
+                    OutlinedTextField(
+                        value = nome,
+                        onValueChange = {
+                            nome = it
+                            erro = ""
+                        },
+                        label = {
+                            Text(
+                                text = "Nome completo *",
+                                fontSize = 13.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector =
+                                    Icons.Outlined.PersonOutline,
+                                contentDescription = null,
+                                tint = ClienteCores.Cobre,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (nomeInvalido) {
+                                    Modifier.semantics {
+                                        error(
+                                            "Informe o nome do cliente."
+                                        )
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            ),
+                        singleLine = true,
+                        isError = nomeInvalido,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Next
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = coresCampo,
+                        textStyle = TextStyle(
+                            fontSize = 14.sp,
+                            color = ClienteCores.Azul
                         )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Phone,
-                            contentDescription = null,
-                            tint = ClienteCores.Cobre,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Phone
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = coresCampo,
-                    textStyle = TextStyle(
-                        fontSize = 14.sp,
-                        color = ClienteCores.Azul
                     )
-                )
 
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        erro = ""
-                    },
-                    label = {
-                        Text(
-                            "E-mail (opcional)",
-                            fontSize = 13.sp
+                    if (nomeInvalido) {
+                        ErroEdicaoCliente(
+                            mensagem =
+                                "Informe o nome do cliente."
                         )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Email,
-                            contentDescription = null,
-                            tint = ClienteCores.Cobre,
-                            modifier = Modifier.size(20.dp)
+                    }
+                }
+
+                // TELEFONE
+                Column {
+                    OutlinedTextField(
+                        value = telefone,
+                        onValueChange = {
+                            telefone = it
+                            erro = ""
+                        },
+                        label = {
+                            Text(
+                                text = "Telefone com DDD *",
+                                fontSize = 13.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector =
+                                    Icons.Outlined.Phone,
+                                contentDescription = null,
+                                tint = ClienteCores.Cobre,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        supportingText = {
+                            Text(
+                                text = "Ex.: 11987654321",
+                                color = CinzaEdicao,
+                                fontSize = 12.sp
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (telefoneInvalido) {
+                                    Modifier.semantics {
+                                        error(
+                                            "Informe um telefone válido com DDD."
+                                        )
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            ),
+                        singleLine = true,
+                        isError = telefoneInvalido,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Phone,
+                            imeAction = ImeAction.Next
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = coresCampo,
+                        textStyle = TextStyle(
+                            fontSize = 14.sp,
+                            color = ClienteCores.Azul
                         )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = coresCampo,
-                    textStyle = TextStyle(
-                        fontSize = 14.sp,
-                        color = ClienteCores.Azul
                     )
-                )
+
+                    if (telefoneInvalido) {
+                        ErroEdicaoCliente(
+                            mensagem =
+                                "Informe um telefone válido com DDD."
+                        )
+                    }
+                }
+
+                // E-MAIL OPCIONAL
+                Column {
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            erro = ""
+                        },
+                        label = {
+                            Text(
+                                text = "E-mail (opcional)",
+                                fontSize = 13.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector =
+                                    Icons.Outlined.Email,
+                                contentDescription = null,
+                                tint = ClienteCores.Cobre,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (emailInvalido) {
+                                    Modifier.semantics {
+                                        error(
+                                            "Informe um e-mail válido."
+                                        )
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            ),
+                        singleLine = true,
+                        isError = emailInvalido,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                teclado?.hide()
+                                foco.clearFocus()
+                            }
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = coresCampo,
+                        textStyle = TextStyle(
+                            fontSize = 14.sp,
+                            color = ClienteCores.Azul
+                        )
+                    )
+
+                    if (emailInvalido) {
+                        ErroEdicaoCliente(
+                            mensagem =
+                                "Informe um e-mail válido."
+                        )
+                    }
+                }
             }
         }
 
@@ -217,13 +384,14 @@ fun ClienteEdicaoScreen(
 
         Text(
             text = "* Campos obrigatórios",
-            fontSize = 11.sp,
-            color = ClienteCores.Cinza,
+            fontSize = 12.sp,
+            color = CinzaEdicao,
             modifier = Modifier.padding(start = 4.dp)
         )
 
         Spacer(Modifier.height(22.dp))
 
+        // SITUACAO DO CLIENTE
         ClienteTituloSecao(
             titulo = "Situação do cliente"
         )
@@ -247,7 +415,11 @@ fun ClienteEdicaoScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = "Cliente ativo",
+                        text = if (ativo) {
+                            "Cliente ativo"
+                        } else {
+                            "Cliente inativo"
+                        },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = ClienteCores.Azul
@@ -259,11 +431,11 @@ fun ClienteEdicaoScreen(
                         text = if (ativo) {
                             "Disponível para novos serviços."
                         } else {
-                            "Cliente marcado como inativo."
+                            "Marcado como inativo."
                         },
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp,
-                        color = ClienteCores.Cinza
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        color = CinzaEdicao
                     )
                 }
 
@@ -274,59 +446,48 @@ fun ClienteEdicaoScreen(
                     onCheckedChange = {
                         ativo = it
                     },
+                    modifier = Modifier.sizeIn(
+                        minWidth = 48.dp,
+                        minHeight = 48.dp
+                    ),
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = ClienteCores.Azul,
                         uncheckedThumbColor = Color.White,
-                        uncheckedTrackColor = ClienteCores.Borda,
-                        uncheckedBorderColor = ClienteCores.Cinza
+                        uncheckedTrackColor = BordaEdicao,
+                        uncheckedBorderColor = CinzaEdicao
                     )
                 )
             }
         }
 
-        if (erro.isNotEmpty()) {
+        // ERRO GERAL
+        if (erro.isNotBlank()) {
             Spacer(Modifier.height(14.dp))
 
             Text(
                 text = erro,
-                color = ClienteCores.Vermelho,
-                fontSize = 12.sp
+                color = VermelhoEdicao,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        liveRegion = LiveRegionMode.Polite
+                    }
             )
         }
 
         Spacer(Modifier.height(26.dp))
 
+        // SALVAR ALTERACOES
         Button(
             onClick = {
-                val numeros = telefone.filter { it.isDigit() }
-                val emailLimpo = email.trim()
-
-                erro = when {
-                    nome.isBlank() -> {
-                        "Informe o nome do cliente."
-                    }
-
-                    numeros.length !in 10..11 -> {
-                        "Informe um telefone válido com DDD."
-                    }
-
-                    emailLimpo.isNotEmpty() &&
-                            !Patterns.EMAIL_ADDRESS.matcher(
-                                emailLimpo
-                            ).matches() -> {
-                        "Informe um e-mail válido."
-                    }
-
-                    else -> {
-                        mostrarConfirmacao = true
-                        ""
-                    }
-                }
+                validarAlteracoes()
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .heightIn(min = 50.dp),
             shape = RoundedCornerShape(11.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = ClienteCores.Azul,
@@ -343,15 +504,16 @@ fun ClienteEdicaoScreen(
 
         Spacer(Modifier.height(10.dp))
 
+        // CANCELAR
         OutlinedButton(
             onClick = onVoltar,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .heightIn(min = 48.dp),
             shape = RoundedCornerShape(11.dp),
             border = BorderStroke(
-                1.dp,
-                ClienteCores.Borda
+                width = 1.dp,
+                color = BordaEdicao
             ),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.Transparent,
@@ -369,7 +531,7 @@ fun ClienteEdicaoScreen(
         Spacer(Modifier.height(24.dp))
     }
 
-    // Confirmação antes de salvar
+    // CONFIRMACAO ANTES DE SALVAR
     if (mostrarConfirmacao) {
         AlertDialog(
             onDismissRequest = {
@@ -377,9 +539,10 @@ fun ClienteEdicaoScreen(
             },
             icon = {
                 Icon(
-                    imageVector = Icons.Outlined.CheckCircleOutline,
+                    imageVector =
+                        Icons.Outlined.CheckCircleOutline,
                     contentDescription = null,
-                    tint = ClienteCores.Verde
+                    tint = VerdeEdicao
                 )
             },
             title = {
@@ -390,11 +553,51 @@ fun ClienteEdicaoScreen(
                 )
             },
             text = {
-                Text(
-                    text = "Deseja salvar as alterações realizadas " +
-                            "no cadastro deste cliente?",
-                    color = ClienteCores.Cinza
-                )
+                Column(
+                    verticalArrangement =
+                        Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Confira os dados antes de confirmar.",
+                        color = CinzaEdicao
+                    )
+
+                    HorizontalDivider(
+                        color = BordaEdicao
+                    )
+
+                    Text(
+                        text = "Nome: ${nome.trim()}",
+                        color = ClienteCores.Azul,
+                        fontSize = 13.sp
+                    )
+
+                    Text(
+                        text = "Telefone: ${telefone.trim()}",
+                        color = ClienteCores.Azul,
+                        fontSize = 13.sp
+                    )
+
+                    Text(
+                        text = "E-mail: ${
+                            emailLimpo.ifBlank {
+                                "Não informado"
+                            }
+                        }",
+                        color = ClienteCores.Azul,
+                        fontSize = 13.sp
+                    )
+
+                    Text(
+                        text = if (ativo) {
+                            "Situação selecionada: Ativo"
+                        } else {
+                            "Situação selecionada: Inativo"
+                        },
+                        color = ClienteCores.Azul,
+                        fontSize = 13.sp
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
@@ -405,11 +608,14 @@ fun ClienteEdicaoScreen(
                             cliente.copy(
                                 nome = nome.trim(),
                                 telefone = telefone.trim(),
-                                email = email.trim(),
+                                email = emailLimpo,
                                 ativo = ativo
                             )
                         )
-                    }
+                    },
+                    modifier = Modifier.heightIn(
+                        min = 48.dp
+                    )
                 ) {
                     Text(
                         text = "Confirmar",
@@ -422,11 +628,15 @@ fun ClienteEdicaoScreen(
                 TextButton(
                     onClick = {
                         mostrarConfirmacao = false
-                    }
+                    },
+                    modifier = Modifier.heightIn(
+                        min = 48.dp
+                    )
                 ) {
                     Text(
-                        text = "Cancelar",
-                        color = ClienteCores.Cinza
+                        text = "Corrigir",
+                        color = CinzaEdicao,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             },
@@ -434,4 +644,22 @@ fun ClienteEdicaoScreen(
             shape = RoundedCornerShape(18.dp)
         )
     }
+}
+
+@Composable
+private fun ErroEdicaoCliente(
+    mensagem: String
+) {
+    Text(
+        text = mensagem,
+        color = VermelhoEdicao,
+        fontSize = 12.sp,
+        lineHeight = 17.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 5.dp)
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+            }
+    )
 }
