@@ -2,7 +2,9 @@
 package com.nexo.marcenaria365.ui.screens.mais
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -20,14 +22,19 @@ import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.PeopleOutline
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,8 +42,10 @@ import com.nexo.marcenaria365.ui.screens.perfil.FotoPerfil
 
 private val FundoMais = Color(0xFFFAF6F0)
 private val AzulMais = Color(0xFF193447)
-private val CinzaMais = Color(0xFF77828A)
-private val VermelhoMais = Color(0xFFCF6666)
+private val CobreMais = Color(0xFF94613C)
+private val CinzaMais = Color(0xFF53616A)
+private val BordaMais = Color(0xFF89969E)
+private val VermelhoMais = Color(0xFFB3261E)
 
 @Composable
 fun MaisScreen(
@@ -56,12 +65,17 @@ fun MaisScreen(
         mutableStateOf(false)
     }
 
+    var mostrarConfiguracoes by remember {
+        mutableStateOf(false)
+    }
+
     var opcaoSelecionada by remember {
         mutableStateOf<String?>(null)
     }
 
     BackHandler(
         enabled = !confirmarSaida &&
+                !mostrarConfiguracoes &&
                 opcaoSelecionada == null,
         onBack = onInicioClick
     )
@@ -76,7 +90,7 @@ fun MaisScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(62.dp)
+                    .heightIn(min = 62.dp)
                     .background(AzulMais)
             ) {
                 IconButton(
@@ -84,13 +98,16 @@ fun MaisScreen(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .padding(start = 8.dp)
+                        .sizeIn(
+                            minWidth = 48.dp,
+                            minHeight = 48.dp
+                        )
                 ) {
                     Icon(
                         imageVector =
                             Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Voltar ao início",
-                        tint = Color.White,
-                        modifier = Modifier.size(23.dp)
+                        tint = Color.White
                     )
                 }
 
@@ -99,7 +116,11 @@ fun MaisScreen(
                     color = Color.White,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .semantics {
+                            heading()
+                        }
                 )
             }
         },
@@ -108,7 +129,7 @@ fun MaisScreen(
             NavigationBar(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(75.dp),
+                    .heightIn(min = 75.dp),
                 containerColor = Color.White,
                 tonalElevation = 0.dp
             ) {
@@ -128,7 +149,8 @@ fun MaisScreen(
 
                 ItemMenuMais(
                     titulo = "Serviços",
-                    icone = Icons.AutoMirrored.Outlined.Assignment,
+                    icone =
+                        Icons.AutoMirrored.Outlined.Assignment,
                     selecionado = false,
                     onClick = onServicosClick
                 )
@@ -152,14 +174,58 @@ fun MaisScreen(
         ) {
             Spacer(Modifier.height(20.dp))
 
-            // CARTAO DE PERFIL
+            // ACESSO AO PERFIL
+            var perfilFocado by remember {
+                mutableStateOf(false)
+            }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onPerfilClick),
+                    .onFocusChanged {
+                        perfilFocado = it.isFocused
+                    }
+                    .then(
+                        if (perfilFocado) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = AzulMais,
+                                shape = RoundedCornerShape(15.dp)
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .clickable(
+                        role = Role.Button,
+                        onClick = onPerfilClick
+                    )
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = buildString {
+                            append("Abrir meu perfil. ")
+                            append(
+                                "Nome: ${
+                                    nomeUsuario.ifBlank {
+                                        "Não informado"
+                                    }
+                                }. "
+                            )
+                            append(
+                                "E-mail: ${
+                                    emailUsuario.ifBlank {
+                                        "Não informado"
+                                    }
+                                }."
+                            )
+                        }
+                    },
                 shape = RoundedCornerShape(15.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = BordaMais
                 )
             ) {
                 Row(
@@ -186,7 +252,7 @@ fun MaisScreen(
                             color = AzulMais,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
 
@@ -197,47 +263,67 @@ fun MaisScreen(
                                 "Toque para acessar seu perfil"
                             },
                             color = CinzaMais,
-                            fontSize = 11.sp,
-                            maxLines = 1,
+                            fontSize = 12.sp,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
 
+                    Spacer(Modifier.width(8.dp))
+
                     Icon(
-                        imageVector = Icons.Outlined.ChevronRight,
-                        contentDescription = "Abrir perfil",
+                        imageVector =
+                            Icons.Outlined.ChevronRight,
+                        contentDescription = null,
                         tint = CinzaMais,
-                        modifier = Modifier.size(19.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(24.dp))
 
-            // MATERIAIS
+            Text(
+                text = "Ferramentas e configurações",
+                color = AzulMais,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                modifier = Modifier.semantics {
+                    heading()
+                }
+            )
+
+            Spacer(Modifier.height(9.dp))
+
             OpcaoMais(
                 titulo = "Materiais",
                 icone = Icons.Outlined.Inventory2,
                 onClick = onMateriaisClick
             )
 
-            // CENTRAL DE ATENDIMENTO
+            OpcaoMais(
+                titulo = "Configurações",
+                icone = Icons.Outlined.Settings,
+                onClick = {
+                    mostrarConfiguracoes = true
+                }
+            )
+
             OpcaoMais(
                 titulo = "Central de atendimento",
                 icone = Icons.Outlined.Message,
                 onClick = {
-                    opcaoSelecionada = "Central de atendimento"
+                    opcaoSelecionada =
+                        "Central de atendimento"
                 }
             )
 
-            // AJUDA E SUPORTE
             OpcaoMais(
                 titulo = "Ajuda e suporte",
                 icone = Icons.Outlined.HelpOutline,
                 onClick = onAjudaClick
             )
 
-            // POLITICA DE PRIVACIDADE
             OpcaoMais(
                 titulo = "Política de Privacidade",
                 icone = Icons.Outlined.Description,
@@ -247,22 +333,52 @@ fun MaisScreen(
             Spacer(Modifier.height(25.dp))
 
             // SAIR DA CONTA
+            var sairFocado by remember {
+                mutableStateOf(false)
+            }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        confirmarSaida = true
-                    },
+                    .onFocusChanged {
+                        sairFocado = it.isFocused
+                    }
+                    .then(
+                        if (sairFocado) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = AzulMais,
+                                shape = RoundedCornerShape(11.dp)
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .clickable(
+                        role = Role.Button,
+                        onClick = {
+                            confirmarSaida = true
+                        }
+                    ),
                 shape = RoundedCornerShape(11.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color.White
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = BordaMais
                 )
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(49.dp),
-                    horizontalArrangement = Arrangement.Center,
+                        .heightIn(min = 52.dp)
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = 12.dp
+                        ),
+                    horizontalArrangement =
+                        Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -270,7 +386,7 @@ fun MaisScreen(
                             Icons.AutoMirrored.Outlined.Logout,
                         contentDescription = null,
                         tint = VermelhoMais,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(19.dp)
                     )
 
                     Spacer(Modifier.width(9.dp))
@@ -278,7 +394,7 @@ fun MaisScreen(
                     Text(
                         text = "Sair da conta",
                         color = VermelhoMais,
-                        fontSize = 13.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -286,6 +402,108 @@ fun MaisScreen(
 
             Spacer(Modifier.height(25.dp))
         }
+    }
+
+    // CONFIGURAÇÕES
+    if (mostrarConfiguracoes) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarConfiguracoes = false
+            },
+            title = {
+                Text(
+                    text = "Configurações",
+                    color = AzulMais,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement =
+                        Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Minha conta",
+                        fontWeight = FontWeight.SemiBold,
+                        color = AzulMais,
+                        modifier = Modifier.semantics {
+                            heading()
+                        }
+                    )
+
+                    Text(
+                        text = "Nome: ${
+                            nomeUsuario.ifBlank {
+                                "Não informado"
+                            }
+                        }",
+                        color = CinzaMais,
+                        fontSize = 14.sp
+                    )
+
+                    Text(
+                        text = "E-mail: ${
+                            emailUsuario.ifBlank {
+                                "Não informado"
+                            }
+                        }",
+                        color = CinzaMais,
+                        fontSize = 14.sp
+                    )
+
+                    HorizontalDivider(
+                        color = BordaMais
+                    )
+
+                    TextButton(
+                        onClick = {
+                            mostrarConfiguracoes = false
+                            onPerfilClick()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                    ) {
+                        Text(
+                            text = "Acessar meu perfil",
+                            color = AzulMais
+                        )
+                    }
+
+                    TextButton(
+                        onClick = {
+                            mostrarConfiguracoes = false
+                            onPoliticaClick()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                    ) {
+                        Text(
+                            text = "Política de Privacidade",
+                            color = AzulMais
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarConfiguracoes = false
+                    },
+                    modifier = Modifier.heightIn(
+                        min = 48.dp
+                    )
+                ) {
+                    Text(
+                        text = "Fechar",
+                        color = AzulMais
+                    )
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(17.dp)
+        )
     }
 
     // CENTRAL DE ATENDIMENTO
@@ -303,14 +521,20 @@ fun MaisScreen(
             },
             text = {
                 Text(
-                    text = "Esta funcionalidade ainda não está disponível."
+                    text = "Esta funcionalidade ainda não está disponível.",
+                    color = CinzaMais,
+                    fontSize = 14.sp,
+                    lineHeight = 21.sp
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         opcaoSelecionada = null
-                    }
+                    },
+                    modifier = Modifier.heightIn(
+                        min = 48.dp
+                    )
                 ) {
                     Text(
                         text = "Entendi",
@@ -323,7 +547,7 @@ fun MaisScreen(
         )
     }
 
-    // CONFIRMACAO DE SAIDA
+    // CONFIRMAÇÃO DE SAÍDA
     if (confirmarSaida) {
         AlertDialog(
             onDismissRequest = {
@@ -338,7 +562,10 @@ fun MaisScreen(
             },
             text = {
                 Text(
-                    text = "Deseja voltar para a tela de login?"
+                    text = "Deseja encerrar sua sessão e voltar para a tela de login?",
+                    color = CinzaMais,
+                    fontSize = 14.sp,
+                    lineHeight = 21.sp
                 )
             },
             confirmButton = {
@@ -346,12 +573,15 @@ fun MaisScreen(
                     onClick = {
                         confirmarSaida = false
                         onSair()
-                    }
+                    },
+                    modifier = Modifier.heightIn(
+                        min = 48.dp
+                    )
                 ) {
                     Text(
                         text = "Sair",
                         color = VermelhoMais,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     )
                 }
             },
@@ -359,7 +589,10 @@ fun MaisScreen(
                 TextButton(
                     onClick = {
                         confirmarSaida = false
-                    }
+                    },
+                    modifier = Modifier.heightIn(
+                        min = 48.dp
+                    )
                 ) {
                     Text(
                         text = "Cancelar",
@@ -373,17 +606,40 @@ fun MaisScreen(
     }
 }
 
-// OPCOES DA TELA MAIS
 @Composable
 private fun OpcaoMais(
     titulo: String,
     icone: ImageVector,
     onClick: () -> Unit
 ) {
+    var focado by remember {
+        mutableStateOf(false)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .onFocusChanged {
+                focado = it.isFocused
+            }
+            .then(
+                if (focado) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = AzulMais,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .clickable(
+                role = Role.Button,
+                onClick = onClick
+            )
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Abrir $titulo"
+            }
             .heightIn(min = 62.dp)
             .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -391,8 +647,8 @@ private fun OpcaoMais(
         Icon(
             imageVector = icone,
             contentDescription = null,
-            tint = CinzaMais,
-            modifier = Modifier.size(21.dp)
+            tint = CobreMais,
+            modifier = Modifier.size(22.dp)
         )
 
         Spacer(Modifier.width(19.dp))
@@ -401,19 +657,22 @@ private fun OpcaoMais(
             text = titulo,
             color = AzulMais,
             fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(1f)
         )
 
+        Spacer(Modifier.width(8.dp))
+
         Icon(
             imageVector = Icons.Outlined.ChevronRight,
-            contentDescription = "Abrir $titulo",
+            contentDescription = null,
             tint = CinzaMais,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }
 
-// MENU INFERIOR
 @Composable
 private fun RowScope.ItemMenuMais(
     titulo: String,
@@ -427,16 +686,17 @@ private fun RowScope.ItemMenuMais(
         icon = {
             Icon(
                 imageVector = icone,
-                contentDescription = titulo,
+                contentDescription = null,
                 modifier = Modifier.size(22.dp)
             )
         },
         label = {
             Text(
                 text = titulo,
-                fontSize = 10.sp
+                fontSize = 12.sp
             )
         },
+        alwaysShowLabel = true,
         colors = NavigationBarItemDefaults.colors(
             selectedIconColor = AzulMais,
             selectedTextColor = AzulMais,
