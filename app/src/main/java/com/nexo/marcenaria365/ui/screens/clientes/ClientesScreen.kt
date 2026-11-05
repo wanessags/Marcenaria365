@@ -2,7 +2,6 @@
 package com.nexo.marcenaria365.ui.screens.clientes
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -45,13 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 
-private val FundoClientes = Color(0xFFFAF6F0)
-private val AzulClientes = Color(0xFF193447)
-private val CobreClientes = Color(0xFF94613C)
-private val CinzaClientes = Color(0xFF53616A)
-private val BordaClientes = Color(0xFF89969E)
-private val VerdeClientes = Color(0xFF237A58)
-
 @Composable
 fun ClientesScreen(
     clientes: List<ClienteUi>,
@@ -62,6 +55,14 @@ fun ClientesScreen(
     onServicosClick: () -> Unit,
     onMaisClick: () -> Unit
 ) {
+    // As cores acompanham o tema selecionado
+    // em Mais > Aparência.
+    val cores = MaterialTheme.colorScheme
+
+    val teclado = LocalSoftwareKeyboardController.current
+    val foco = LocalFocusManager.current
+
+    // Estados originais da pesquisa e dos filtros.
     var busca by rememberSaveable {
         mutableStateOf("")
     }
@@ -70,9 +71,8 @@ fun ClientesScreen(
         mutableStateOf("Todos")
     }
 
-    val teclado = LocalSoftwareKeyboardController.current
-    val foco = LocalFocusManager.current
-
+    // REGRA ORIGINAL: filtrar por situação,
+    // nome ou telefone.
     val clientesFiltrados = clientes.filter { cliente ->
         val correspondeFiltro = when (filtro) {
             "Ativos" -> cliente.ativo
@@ -94,6 +94,7 @@ fun ClientesScreen(
                 )
     }
 
+    // Mesmas categorias da versão funcional.
     val filtros = listOf(
         "Todos" to clientes.size,
         "Ativos" to clientes.count { it.ativo },
@@ -106,8 +107,10 @@ fun ClientesScreen(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
-        containerColor = FundoClientes,
 
+        containerColor = cores.background,
+
+        // BOTÃO ORIGINAL DE CADASTRAR CLIENTE
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNovoClienteClick,
@@ -115,23 +118,27 @@ fun ClientesScreen(
                     minWidth = 56.dp,
                     minHeight = 56.dp
                 ),
-                containerColor = AzulClientes,
-                contentColor = Color.White,
+                containerColor = cores.primary,
+                contentColor = cores.onPrimary,
                 shape = RoundedCornerShape(15.dp)
             ) {
                 Icon(
                     imageVector =
                         Icons.Outlined.PersonAddAlt1,
-                    contentDescription = "Adicionar cliente"
+                    contentDescription = "Adicionar cliente",
+                    modifier = Modifier.size(25.dp)
                 )
             }
         },
 
+        // MENU INFERIOR ORIGINAL
         bottomBar = {
             NavigationBar(
-                containerColor = Color.White,
+                containerColor = cores.surface,
                 tonalElevation = 0.dp,
-                modifier = Modifier.heightIn(min = 75.dp)
+                modifier = Modifier.heightIn(
+                    min = 75.dp
+                )
             ) {
                 NavigationBarItem(
                     selected = false,
@@ -143,8 +150,12 @@ fun ClientesScreen(
                         )
                     },
                     label = {
-                        Text("Início", fontSize = 12.sp)
+                        Text(
+                            text = "Início",
+                            fontSize = 12.sp
+                        )
                     },
+                    alwaysShowLabel = true,
                     colors = coresMenuClientes()
                 )
 
@@ -159,8 +170,12 @@ fun ClientesScreen(
                         )
                     },
                     label = {
-                        Text("Clientes", fontSize = 12.sp)
+                        Text(
+                            text = "Clientes",
+                            fontSize = 12.sp
+                        )
                     },
+                    alwaysShowLabel = true,
                     colors = coresMenuClientes()
                 )
 
@@ -170,13 +185,18 @@ fun ClientesScreen(
                     icon = {
                         Icon(
                             imageVector =
-                                Icons.AutoMirrored.Outlined.Assignment,
+                                Icons.AutoMirrored
+                                    .Outlined.Assignment,
                             contentDescription = null
                         )
                     },
                     label = {
-                        Text("Serviços", fontSize = 12.sp)
+                        Text(
+                            text = "Serviços",
+                            fontSize = 12.sp
+                        )
                     },
+                    alwaysShowLabel = true,
                     colors = coresMenuClientes()
                 )
 
@@ -190,8 +210,12 @@ fun ClientesScreen(
                         )
                     },
                     label = {
-                        Text("Mais", fontSize = 12.sp)
+                        Text(
+                            text = "Mais",
+                            fontSize = 12.sp
+                        )
                     },
+                    alwaysShowLabel = true,
                     colors = coresMenuClientes()
                 )
             }
@@ -203,7 +227,7 @@ fun ClientesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // CABEÇALHO
+            // CABEÇALHO ORIGINAL
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -223,18 +247,21 @@ fun ClientesScreen(
                 ) {
                     Icon(
                         imageVector =
-                            Icons.AutoMirrored.Outlined.ArrowBack,
+                            Icons.AutoMirrored
+                                .Outlined.ArrowBack,
                         contentDescription = "Voltar ao início",
-                        tint = AzulClientes
+                        tint = cores.onBackground
                     )
                 }
 
                 Spacer(Modifier.width(5.dp))
 
-                Column {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
                         text = "Clientes",
-                        color = AzulClientes,
+                        color = cores.onBackground,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.semantics {
@@ -246,7 +273,7 @@ fun ClientesScreen(
 
                     Text(
                         text = "Gerencie seus clientes e contatos.",
-                        color = CinzaClientes,
+                        color = cores.onSurfaceVariant,
                         fontSize = 13.sp,
                         lineHeight = 19.sp
                     )
@@ -255,7 +282,8 @@ fun ClientesScreen(
 
             Spacer(Modifier.height(17.dp))
 
-            // PESQUISA
+            // CAMPO DE PESQUISA ORIGINAL
+            // Agora com rótulo permanente.
             OutlinedTextField(
                 value = busca,
                 onValueChange = {
@@ -265,16 +293,13 @@ fun ClientesScreen(
                     Text("Buscar clientes")
                 },
                 placeholder = {
-                    Text(
-                        "Nome ou telefone",
-                        color = CinzaClientes
-                    )
+                    Text("Nome ou telefone")
                 },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Search,
                         contentDescription = null,
-                        tint = CinzaClientes
+                        tint = cores.onSurfaceVariant
                     )
                 },
                 singleLine = true,
@@ -292,21 +317,21 @@ fun ClientesScreen(
                     .padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = CobreClientes,
-                    unfocusedBorderColor = BordaClientes,
-                    focusedTextColor = AzulClientes,
-                    unfocusedTextColor = AzulClientes,
-                    focusedLabelColor = AzulClientes,
-                    unfocusedLabelColor = CinzaClientes,
-                    cursorColor = AzulClientes
+                    focusedContainerColor = cores.surface,
+                    unfocusedContainerColor = cores.surface,
+                    focusedTextColor = cores.onSurface,
+                    unfocusedTextColor = cores.onSurface,
+                    focusedBorderColor = cores.primary,
+                    unfocusedBorderColor = cores.outline,
+                    focusedLabelColor = cores.primary,
+                    unfocusedLabelColor = cores.onSurfaceVariant,
+                    cursorColor = cores.primary
                 )
             )
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // FILTROS
+            // FILTROS ORIGINAIS
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(
@@ -320,14 +345,11 @@ fun ClientesScreen(
                     key = { it.first }
                 ) { (nome, quantidade) ->
 
-                    var focado by remember {
-                        mutableStateOf(false)
-                    }
-
                     FilterChip(
                         selected = filtro == nome,
                         onClick = {
                             filtro = nome
+
                             teclado?.hide()
                             foco.clearFocus()
                         },
@@ -335,61 +357,50 @@ fun ClientesScreen(
                             Text(
                                 text = "$nome ($quantidade)",
                                 fontSize = 13.sp,
-                                fontWeight =
-                                    if (filtro == nome) {
-                                        FontWeight.Bold
-                                    } else {
-                                        FontWeight.Medium
-                                    }
+                                fontWeight = if (filtro == nome) {
+                                    FontWeight.SemiBold
+                                } else {
+                                    FontWeight.Medium
+                                }
                             )
                         },
-                        modifier = Modifier
-                            .heightIn(min = 48.dp)
-                            .onFocusChanged {
-                                focado = it.isFocused
-                            }
-                            .then(
-                                if (focado) {
-                                    Modifier.border(
-                                        2.dp,
-                                        AzulClientes,
-                                        RoundedCornerShape(16.dp)
-                                    )
-                                } else {
-                                    Modifier
-                                }
-                            ),
+                        modifier = Modifier.heightIn(
+                            min = 48.dp
+                        ),
                         shape = RoundedCornerShape(16.dp),
                         colors =
                             FilterChipDefaults.filterChipColors(
-                                containerColor = Color.White,
+                                containerColor = cores.surface,
                                 selectedContainerColor =
-                                    Color(0xFFF1E4D7),
-                                selectedLabelColor = AzulClientes,
-                                labelColor = AzulClientes
+                                    cores.primaryContainer,
+                                selectedLabelColor =
+                                    cores.onPrimaryContainer,
+                                labelColor = cores.onSurface
                             ),
                         border =
                             FilterChipDefaults.filterChipBorder(
                                 enabled = true,
                                 selected = filtro == nome,
-                                borderColor = BordaClientes,
-                                selectedBorderColor = CobreClientes
+                                borderColor = cores.outline,
+                                selectedBorderColor =
+                                    cores.primary
                             )
                     )
                 }
             }
 
-            Spacer(Modifier.height(11.dp))
+            Spacer(Modifier.height(9.dp))
 
-            // QUANTIDADE DE RESULTADOS
+            // CONTAGEM DOS RESULTADOS:
+            // apenas informação visual e para TalkBack.
             Text(
                 text = if (clientesFiltrados.size == 1) {
                     "1 cliente encontrado"
                 } else {
                     "${clientesFiltrados.size} clientes encontrados"
                 },
-                color = CinzaClientes,
                 fontSize = 12.sp,
+                color = cores.onSurfaceVariant,
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
                     .semantics {
@@ -397,34 +408,30 @@ fun ClientesScreen(
                     }
             )
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(9.dp))
 
-            // LISTA DE CLIENTES
+            // LISTA ORIGINAL DE CLIENTES
             if (clientesFiltrados.isEmpty()) {
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(horizontal = 20.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (busca.isNotBlank()) {
-                            "Nenhum cliente encontrado para sua pesquisa."
-                        } else if (filtro != "Todos") {
-                            "Nenhum cliente neste filtro."
-                        } else {
-                            "Nenhum cliente cadastrado."
-                        },
-                        color = CinzaClientes,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
+                        text = "Nenhum cliente encontrado.",
+                        color = cores.onSurfaceVariant,
+                        fontSize = 13.sp,
                         modifier = Modifier.semantics {
                             liveRegion = LiveRegionMode.Polite
                         }
                     )
                 }
+
             } else {
+
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
@@ -440,7 +447,9 @@ fun ClientesScreen(
                         key = { it.id }
                     ) { cliente ->
 
-                        // Mantém a contagem de serviços em aberto.
+                        // REGRA ORIGINAL:
+                        // contar serviços em aberto
+                        // vinculados ao cliente.
                         val quantidadeServicos = servicos.count {
                             it.clienteId == cliente.id &&
                                     it.status != "Concluído" &&
@@ -457,7 +466,9 @@ fun ClientesScreen(
                         )
 
                         HorizontalDivider(
-                            color = BordaClientes,
+                            color = cores.outline.copy(
+                                alpha = 0.55f
+                            ),
                             thickness = 0.7.dp
                         )
                     }
@@ -467,25 +478,43 @@ fun ClientesScreen(
     }
 }
 
+// LINHA DO CLIENTE
+// Mantém nome, telefone, situação, serviços
+// e navegação ao tocar.
 @Composable
 private fun LinhaCliente(
     cliente: ClienteUi,
     quantidadeServicos: Int,
     onClick: () -> Unit
 ) {
-    var focado by remember {
-        mutableStateOf(false)
+    val cores = MaterialTheme.colorScheme
+
+    // Verifica o tema aplicado pelo aplicativo,
+    // e não apenas a configuração do celular.
+    val modoEscuro =
+        cores.background.luminance() < 0.5f
+
+    val corVerde = if (modoEscuro) {
+        Color(0xFF83DDB5)
+    } else {
+        Color(0xFF237A58)
     }
 
-    val iniciais = cliente.nome
-        .trim()
-        .split(Regex("\\s+"))
-        .filter { it.isNotBlank() }
-        .take(2)
-        .joinToString("") {
-            it.first().uppercase()
+    val corSituacao = if (cliente.ativo) {
+        corVerde
+    } else {
+        cores.onSurfaceVariant
+    }
+
+    val fundoSituacao = if (cliente.ativo) {
+        if (modoEscuro) {
+            Color(0xFF1D4134)
+        } else {
+            Color(0xFFE5F4EC)
         }
-        .ifBlank { "C" }
+    } else {
+        cores.surfaceVariant
+    }
 
     val situacao = if (cliente.ativo) {
         "Ativo"
@@ -493,16 +522,33 @@ private fun LinhaCliente(
         "Inativo"
     }
 
-    val textoServicos = when (quantidadeServicos) {
-        0 -> "Nenhum serviço em aberto"
-        1 -> "1 serviço em aberto"
-        else -> "$quantidadeServicos serviços em aberto"
+    val iniciais = cliente.nome
+        .trim()
+        .split(" ")
+        .filter { it.isNotBlank() }
+        .take(2)
+        .mapNotNull { it.firstOrNull() }
+        .joinToString("")
+        .uppercase()
+        .ifBlank { "C" }
+
+    var focado by remember {
+        mutableStateOf(false)
     }
 
-    val descricaoAcessivel =
-        "Abrir detalhes de ${cliente.nome}. " +
-                "Telefone: ${cliente.telefone}. " +
-                "Situação: $situacao. $textoServicos."
+    // O TalkBack anuncia todas as informações
+    // antes de abrir os detalhes do cliente.
+    val descricaoAcessivel = buildString {
+        append("Abrir detalhes de ${cliente.nome}. ")
+        append("Telefone: ${cliente.telefone}. ")
+        append("Situação: $situacao. ")
+
+        if (quantidadeServicos == 1) {
+            append("1 serviço em aberto.")
+        } else {
+            append("$quantidadeServicos serviços em aberto.")
+        }
+    }
 
     Row(
         modifier = Modifier
@@ -514,8 +560,8 @@ private fun LinhaCliente(
                 if (focado) {
                     Modifier.border(
                         width = 2.dp,
-                        color = AzulClientes,
-                        shape = RoundedCornerShape(12.dp)
+                        color = cores.primary,
+                        shape = RoundedCornerShape(10.dp)
                     )
                 } else {
                     Modifier
@@ -528,28 +574,25 @@ private fun LinhaCliente(
             .semantics(mergeDescendants = true) {
                 contentDescription = descricaoAcessivel
             }
-            .heightIn(min = 80.dp)
-            .padding(
-                horizontal = 6.dp,
-                vertical = 12.dp
-            ),
+            .heightIn(min = 76.dp)
+            .padding(vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // AVATAR COM INICIAIS
+        // AVATAR ORIGINAL COM INICIAIS
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(44.dp)
                 .background(
-                    color = CobreClientes,
+                    color = cores.secondary,
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = iniciais,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
+                color = cores.onSecondary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
 
@@ -558,81 +601,94 @@ private fun LinhaCliente(
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement =
-                Arrangement.spacedBy(6.dp)
+                Arrangement.spacedBy(5.dp)
         ) {
-            // NOME
-            Text(
-                text = cliente.nome,
-                color = AzulClientes,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            // NOME E SITUAÇÃO
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement =
+                    Arrangement.spacedBy(7.dp)
+            ) {
+                Text(
+                    text = cliente.nome,
+                    color = cores.onSurface,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(
+                        weight = 1f,
+                        fill = false
+                    )
+                )
+
+                Surface(
+                    color = fundoSituacao,
+                    shape = RoundedCornerShape(5.dp)
+                ) {
+                    Text(
+                        text = situacao,
+                        color = corSituacao,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(
+                            horizontal = 7.dp,
+                            vertical = 5.dp
+                        )
+                    )
+                }
+            }
 
             // TELEFONE
             Text(
                 text = cliente.telefone,
-                color = CinzaClientes,
-                fontSize = 13.sp,
+                color = cores.onSurfaceVariant,
+                fontSize = 12.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
-            // SITUAÇÃO
-            Surface(
-                modifier = Modifier.align(
-                    Alignment.Start
-                ),
-                color = if (cliente.ativo) {
-                    Color(0xFFE5F4EC)
-                } else {
-                    Color(0xFFF1EEEE)
-                },
-                shape = RoundedCornerShape(7.dp)
-            ) {
+            // SERVIÇOS EM ABERTO
+            // Mantém a regra original:
+            // a informação só aparece se houver serviços.
+            if (quantidadeServicos > 0) {
                 Text(
-                    text = situacao,
-                    color = if (cliente.ativo) {
-                        VerdeClientes
+                    text = if (quantidadeServicos == 1) {
+                        "1 serviço em aberto"
                     } else {
-                        AzulClientes
+                        "$quantidadeServicos serviços em aberto"
                     },
+                    color = cores.secondary,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(
-                        horizontal = 9.dp,
-                        vertical = 5.dp
-                    )
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-
-            // SERVIÇOS EM ABERTO
-            Text(
-                text = textoServicos,
-                color = CobreClientes,
-                fontSize = 12.sp,
-                lineHeight = 17.sp
-            )
         }
 
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(7.dp))
 
         Icon(
             imageVector = Icons.Outlined.ChevronRight,
             contentDescription = null,
-            tint = CinzaClientes,
+            tint = cores.onSurfaceVariant,
             modifier = Modifier.size(20.dp)
         )
     }
 }
 
+// CORES DINÂMICAS DA NAVEGAÇÃO INFERIOR
 @Composable
-private fun coresMenuClientes() =
-    NavigationBarItemDefaults.colors(
-        selectedIconColor = AzulClientes,
-        selectedTextColor = AzulClientes,
-        indicatorColor = Color(0xFFF1E8DE),
-        unselectedIconColor = CinzaClientes,
-        unselectedTextColor = CinzaClientes
+private fun coresMenuClientes(): NavigationBarItemColors {
+    val cores = MaterialTheme.colorScheme
+
+    return NavigationBarItemDefaults.colors(
+        selectedIconColor = cores.primary,
+        selectedTextColor = cores.onSurface,
+        indicatorColor = cores.primaryContainer,
+        unselectedIconColor = cores.onSurfaceVariant,
+        unselectedTextColor = cores.onSurfaceVariant
     )
+}
