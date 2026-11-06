@@ -28,12 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val FundoAjuda = Color(0xFFFAF6F0)
 private val AzulAjuda = Color(0xFF193447)
-private val CobreAjuda = Color(0xFF94613C)
-private val CinzaAjuda = Color(0xFF53616A)
-private val BordaAjuda = Color(0xFF89969E)
 
+// Mantém as perguntas já existentes no aplicativo.
 private data class PerguntaAjuda(
     val titulo: String,
     val resposta: String
@@ -86,11 +83,24 @@ private val perguntasAjuda = listOf(
 fun AjudaSuporteScreen(
     onVoltar: () -> Unit
 ) {
+    val cores = MaterialTheme.colorScheme
+
+    // As cores são obtidas do tema atual.
+    // Assim a tela acompanha automaticamente
+    // o modo claro ou escuro do aplicativo.
+    val corFundo = cores.background
+    val corCartao = cores.surface
+    val corTexto = cores.onSurface
+    val corSecundaria = cores.onSurfaceVariant
+    val corDestaque = cores.primary
+    val corBorda = cores.outlineVariant
+    val corSelecionada = cores.primary
+
     BackHandler(onBack = onVoltar)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = FundoAjuda,
+        containerColor = corFundo,
         topBar = {
             Row(
                 modifier = Modifier
@@ -135,10 +145,9 @@ fun AjudaSuporteScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .background(corFundo)
                 .padding(horizontal = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(
-                12.dp
-            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(
                 top = 20.dp,
                 bottom = 32.dp
@@ -149,37 +158,46 @@ fun AjudaSuporteScreen(
             item {
                 Column {
                     Row(
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector =
-                                Icons.Outlined.HelpOutline,
-                            contentDescription = null,
-                            tint = CobreAjuda,
-                            modifier = Modifier.size(27.dp)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = cores.primaryContainer
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Outlined.HelpOutline,
+                                contentDescription = null,
+                                tint = cores.onPrimaryContainer,
+                                modifier = Modifier
+                                    .padding(11.dp)
+                                    .size(26.dp)
+                            )
+                        }
 
-                        Spacer(Modifier.width(10.dp))
+                        Spacer(Modifier.width(12.dp))
 
                         Text(
                             text = "Como podemos ajudar?",
                             fontSize = 20.sp,
+                            lineHeight = 26.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AzulAjuda,
-                            modifier = Modifier.semantics {
-                                heading()
-                            }
+                            color = cores.onBackground,
+                            modifier = Modifier
+                                .weight(1f)
+                                .semantics {
+                                    heading()
+                                }
                         )
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(14.dp))
 
                     Text(
                         text = "Encontre respostas para as " +
                                 "dúvidas mais comuns sobre o " +
                                 "Marcenaria 365.",
-                        color = CinzaAjuda,
+                        color = corSecundaria,
                         fontSize = 14.sp,
                         lineHeight = 21.sp
                     )
@@ -189,7 +207,7 @@ fun AjudaSuporteScreen(
                     Text(
                         text = "Selecione uma pergunta para " +
                                 "mostrar ou ocultar a resposta.",
-                        color = CinzaAjuda,
+                        color = corSecundaria,
                         fontSize = 13.sp,
                         lineHeight = 19.sp
                     )
@@ -225,19 +243,15 @@ fun AjudaSuporteScreen(
                             if (focado) {
                                 Modifier.border(
                                     width = 2.dp,
-                                    color = AzulAjuda,
-                                    shape = RoundedCornerShape(
-                                        14.dp
-                                    )
+                                    color = corSelecionada,
+                                    shape = RoundedCornerShape(14.dp)
                                 )
                             } else {
                                 Modifier
                             }
                         )
                         .semantics {
-                            stateDescription = if (
-                                expandida
-                            ) {
+                            stateDescription = if (expandida) {
                                 "Expandida. Toque para recolher."
                             } else {
                                 "Recolhida. Toque para expandir."
@@ -245,14 +259,15 @@ fun AjudaSuporteScreen(
                         },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White
+                        containerColor = corCartao,
+                        contentColor = corTexto
                     ),
                     border = BorderStroke(
                         width = 1.dp,
                         color = if (expandida) {
-                            CobreAjuda
+                            corDestaque
                         } else {
-                            BordaAjuda
+                            corBorda
                         }
                     ),
                     elevation = CardDefaults.cardElevation(
@@ -264,77 +279,59 @@ fun AjudaSuporteScreen(
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
-
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 48.dp),
-                            verticalAlignment =
-                                Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = pergunta.titulo,
-                                fontWeight =
-                                    FontWeight.SemiBold,
-                                color = AzulAjuda,
+                                fontWeight = FontWeight.SemiBold,
+                                color = corTexto,
                                 fontSize = 15.sp,
                                 lineHeight = 22.sp,
-                                modifier = Modifier.weight(
-                                    1f
-                                )
+                                modifier = Modifier.weight(1f)
                             )
 
-                            Spacer(
-                                Modifier.width(10.dp)
-                            )
+                            Spacer(Modifier.width(10.dp))
 
                             Icon(
-                                imageVector = if (
-                                    expandida
-                                ) {
+                                imageVector = if (expandida) {
                                     Icons.Outlined.ExpandLess
                                 } else {
                                     Icons.Outlined.ExpandMore
                                 },
                                 contentDescription = null,
-                                tint = AzulAjuda,
-                                modifier = Modifier.size(
-                                    24.dp
-                                )
+                                tint = corDestaque,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
 
                         if (expandida) {
-                            Spacer(
-                                Modifier.height(10.dp)
-                            )
+                            Spacer(Modifier.height(10.dp))
 
                             HorizontalDivider(
-                                color = BordaAjuda,
+                                color = corBorda,
                                 thickness = 1.dp
                             )
 
-                            Spacer(
-                                Modifier.height(12.dp)
-                            )
+                            Spacer(Modifier.height(12.dp))
 
                             Text(
                                 text = pergunta.resposta,
-                                color = CinzaAjuda,
+                                color = corSecundaria,
                                 fontSize = 14.sp,
                                 lineHeight = 22.sp
                             )
                         } else {
-                            Spacer(
-                                Modifier.height(5.dp)
-                            )
+                            Spacer(Modifier.height(5.dp))
 
                             Text(
                                 text = "Mostrar resposta",
-                                color = CobreAjuda,
+                                color = corDestaque,
                                 fontSize = 13.sp,
-                                fontWeight =
-                                    FontWeight.Medium
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
