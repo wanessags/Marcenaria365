@@ -115,6 +115,18 @@ private fun ordenarData(prazo: String): Long =
         Long.MAX_VALUE
     }
 
+/*
+ * Calcula os indicadores do painel.
+ *
+ * REGRA DO PAINEL:
+ * - Serviços cancelados permanecem no gráfico.
+ * - Valores de serviços cancelados não entram no
+ *   indicador financeiro da Home.
+ * - Serviços excluídos não aparecem quando a API
+ *   deixa de retorná-los.
+ *
+ * Esta função não modifica o banco de dados.
+ */
 private fun montarResumoDashboard(
     quantidadeClientes: Int,
     servicos: List<ServicoUi>
@@ -140,7 +152,16 @@ private fun montarResumoDashboard(
         classificarServico(it.status) == "pendentes"
     }
 
-    val recebido = servicos.sumOf { it.valorRecebido }
+    // CORREÇÃO:
+    // Não contabilizar recebimentos associados
+    // a serviços cancelados no indicador da Home.
+    val recebido = servicos
+        .filter { servico ->
+            classificarServico(servico.status) != "cancelados"
+        }
+        .sumOf { servico ->
+            servico.valorRecebido
+        }
 
     val entregas = servicos
         .filter {
@@ -161,10 +182,26 @@ private fun montarResumoDashboard(
         }
 
     val status = mutableListOf(
-        StatusServico("Aguardando", aguardando, LaranjaHome),
-        StatusServico("Produção", producao, CinzaHome),
-        StatusServico("Concluídos", concluidos, VerdeHome),
-        StatusServico("Cancelados", cancelados, VermelhoHome)
+        StatusServico(
+            "Aguardando",
+            aguardando,
+            LaranjaHome
+        ),
+        StatusServico(
+            "Produção",
+            producao,
+            CinzaHome
+        ),
+        StatusServico(
+            "Concluídos",
+            concluidos,
+            VerdeHome
+        ),
+        StatusServico(
+            "Cancelados",
+            cancelados,
+            VermelhoHome
+        )
     )
 
     if (outros > 0) {
@@ -207,13 +244,17 @@ fun HomeScreen(
         .substringBefore(" ")
         .ifBlank { "Usuário" }
 
-    var clientes by remember { mutableIntStateOf(0) }
+    var clientes by remember {
+        mutableIntStateOf(0)
+    }
 
     var servicos by remember {
         mutableStateOf<List<ServicoUi>>(emptyList())
     }
 
-    var carregando by remember { mutableStateOf(true) }
+    var carregando by remember {
+        mutableStateOf(true)
+    }
 
     var mensagemErro by remember {
         mutableStateOf<String?>(null)
@@ -226,7 +267,7 @@ fun HomeScreen(
     val tokenAtual = AuthRepository.sessaoAtual?.token
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Atualiza ao voltar para a Activity.
+    // Atualiza os indicadores ao voltar para o aplicativo.
     DisposableEffect(lifecycleOwner) {
         val observador = LifecycleEventObserver { _, evento ->
             if (evento == Lifecycle.Event.ON_RESUME) {
@@ -241,16 +282,18 @@ fun HomeScreen(
         }
     }
 
-    // Busca dados reais, evitando indicadores antigos.
+    // Busca novamente os dados reais na API.
     LaunchedEffect(tokenAtual, revisaoDados) {
         carregando = true
         mensagemErro = null
 
+        // Remove os valores anteriores da interface.
         clientes = 0
         servicos = emptyList()
 
         if (tokenAtual == null) {
-            mensagemErro = "Faça login para acessar seus dados."
+            mensagemErro =
+                "Faça login para acessar seus dados."
             carregando = false
             return@LaunchedEffect
         }
@@ -267,6 +310,8 @@ fun HomeScreen(
                 val recebimentosApi =
                     RecebimentoRepository.listar().getOrThrow()
 
+                // Considera somente recebimentos
+                // efetivamente registrados.
                 val recebidosPorServico = recebimentosApi
                     .filter {
                         it.status.equals(
@@ -281,6 +326,7 @@ fun HomeScreen(
                         )
                     }
 
+                // Associa cada recebimento ao serviço real.
                 val servicosAtualizados = servicosApi.map {
                         servico ->
                     servico.copy(
@@ -289,10 +335,14 @@ fun HomeScreen(
                     )
                 }
 
-                Pair(clientesApi.size, servicosAtualizados)
+                Pair(
+                    clientesApi.size,
+                    servicosAtualizados
+                )
             }
         }
 
+        // Não utiliza dados de uma sessão encerrada.
         if (AuthRepository.sessaoAtual?.token != tokenAtual) {
             return@LaunchedEffect
         }
@@ -331,6 +381,7 @@ fun HomeScreen(
         ) {
             Spacer(Modifier.height(16.dp))
 
+            // SAUDAÇÃO
             Text(
                 text = "Olá, $primeiroNome!",
                 color = cores.onBackground,
@@ -352,12 +403,15 @@ fun HomeScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            // ATUALIZAÇÃO MANUAL
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(
-                    onClick = { revisaoDados++ },
+                    onClick = {
+                        revisaoDados++
+                    },
                     enabled = !carregando
                 ) {
                     Icon(
@@ -367,12 +421,14 @@ fun HomeScreen(
                     )
 
                     Spacer(Modifier.width(6.dp))
+
                     Text("Atualizar resumo")
                 }
             }
 
             Spacer(Modifier.height(5.dp))
 
+            // CARREGAMENTO
             if (carregando) {
                 Row(
                     modifier = Modifier
@@ -391,12 +447,13 @@ fun HomeScreen(
                     Spacer(Modifier.width(12.dp))
 
                     Text(
-                        "Carregando seus dados...",
+                        text = "Carregando seus dados...",
                         color = secundario
                     )
                 }
             }
 
+            // MENSAGEM DE ERRO
             if (mensagemErro != null) {
                 Card(
                     modifier = Modifier
@@ -417,14 +474,18 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                TextButton(onClick = { revisaoDados++ }) {
+                TextButton(
+                    onClick = {
+                        revisaoDados++
+                    }
+                ) {
                     Text("Tentar novamente")
                 }
             }
 
             if (!carregando && mensagemErro == null) {
 
-                // TOTAL RECEBIDO
+                // CARTÃO FINANCEIRO
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -442,7 +503,8 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                Icons.Outlined.AccountBalanceWallet,
+                                imageVector =
+                                    Icons.Outlined.AccountBalanceWallet,
                                 contentDescription = null,
                                 tint = destaque,
                                 modifier = Modifier.size(22.dp)
@@ -451,7 +513,7 @@ fun HomeScreen(
                             Spacer(Modifier.width(9.dp))
 
                             Text(
-                                "TOTAL RECEBIDO",
+                                text = "TOTAL RECEBIDO",
                                 color = secundario,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -489,14 +551,14 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "Ver detalhes",
+                                text = "Ver detalhes",
                                 color = destaque,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
 
                             Icon(
-                                Icons.Outlined.ChevronRight,
+                                imageVector = Icons.Outlined.ChevronRight,
                                 contentDescription = null,
                                 tint = destaque,
                                 modifier = Modifier.size(19.dp)
@@ -510,7 +572,8 @@ fun HomeScreen(
                 // INDICADORES
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(9.dp)
+                    horizontalArrangement =
+                        Arrangement.spacedBy(9.dp)
                 ) {
                     IndicadorDashboard(
                         modifier = Modifier.weight(1f),
@@ -523,7 +586,8 @@ fun HomeScreen(
 
                     IndicadorDashboard(
                         modifier = Modifier.weight(1f),
-                        icone = Icons.AutoMirrored.Outlined.Assignment,
+                        icone =
+                            Icons.AutoMirrored.Outlined.Assignment,
                         numero = resumo.emAndamento,
                         descricao = "Serviços em\nandamento",
                         cor = destaque,
@@ -532,7 +596,8 @@ fun HomeScreen(
 
                     IndicadorDashboard(
                         modifier = Modifier.weight(1f),
-                        icone = Icons.Outlined.CheckCircleOutline,
+                        icone =
+                            Icons.Outlined.CheckCircleOutline,
                         numero = resumo.concluidos,
                         descricao = "Serviços\nconcluídos",
                         cor = VerdeHome,
@@ -542,7 +607,7 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(11.dp))
 
-                // GRÁFICO
+                // GRÁFICO DE SERVIÇOS
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -554,7 +619,7 @@ fun HomeScreen(
                         modifier = Modifier.padding(14.dp)
                     ) {
                         Text(
-                            "Serviços por status",
+                            text = "Serviços por status",
                             color = texto,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
@@ -609,7 +674,8 @@ fun HomeScreen(
                                             color = texto,
                                             fontSize = 12.sp,
                                             maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
+                                            overflow =
+                                                TextOverflow.Ellipsis,
                                             modifier = Modifier.weight(1f)
                                         )
 
@@ -640,7 +706,7 @@ fun HomeScreen(
                         modifier = Modifier.padding(13.dp)
                     ) {
                         Text(
-                            "Próximas entregas",
+                            text = "Próximas entregas",
                             color = texto,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
@@ -653,7 +719,7 @@ fun HomeScreen(
 
                         if (resumo.entregas.isEmpty()) {
                             Text(
-                                "Nenhuma entrega prevista.",
+                                text = "Nenhuma entrega prevista.",
                                 color = secundario,
                                 fontSize = 13.sp,
                                 modifier = Modifier.padding(
@@ -693,7 +759,8 @@ fun HomeScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            Icons.AutoMirrored.Outlined.Assignment,
+                                            imageVector =
+                                                Icons.AutoMirrored.Outlined.Assignment,
                                             contentDescription = null,
                                             tint = cores.onPrimaryContainer,
                                             modifier = Modifier.size(18.dp)
@@ -706,16 +773,18 @@ fun HomeScreen(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
-                                            entrega.titulo,
+                                            text = entrega.titulo,
                                             color = texto,
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
+                                            overflow =
+                                                TextOverflow.Ellipsis
                                         )
 
                                         Text(
-                                            "${entrega.cliente} · ${entrega.prazo}",
+                                            text =
+                                                "${entrega.cliente} · ${entrega.prazo}",
                                             color = secundario,
                                             fontSize = 12.sp,
                                             maxLines = 2
@@ -725,7 +794,9 @@ fun HomeScreen(
                                     Spacer(Modifier.width(5.dp))
 
                                     Text(
-                                        rotuloSituacaoServico(entrega.status),
+                                        text = rotuloSituacaoServico(
+                                            entrega.status
+                                        ),
                                         color = destaque,
                                         fontSize = 11.sp,
                                         maxLines = 2,
@@ -754,7 +825,7 @@ fun HomeScreen(
                 onClick = {},
                 icon = {
                     Icon(
-                        Icons.Outlined.Home,
+                        imageVector = Icons.Outlined.Home,
                         contentDescription = null
                     )
                 },
@@ -769,7 +840,8 @@ fun HomeScreen(
                 onClick = onClientesClick,
                 icon = {
                     Icon(
-                        Icons.Outlined.PeopleOutline,
+                        imageVector =
+                            Icons.Outlined.PeopleOutline,
                         contentDescription = null
                     )
                 },
@@ -784,7 +856,8 @@ fun HomeScreen(
                 onClick = onServicosClick,
                 icon = {
                     Icon(
-                        Icons.AutoMirrored.Outlined.Assignment,
+                        imageVector =
+                            Icons.AutoMirrored.Outlined.Assignment,
                         contentDescription = null
                     )
                 },
@@ -799,7 +872,7 @@ fun HomeScreen(
                 onClick = onMaisClick,
                 icon = {
                     Icon(
-                        Icons.Outlined.Menu,
+                        imageVector = Icons.Outlined.Menu,
                         contentDescription = null
                     )
                 },
@@ -867,7 +940,7 @@ private fun IndicadorDashboard(
             Spacer(Modifier.height(5.dp))
 
             Text(
-                numero.toString(),
+                text = numero.toString(),
                 color = cores.onSurface,
                 fontSize = 21.sp,
                 fontWeight = FontWeight.Bold
@@ -876,7 +949,7 @@ private fun IndicadorDashboard(
             Spacer(Modifier.height(3.dp))
 
             Text(
-                nome,
+                text = nome,
                 color = cores.onSurfaceVariant,
                 fontSize = 11.sp,
                 lineHeight = 15.sp
@@ -897,8 +970,8 @@ private fun GraficoDashboard(
         append("Gráfico de serviços por status. ")
         append("Total: $total serviços. ")
 
-        status.forEach {
-            append("${it.nome}: ${it.quantidade}. ")
+        status.forEach { item ->
+            append("${item.nome}: ${item.quantidade}. ")
         }
     }
 
@@ -919,7 +992,8 @@ private fun GraficoDashboard(
 
             if (total > 0) {
                 status.forEach { item ->
-                    val parte = 360f * item.quantidade / total
+                    val parte =
+                        360f * item.quantidade / total
 
                     drawArc(
                         color = item.cor,
@@ -950,14 +1024,14 @@ private fun GraficoDashboard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                total.toString(),
+                text = total.toString(),
                 color = cores.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize = 23.sp
             )
 
             Text(
-                "Total",
+                text = "Total",
                 color = cores.onSurfaceVariant,
                 fontSize = 12.sp
             )
