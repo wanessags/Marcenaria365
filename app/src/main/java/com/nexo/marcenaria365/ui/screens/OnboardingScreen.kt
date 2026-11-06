@@ -1,14 +1,7 @@
 
-
 package com.nexo.marcenaria365.ui.screens
 
 import androidx.activity.compose.BackHandler
-import com.nexo.marcenaria365.data.mapper.paraRequest
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import com.nexo.marcenaria365.data.mapper.paraUi
-import com.nexo.marcenaria365.data.repository.ClienteRepository
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -25,31 +18,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import com.nexo.marcenaria365.data.mapper.paraRequest
+import com.nexo.marcenaria365.data.mapper.paraUi
+import com.nexo.marcenaria365.data.repository.AuthRepository
+import com.nexo.marcenaria365.data.repository.ClienteRepository
+import com.nexo.marcenaria365.data.repository.ServicoRepository
+import com.nexo.marcenaria365.data.repository.RecebimentoRepository
 import com.nexo.marcenaria365.ui.screens.caixa.CaixaScreen
-
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteCadastroScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteDetalhesScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteEdicaoScreen
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import com.nexo.marcenaria365.ui.screens.clientes.ClientesScreen
-import com.nexo.marcenaria365.ui.screens.clientes.clientesIniciais
-
 import com.nexo.marcenaria365.ui.screens.ajuda.AjudaSuporteScreen
 import com.nexo.marcenaria365.ui.screens.mais.MaisScreen
 import com.nexo.marcenaria365.ui.screens.materiais.MateriaisScreen
-
 import com.nexo.marcenaria365.ui.screens.perfil.MeuPerfilScreen
-
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import com.nexo.marcenaria365.ui.screens.servicos.ServicosFlowScreen
-import com.nexo.marcenaria365.data.repository.AuthRepository
-import com.nexo.marcenaria365.data.repository.ServicoRepository
-import com.nexo.marcenaria365.data.repository.RecebimentoRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun OnboardingScreen() {
@@ -97,24 +92,41 @@ fun OnboardingScreen() {
         mutableStateListOf<ClienteUi>()
     }
 
+    val servicos = remember {
+        mutableStateListOf<ServicoUi>()
+    }
+
     val scope = rememberCoroutineScope()
 
     var erroClientes by remember {
         mutableStateOf<String?>(null)
     }
 
+    var erroServicos by remember {
+        mutableStateOf<String?>(null)
+    }
+
     fun carregarClientes() {
         scope.launch {
-            val sessaoDaConsulta = AuthRepository.sessaoAtual ?: return@launch
+            val sessaoDaConsulta =
+                AuthRepository.sessaoAtual ?: return@launch
+
             val resultado = withContext(Dispatchers.IO) {
                 ClienteRepository.listar()
             }
-            if (AuthRepository.sessaoAtual !== sessaoDaConsulta) return@launch
+
+            if (
+                AuthRepository.sessaoAtual !== sessaoDaConsulta
+            ) {
+                return@launch
+            }
 
             resultado.fold(
                 onSuccess = { lista ->
                     clientes.clear()
-                    clientes.addAll(lista.map { it.paraUi() })
+                    clientes.addAll(
+                        lista.map { it.paraUi() }
+                    )
                     erroClientes = null
                 },
                 onFailure = { erro ->
@@ -124,25 +136,24 @@ fun OnboardingScreen() {
         }
     }
 
-    val servicos = remember {
-        mutableStateListOf<ServicoUi>()
-    }
-
-    var erroServicos by remember {
-        mutableStateOf<String?>(null)
-    }
-
     fun carregarServicos() {
         scope.launch {
-            val sessaoDaConsulta = AuthRepository.sessaoAtual ?: return@launch
+            val sessaoDaConsulta =
+                AuthRepository.sessaoAtual ?: return@launch
+
             val resultado = withContext(Dispatchers.IO) {
                 runCatching {
-                    val clientesApi = ClienteRepository.listar().getOrThrow()
+                    val clientesApi =
+                        ClienteRepository.listar().getOrThrow()
+
                     val listaServicos =
-                        ServicoRepository.listar(clientesApi).getOrThrow()
+                        ServicoRepository.listar(
+                            clientesApi
+                        ).getOrThrow()
 
                     val recebimentos =
-                        RecebimentoRepository.listar().getOrThrow()
+                        RecebimentoRepository.listar()
+                            .getOrThrow()
 
                     val totaisPorServico = recebimentos
                         .filter {
@@ -151,20 +162,30 @@ fun OnboardingScreen() {
                                 ignoreCase = true
                             )
                         }
-                        .groupBy { it.servicoId }
+                        .groupBy {
+                            it.servicoId
+                        }
                         .mapValues { (_, pagamentos) ->
-                            RecebimentoRepository.totalRecebido(pagamentos)
+                            RecebimentoRepository.totalRecebido(
+                                pagamentos
+                            )
                         }
 
                     listaServicos.map { servico ->
                         servico.copy(
                             valorRecebido =
-                                totaisPorServico[servico.id] ?: 0.0
+                                totaisPorServico[servico.id]
+                                    ?: 0.0
                         )
                     }
                 }
             }
-            if (AuthRepository.sessaoAtual !== sessaoDaConsulta) return@launch
+
+            if (
+                AuthRepository.sessaoAtual !== sessaoDaConsulta
+            ) {
+                return@launch
+            }
 
             resultado.fold(
                 onSuccess = { lista ->
@@ -173,7 +194,8 @@ fun OnboardingScreen() {
                     erroServicos = null
                 },
                 onFailure = { erro ->
-                    erroServicos = erro.message ?: "Erro ao carregar servicos."
+                    erroServicos = erro.message
+                        ?: "Erro ao carregar servicos."
                 }
             )
         }
@@ -192,29 +214,44 @@ fun OnboardingScreen() {
         scope.launch {
             val resultado = withContext(Dispatchers.IO) {
                 runCatching {
-                    val clientesApi = ClienteRepository.listar().getOrThrow()
-                    ServicoRepository.cadastrar(novo, clientesApi).getOrThrow()
+                    val clientesApi =
+                        ClienteRepository.listar().getOrThrow()
+
+                    ServicoRepository.cadastrar(
+                        novo,
+                        clientesApi
+                    ).getOrThrow()
                 }
             }
 
             resultado.fold(
                 onSuccess = { salvo ->
-                    servicos.add(salvo.copy(fotoUri = novo.fotoUri))
+                    servicos.add(
+                        salvo.copy(fotoUri = novo.fotoUri)
+                    )
                     erroServicos = null
                 },
                 onFailure = { erro ->
-                    erroServicos = erro.message ?: "Erro ao cadastrar servico."
+                    erroServicos = erro.message
+                        ?: "Erro ao cadastrar servico."
                 }
             )
         }
     }
 
-    val atualizarServico: (ServicoUi) -> Unit = { atualizado ->
+    val atualizarServico: (ServicoUi) -> Unit = {
+            atualizado ->
+
         scope.launch {
             val resultado = withContext(Dispatchers.IO) {
                 runCatching {
-                    val clientesApi = ClienteRepository.listar().getOrThrow()
-                    ServicoRepository.editar(atualizado, clientesApi).getOrThrow()
+                    val clientesApi =
+                        ClienteRepository.listar().getOrThrow()
+
+                    ServicoRepository.editar(
+                        atualizado,
+                        clientesApi
+                    ).getOrThrow()
                 }
             }
 
@@ -227,13 +264,16 @@ fun OnboardingScreen() {
                     if (indice >= 0) {
                         servicos[indice] = salvo.copy(
                             fotoUri = atualizado.fotoUri,
-                            valorRecebido = atualizado.valorRecebido
+                            valorRecebido =
+                                atualizado.valorRecebido
                         )
                     }
+
                     erroServicos = null
                 },
                 onFailure = { erro ->
-                    erroServicos = erro.message ?: "Erro ao editar servico."
+                    erroServicos = erro.message
+                        ?: "Erro ao editar servico."
                 }
             )
         }
@@ -247,11 +287,14 @@ fun OnboardingScreen() {
 
             resultado.fold(
                 onSuccess = {
-                    servicos.removeAll { it.id == id }
+                    servicos.removeAll {
+                        it.id == id
+                    }
                     erroServicos = null
                 },
                 onFailure = { erro ->
-                    erroServicos = erro.message ?: "Erro ao excluir servico."
+                    erroServicos = erro.message
+                        ?: "Erro ao excluir servico."
                 }
             )
         }
@@ -259,27 +302,46 @@ fun OnboardingScreen() {
 
     if (erroServicos != null) {
         AlertDialog(
-            onDismissRequest = { erroServicos = null },
-            title = { Text("Servicos") },
+            onDismissRequest = {
+                erroServicos = null
+            },
+            title = {
+                Text("Servicos")
+            },
             text = {
-                Text(erroServicos ?: "Ocorreu um erro ao acessar a API.")
+                Text(
+                    erroServicos
+                        ?: "Ocorreu um erro ao acessar a API."
+                )
             },
             confirmButton = {
-                TextButton(onClick = { erroServicos = null }) {
+                TextButton(
+                    onClick = {
+                        erroServicos = null
+                    }
+                ) {
                     Text("Entendi")
                 }
             }
         )
     }
 
-    // Telas publicas podem ser exibidas sem autenticacao.
+    // Telas públicas não exigem autenticação.
     val telasPublicas = setOf(
-        "onboarding", "login", "cadastro_usuario", "politica_entrada"
+        "onboarding",
+        "login",
+        "cadastro_usuario",
+        "politica_entrada"
     )
 
     val telaSegura = if (
-        AuthRepository.sessaoAtual == null && telaAtual !in telasPublicas
-    ) "login" else telaAtual
+        AuthRepository.sessaoAtual == null &&
+        telaAtual !in telasPublicas
+    ) {
+        "login"
+    } else {
+        telaAtual
+    }
 
     when (telaSegura) {
 
@@ -308,15 +370,17 @@ fun OnboardingScreen() {
                         nomeUsuario = nome
                         emailUsuario = ""
                         fotoUsuario = null
+
                         carregarClientes()
                         carregarServicos()
+
                         telaAtual = "home"
                     }
                 }
             )
         }
 
-        // CADASTRO DO USUÁRIO
+        // CADASTRO DE USUÁRIO
         "cadastro_usuario" -> {
             BackHandler {
                 telaAtual = "login"
@@ -332,39 +396,50 @@ fun OnboardingScreen() {
             )
         }
 
-        // DASHBOARD
+        // HOME
         "home" -> {
             HomeScreen(
                 nomeUsuario = nomeUsuario,
                 quantidadeClientes = clientes.size,
+
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
+
                 onServicosClick = {
                     telaAtual = "servicos"
                 },
+
                 onCaixaClick = {
                     telaAtual = "caixa"
                 },
+
                 onMaisClick = {
                     telaAtual = "mais"
                 },
+
                 onSair = {
                     AuthRepository.encerrarSessao()
+
                     clientes.clear()
                     servicos.clear()
+
                     clienteSelecionadoId = null
                     servicoVindoClienteId = null
+
                     erroClientes = null
                     erroServicos = null
+
                     nomeUsuario = ""
                     emailUsuario = ""
                     fotoUsuario = null
+
                     preferencias.edit()
                         .remove("nome")
                         .remove("email")
                         .remove("foto")
                         .apply()
+
                     telaAtual = "login"
                 }
             )
@@ -385,19 +460,24 @@ fun OnboardingScreen() {
             ClientesScreen(
                 clientes = clientes,
                 servicos = servicos,
+
                 onInicioClick = {
                     telaAtual = "home"
                 },
+
                 onNovoClienteClick = {
                     telaAtual = "cliente_cadastro"
                 },
+
                 onClienteClick = { cliente ->
                     clienteSelecionadoId = cliente.id
                     telaAtual = "cliente_detalhes"
                 },
+
                 onServicosClick = {
                     telaAtual = "servicos"
                 },
+
                 onMaisClick = {
                     telaAtual = "mais"
                 }
@@ -410,9 +490,12 @@ fun OnboardingScreen() {
                 onVoltar = {
                     telaAtual = "clientes"
                 },
+
                 onSalvar = { novoCliente ->
                     scope.launch {
-                        val resultado = withContext(Dispatchers.IO) {
+                        val resultado = withContext(
+                            Dispatchers.IO
+                        ) {
                             ClienteRepository.cadastrar(
                                 novoCliente.paraRequest()
                             )
@@ -420,13 +503,16 @@ fun OnboardingScreen() {
 
                         resultado.fold(
                             onSuccess = { salvo ->
-                                clientes.add(salvo.paraUi())
+                                clientes.add(
+                                    salvo.paraUi()
+                                )
                                 telaAtual = "clientes"
                             },
                             onFailure = { erro ->
                                 android.widget.Toast.makeText(
                                     context,
-                                    erro.message ?: "Erro ao cadastrar cliente.",
+                                    erro.message
+                                        ?: "Erro ao cadastrar cliente.",
                                     android.widget.Toast.LENGTH_LONG
                                 ).show()
                             }
@@ -442,34 +528,44 @@ fun OnboardingScreen() {
                 ClienteDetalhesScreen(
                     cliente = clienteSelecionado,
                     servicos = servicos,
+
                     onVoltar = {
                         telaAtual = "clientes"
                     },
+
                     onEditar = {
                         telaAtual = "cliente_edicao"
                     },
+
                     onExcluir = { id ->
                         scope.launch {
-                            val resultado = withContext(Dispatchers.IO) {
+                            val resultado = withContext(
+                                Dispatchers.IO
+                            ) {
                                 ClienteRepository.excluir(id)
                             }
 
                             resultado.fold(
                                 onSuccess = {
-                                    clientes.removeAll { it.id == id }
+                                    clientes.removeAll {
+                                        it.id == id
+                                    }
+
                                     clienteSelecionadoId = null
                                     telaAtual = "clientes"
                                 },
                                 onFailure = { erro ->
                                     android.widget.Toast.makeText(
                                         context,
-                                        erro.message ?: "Erro ao excluir cliente.",
+                                        erro.message
+                                            ?: "Erro ao excluir cliente.",
                                         android.widget.Toast.LENGTH_LONG
                                     ).show()
                                 }
                             )
                         }
                     },
+
                     onAbrirServico = { servico ->
                         servicoVindoClienteId = servico.id
                         telaAtual = "servico_cliente"
@@ -482,40 +578,42 @@ fun OnboardingScreen() {
             }
         }
 
-        // EDIÇÃO DE CLIENTE
+        // EDIÇÃO DO CLIENTE
         "cliente_edicao" -> {
             if (clienteSelecionado != null) {
                 ClienteEdicaoScreen(
                     cliente = clienteSelecionado,
+
                     onVoltar = {
                         telaAtual = "cliente_detalhes"
                     },
+
                     onSalvar = { atualizado ->
                         scope.launch {
-                            val resultado = withContext(Dispatchers.IO) {
-                                // Buscar os dados atuais para preservar
-                                // endereco e observacoes no PostgreSQL.
-                                ClienteRepository.buscar(atualizado.id)
-                                    .mapCatching { existente ->
-                                        ClienteRepository.ClienteRequest(
-                                            nome = atualizado.nome,
-                                            telefone = atualizado.telefone,
-                                            email = atualizado.email,
-                                            endereco = existente.endereco,
-                                            observacoes = existente.observacoes
-                                        )
-                                    }
-                                    .fold(
-                                        onSuccess = { dados ->
-                                            ClienteRepository.editar(
-                                                atualizado.id,
-                                                dados
-                                            )
-                                        },
-                                        onFailure = { erro ->
-                                            Result.failure(erro)
-                                        }
+                            val resultado = withContext(
+                                Dispatchers.IO
+                            ) {
+                                ClienteRepository.buscar(
+                                    atualizado.id
+                                ).mapCatching { existente ->
+                                    ClienteRepository.ClienteRequest(
+                                        nome = atualizado.nome,
+                                        telefone = atualizado.telefone,
+                                        email = atualizado.email,
+                                        endereco = existente.endereco,
+                                        observacoes = existente.observacoes
                                     )
+                                }.fold(
+                                    onSuccess = { dados ->
+                                        ClienteRepository.editar(
+                                            atualizado.id,
+                                            dados
+                                        )
+                                    },
+                                    onFailure = { erro ->
+                                        Result.failure(erro)
+                                    }
+                                )
                             }
 
                             resultado.fold(
@@ -533,7 +631,8 @@ fun OnboardingScreen() {
                                 onFailure = { erro ->
                                     android.widget.Toast.makeText(
                                         context,
-                                        erro.message ?: "Erro ao editar cliente.",
+                                        erro.message
+                                            ?: "Erro ao editar cliente.",
                                         android.widget.Toast.LENGTH_LONG
                                     ).show()
                                 }
@@ -553,10 +652,14 @@ fun OnboardingScreen() {
             ServicosFlowScreen(
                 clientes = clientes,
                 servicos = servicos,
+
                 onAdicionarServico = adicionarServico,
                 onAtualizarServico = atualizarServico,
                 onExcluirServico = excluirServico,
-                onAtualizarValorRecebido = { servicoId, total ->
+
+                onAtualizarValorRecebido = {
+                        servicoId, total ->
+
                     val indice = servicos.indexOfFirst {
                         it.id == servicoId
                     }
@@ -567,29 +670,35 @@ fun OnboardingScreen() {
                         )
                     }
                 },
+
                 onInicioClick = {
                     telaAtual = "home"
                 },
+
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
-                // CORREÇÃO: botão Mais funciona em Serviços
+
                 onMaisClick = {
                     telaAtual = "mais"
                 }
             )
         }
 
-        // SERVIÇO ABERTO A PARTIR DO CLIENTE
+        // SERVIÇO ABERTO PELO CLIENTE
         "servico_cliente" -> {
             ServicosFlowScreen(
                 clientes = clientes,
                 servicos = servicos,
                 initialServicoId = servicoVindoClienteId,
+
                 onAdicionarServico = adicionarServico,
                 onAtualizarServico = atualizarServico,
                 onExcluirServico = excluirServico,
-                onAtualizarValorRecebido = { servicoId, total ->
+
+                onAtualizarValorRecebido = {
+                        servicoId, total ->
+
                     val indice = servicos.indexOfFirst {
                         it.id == servicoId
                     }
@@ -600,15 +709,19 @@ fun OnboardingScreen() {
                         )
                     }
                 },
+
                 onInicioClick = {
                     telaAtual = "home"
                 },
+
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
+
                 onMaisClick = {
                     telaAtual = "mais"
                 },
+
                 onVoltarDoServicoInicial = {
                     servicoVindoClienteId = null
                     telaAtual = "cliente_detalhes"
@@ -622,43 +735,57 @@ fun OnboardingScreen() {
                 nomeUsuario = nomeUsuario,
                 emailUsuario = emailUsuario,
                 fotoUsuario = fotoUsuario,
+
                 onAjudaClick = {
                     telaAtual = "ajuda"
                 },
+
                 onMateriaisClick = {
                     telaAtual = "materiais"
                 },
+
                 onPerfilClick = {
                     telaAtual = "meu_perfil"
                 },
+
                 onInicioClick = {
                     telaAtual = "home"
                 },
+
                 onClientesClick = {
                     telaAtual = "clientes"
                 },
+
                 onServicosClick = {
                     telaAtual = "servicos"
                 },
+
                 onPoliticaClick = {
                     telaAtual = "politica_mais"
                 },
+
                 onSair = {
                     AuthRepository.encerrarSessao()
+
                     clientes.clear()
                     servicos.clear()
+
                     clienteSelecionadoId = null
                     servicoVindoClienteId = null
+
                     erroClientes = null
                     erroServicos = null
+
                     nomeUsuario = ""
                     emailUsuario = ""
                     fotoUsuario = null
+
                     preferencias.edit()
                         .remove("nome")
                         .remove("email")
                         .remove("foto")
                         .apply()
+
                     telaAtual = "login"
                 }
             )
@@ -672,6 +799,7 @@ fun OnboardingScreen() {
                 }
             )
         }
+
         // MATERIAIS
         "materiais" -> {
             MateriaisScreen(
@@ -680,16 +808,21 @@ fun OnboardingScreen() {
                 }
             )
         }
+
         // MEU PERFIL
         "meu_perfil" -> {
             MeuPerfilScreen(
                 nomeAtual = nomeUsuario,
                 emailAtual = emailUsuario,
                 fotoAtual = fotoUsuario,
+
                 onVoltar = {
                     telaAtual = "mais"
                 },
-                onSalvar = { novoNome, novoEmail, novaFoto ->
+
+                onSalvar = {
+                        novoNome, novoEmail, novaFoto ->
+
                     preferencias.edit()
                         .putString("nome", novoNome)
                         .putString("email", novoEmail)
@@ -705,9 +838,10 @@ fun OnboardingScreen() {
             )
         }
 
-        // POLÍTICA PELO MENU MAIS
+        // POLÍTICA ABERTA PELO MENU MAIS
         "politica_mais" -> {
             TelaPoliticaIntegrada(
+                usarTemaDoAplicativo = true,
                 onVoltar = {
                     telaAtual = "mais"
                 }
@@ -717,13 +851,14 @@ fun OnboardingScreen() {
         // POLÍTICA ANTES DO LOGIN
         "politica_entrada" -> {
             TelaPoliticaIntegrada(
+                usarTemaDoAplicativo = false,
                 onVoltar = {
                     telaAtual = "onboarding"
                 }
             )
         }
 
-        // ABERTURA E ACEITE DOS TERMOS
+        // ONBOARDING E ACEITE DOS TERMOS
         else -> {
             HorizontalPager(
                 state = pagerState,
@@ -753,22 +888,46 @@ fun OnboardingScreen() {
     }
 }
 
-// TELA DE POLÍTICA INTEGRADA
+// POLÍTICA DE PRIVACIDADE
+// A mesma tela funciona em dois contextos.
+// Antes do login mantém o visual claro.
+// Pelo menu Mais utiliza o tema do aplicativo.
 
 @Composable
 private fun TelaPoliticaIntegrada(
-    onVoltar: () -> Unit
+    onVoltar: () -> Unit,
+    usarTemaDoAplicativo: Boolean
 ) {
+    val cores = MaterialTheme.colorScheme
+
     val azul = Color(0xFF193447)
-    val fundo = Color(0xFFFAF6F0)
-    val cinza = Color(0xFF929292)
+
+    val fundo = if (usarTemaDoAplicativo) {
+        cores.background
+    } else {
+        Color(0xFFFAF6F0)
+    }
+
+    val corTitulo = if (usarTemaDoAplicativo) {
+        cores.onBackground
+    } else {
+        azul
+    }
+
+    val corTexto = if (usarTemaDoAplicativo) {
+        cores.onSurfaceVariant
+    } else {
+        Color(0xFF929292)
+    }
 
     BackHandler(onBack = onVoltar)
 
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing),
+            .windowInsetsPadding(
+                WindowInsets.safeDrawing
+            ),
         containerColor = fundo,
 
         topBar = {
@@ -799,40 +958,51 @@ private fun TelaPoliticaIntegrada(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .padding(horizontal = 55.dp),
+                        .padding(horizontal = 55.dp)
+                        .semantics {
+                            heading()
+                        },
                     textAlign = TextAlign.Center
                 )
             }
         },
 
         bottomBar = {
-            Button(
-                onClick = onVoltar,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(
-                        horizontal = 24.dp,
-                        vertical = 14.dp
-                    )
-                    .height(52.dp),
-                shape = RoundedCornerShape(11.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = azul,
-                    contentColor = Color.White
-                )
+                    .background(fundo)
             ) {
-                Text(
-                    text = "Entendi",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
+                Button(
+                    onClick = onVoltar,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 24.dp,
+                            vertical = 14.dp
+                        )
+                        .heightIn(min = 52.dp),
+                    shape = RoundedCornerShape(11.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = azul,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "Entendi",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .background(fundo)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 25.dp)
         ) {
@@ -840,69 +1010,76 @@ private fun TelaPoliticaIntegrada(
 
             SecaoPoliticaIntegrada(
                 titulo = "1. Coleta de informações",
-                descricao = "O aplicativo permite cadastrar " +
-                        "informações de clientes, contatos, " +
-                        "serviços, orçamentos e movimentações financeiras.",
-                azul = azul,
-                cinza = cinza
+                descricao =
+                    "O aplicativo permite cadastrar " +
+                            "informações de clientes, contatos, " +
+                            "serviços, orçamentos e movimentações financeiras.",
+                corTitulo = corTitulo,
+                corTexto = corTexto
             )
 
             SecaoPoliticaIntegrada(
                 titulo = "2. Uso dos dados",
-                descricao = "As informações cadastradas auxiliam " +
-                        "na organização das atividades da marcenaria, " +
-                        "no acompanhamento de serviços e no " +
-                        "controle financeiro.",
-                azul = azul,
-                cinza = cinza
+                descricao =
+                    "As informações cadastradas auxiliam " +
+                            "na organização das atividades da marcenaria, " +
+                            "no acompanhamento de serviços e no " +
+                            "controle financeiro.",
+                corTitulo = corTitulo,
+                corTexto = corTexto
             )
 
             SecaoPoliticaIntegrada(
                 titulo = "3. Compartilhamento",
-                descricao = "O usuário pode escolher compartilhar " +
-                        "um orçamento por outros aplicativos. " +
-                        "O conteúdo compartilhado depende da ação realizada.",
-                azul = azul,
-                cinza = cinza
+                descricao =
+                    "O usuário pode escolher compartilhar " +
+                            "um orçamento por outros aplicativos. " +
+                            "O conteúdo compartilhado depende da ação realizada.",
+                corTitulo = corTitulo,
+                corTexto = corTexto
             )
 
             SecaoPoliticaIntegrada(
                 titulo = "4. Armazenamento e segurança",
-                descricao = "O Marcenaria 365 está em desenvolvimento. " +
-                        "Esta versão utiliza dados fictícios e " +
-                        "armazenamento temporário em algumas funcionalidades. " +
-                        "Medidas de segurança deverão ser implementadas " +
-                        "antes do uso real.",
-                azul = azul,
-                cinza = cinza
+                descricao =
+                    "O Marcenaria 365 está em desenvolvimento. " +
+                            "Esta versão utiliza dados fictícios e " +
+                            "armazenamento temporário em algumas funcionalidades. " +
+                            "Medidas de segurança deverão ser implementadas " +
+                            "antes do uso real.",
+                corTitulo = corTitulo,
+                corTexto = corTexto
             )
 
             SecaoPoliticaIntegrada(
                 titulo = "5. Seus direitos",
-                descricao = "A LGPD prevê direitos como acesso " +
-                        "e correção dos dados pessoais e, " +
-                        "nas hipóteses legais, sua exclusão. " +
-                        "Os procedimentos para atender às solicitações " +
-                        "serão definidos antes da disponibilização " +
-                        "do aplicativo.",
-                azul = azul,
-                cinza = cinza
+                descricao =
+                    "A LGPD prevê direitos como acesso " +
+                            "e correção dos dados pessoais e, " +
+                            "nas hipóteses legais, sua exclusão. " +
+                            "Os procedimentos para atender às solicitações " +
+                            "serão definidos antes da disponibilização " +
+                            "do aplicativo.",
+                corTitulo = corTitulo,
+                corTexto = corTexto
             )
 
             SecaoPoliticaIntegrada(
                 titulo = "6. Contato",
-                descricao = "Um canal oficial de contato sobre " +
-                        "privacidade ainda será definido pelo " +
-                        "responsável pelo aplicativo.",
-                azul = azul,
-                cinza = cinza
+                descricao =
+                    "Um canal oficial de contato sobre " +
+                            "privacidade ainda será definido pelo " +
+                            "responsável pelo aplicativo.",
+                corTitulo = corTitulo,
+                corTexto = corTexto
             )
 
             Text(
-                text = "Documento preliminar do projeto acadêmico " +
-                        "Marcenaria 365. Deve ser revisado antes " +
-                        "de utilizar dados pessoais reais.",
-                color = cinza,
+                text =
+                    "Documento preliminar do projeto acadêmico " +
+                            "Marcenaria 365. Deve ser revisado antes " +
+                            "de utilizar dados pessoais reais.",
+                color = corTexto,
                 fontSize = 11.sp,
                 lineHeight = 17.sp
             )
@@ -916,8 +1093,8 @@ private fun TelaPoliticaIntegrada(
 private fun SecaoPoliticaIntegrada(
     titulo: String,
     descricao: String,
-    azul: Color,
-    cinza: Color
+    corTitulo: Color,
+    corTexto: Color
 ) {
     Column(
         modifier = Modifier
@@ -926,7 +1103,7 @@ private fun SecaoPoliticaIntegrada(
     ) {
         Text(
             text = titulo,
-            color = azul,
+            color = corTitulo,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold
         )
@@ -935,7 +1112,7 @@ private fun SecaoPoliticaIntegrada(
 
         Text(
             text = descricao,
-            color = cinza,
+            color = corTexto,
             fontSize = 12.sp,
             lineHeight = 18.sp
         )
