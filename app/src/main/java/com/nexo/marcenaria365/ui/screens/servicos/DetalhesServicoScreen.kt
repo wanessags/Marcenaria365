@@ -31,7 +31,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.semantics.*
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -49,13 +54,11 @@ private val VermelhoServico = Color(0xFFB3261E)
 
 private fun converterValorRecebido(texto: String): Double? {
     val limpo = texto.replace("R$", "").trim()
-
     val normalizado = if (limpo.contains(',')) {
         limpo.replace(".", "").replace(',', '.')
     } else {
         limpo
     }
-
     return normalizado.toDoubleOrNull()
 }
 
@@ -67,11 +70,9 @@ private fun categoriaSituacaoServico(situacao: String): String {
         texto.contains("conclu") ||
                 texto.contains("finaliz") ||
                 texto.contains("entregue") -> "concluido"
-
         texto.contains("produ") ||
                 texto.contains("andamento") ||
                 texto.contains("execu") -> "producao"
-
         else -> "aguardando"
     }
 }
@@ -112,7 +113,7 @@ private fun IndicadorSituacaoServico(situacao: String) {
         Row(
             modifier = Modifier.padding(
                 horizontal = 12.dp,
-                vertical = 7.dp
+                vertical = 8.dp
             ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(7.dp)
@@ -127,7 +128,8 @@ private fun IndicadorSituacaoServico(situacao: String) {
                 text = situacao,
                 color = corTexto,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2
             )
         }
     }
@@ -144,26 +146,33 @@ fun DetalhesServicoScreen(
     onEditarServico: () -> Unit = {}
 ) {
     val cores = MaterialTheme.colorScheme
-    val teclado = LocalSoftwareKeyboardController.current
-    val foco = LocalFocusManager.current
-
     val escuro = cores.background.luminance() < 0.5f
 
-    val corFundo = cores.background
-    val corCard = cores.surface
     val corTexto = cores.onSurface
     val corSecundaria = cores.onSurfaceVariant
-    val corBorda = cores.outlineVariant
-    val corIcone = if (escuro) {
-        Color(0xFFD8AE84)
-    } else {
-        CobreServico
-    }
     val fundoIcone = if (escuro) {
         Color(0xFF354A57)
     } else {
         Color(0xFFF4EBE0)
     }
+    val corIcone = if (escuro) {
+        Color(0xFFD8AE84)
+    } else {
+        CobreServico
+    }
+    val fundoSaldo = if (escuro) {
+        Color(0xFF223A48)
+    } else {
+        Color(0xFFF3F5F4)
+    }
+    val corSaldo = if (escuro) {
+        Color(0xFFF4F7FA)
+    } else {
+        AzulServico
+    }
+
+    val teclado = LocalSoftwareKeyboardController.current
+    val foco = LocalFocusManager.current
 
     val saldo = (
             servico.valorEstimado - servico.valorRecebido
@@ -172,27 +181,21 @@ fun DetalhesServicoScreen(
     var aba by rememberSaveable(servico.id) {
         mutableStateOf("Detalhes")
     }
-
     var confirmarExclusao by remember {
         mutableStateOf(false)
     }
-
     var mostrarRecebimento by remember {
         mutableStateOf(false)
     }
-
     var confirmarRecebimento by remember {
         mutableStateOf(false)
     }
-
     var valorRecebimento by rememberSaveable(servico.id) {
         mutableStateOf("")
     }
-
     var erroRecebimento by remember {
         mutableStateOf("")
     }
-
     var valorValidado by remember {
         mutableStateOf<Double?>(null)
     }
@@ -237,10 +240,10 @@ fun DetalhesServicoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(corFundo)
+            .background(cores.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
-        // CABEÇALHO — SEM CANETINHA
+        // CABEÇALHO SEM CANETINHA
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -290,12 +293,12 @@ fun DetalhesServicoScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = corCard
-                ),
                 border = BorderStroke(
                     1.dp,
-                    corBorda.copy(alpha = 0.65f)
+                    cores.outlineVariant
+                ),
+                colors = CardDefaults.cardColors(
+                    containerColor = cores.surface
                 ),
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 2.dp
@@ -304,13 +307,12 @@ fun DetalhesServicoScreen(
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement =
-                        Arrangement.spacedBy(15.dp)
+                        Arrangement.spacedBy(14.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement =
-                            Arrangement.spacedBy(13.dp)
+                            Arrangement.spacedBy(14.dp)
                     ) {
                         Surface(
                             shape = RoundedCornerShape(15.dp),
@@ -322,7 +324,9 @@ fun DetalhesServicoScreen(
                                     .size(92.dp)
                                     .semantics {
                                         contentDescription =
-                                            if (servico.fotoUri.isNullOrBlank()) {
+                                            if (
+                                                servico.fotoUri.isNullOrBlank()
+                                            ) {
                                                 "Serviço sem foto cadastrada"
                                             } else {
                                                 "Foto do serviço ${servico.titulo}"
@@ -334,7 +338,7 @@ fun DetalhesServicoScreen(
                         Column(
                             modifier = Modifier.weight(1f),
                             verticalArrangement =
-                                Arrangement.spacedBy(8.dp)
+                                Arrangement.spacedBy(7.dp)
                         ) {
                             Text(
                                 text = servico.titulo,
@@ -378,22 +382,31 @@ fun DetalhesServicoScreen(
                         }
                     }
 
-                    HorizontalDivider(color = corBorda)
+                    HorizontalDivider(
+                        color = cores.outlineVariant
+                    )
 
-                    // PRAZO + ÚNICA CANETINHA DE EDIÇÃO
+                    // PRAZO E ÚNICA CANETINHA DE EDIÇÃO
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement =
                             Arrangement.spacedBy(11.dp)
                     ) {
-                        Icon(
-                            imageVector =
-                                Icons.Outlined.CalendarMonth,
-                            contentDescription = null,
-                            tint = corIcone,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(11.dp),
+                            color = fundoIcone
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Outlined.CalendarMonth,
+                                contentDescription = null,
+                                tint = corIcone,
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .size(22.dp)
+                            )
+                        }
 
                         Column(
                             modifier = Modifier.weight(1f),
@@ -416,31 +429,26 @@ fun DetalhesServicoScreen(
                             )
                         }
 
-                        Surface(
+                        IconButton(
                             onClick = onEditarServico,
-                            color = fundoIcone,
-                            shape = RoundedCornerShape(13.dp),
                             modifier = Modifier
                                 .size(48.dp)
-                                .semantics {
-                                    contentDescription =
-                                        "Editar serviço ${servico.titulo}, incluindo a situação"
-                                }
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Edit,
-                                    contentDescription = null,
-                                    tint = if (escuro) {
-                                        Color.White
-                                    } else {
-                                        AzulServico
-                                    },
-                                    modifier = Modifier.size(21.dp)
+                                .background(
+                                    fundoIcone,
+                                    RoundedCornerShape(12.dp)
                                 )
-                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription =
+                                    "Editar serviço ${servico.titulo}, incluindo a situação",
+                                tint = if (escuro) {
+                                    Color.White
+                                } else {
+                                    AzulServico
+                                },
+                                modifier = Modifier.size(21.dp)
+                            )
                         }
                     }
                 }
@@ -448,7 +456,7 @@ fun DetalhesServicoScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ABAS MODERNIZADAS
+            // ABAS DETALHES E ORÇAMENTO
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = if (escuro) {
@@ -459,7 +467,7 @@ fun DetalhesServicoScreen(
                 shape = RoundedCornerShape(15.dp),
                 border = BorderStroke(
                     1.dp,
-                    corBorda.copy(alpha = 0.7f)
+                    cores.outlineVariant
                 )
             ) {
                 Row(
@@ -467,17 +475,25 @@ fun DetalhesServicoScreen(
                     horizontalArrangement =
                         Arrangement.spacedBy(5.dp)
                 ) {
-                    listOf("Detalhes", "Orçamento").forEach { item ->
+                    listOf(
+                        "Detalhes",
+                        "Orçamento"
+                    ).forEach { item ->
                         val selecionada = aba == item
 
                         Surface(
                             onClick = { aba = item },
                             modifier = Modifier
                                 .weight(1f)
-                                .heightIn(min = 46.dp)
+                                .heightIn(min = 48.dp)
                                 .semantics {
                                     contentDescription =
-                                        "Aba $item${if (selecionada) ", selecionada" else ""}"
+                                        "Aba $item" +
+                                                if (selecionada) {
+                                                    ", selecionada"
+                                                } else {
+                                                    ""
+                                                }
                                 },
                             shape = RoundedCornerShape(11.dp),
                             color = if (selecionada) {
@@ -491,7 +507,7 @@ fun DetalhesServicoScreen(
                             }
                         ) {
                             Box(
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -522,15 +538,16 @@ fun DetalhesServicoScreen(
 
             when (aba) {
                 "Orçamento" -> {
+                    // ABA ORÇAMENTO
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = corCard
-                        ),
                         border = BorderStroke(
                             1.dp,
-                            corBorda.copy(alpha = 0.6f)
+                            cores.outlineVariant
+                        ),
+                        colors = CardDefaults.cardColors(
+                            containerColor = cores.surface
                         )
                     ) {
                         Column(
@@ -555,7 +572,7 @@ fun DetalhesServicoScreen(
                                 )
                             }
 
-                            Spacer(Modifier.height(15.dp))
+                            Spacer(Modifier.height(16.dp))
 
                             if (orcamento == null) {
                                 Text(
@@ -581,7 +598,9 @@ fun DetalhesServicoScreen(
                             } else {
                                 Text(
                                     text = "Orçamento #${
-                                        formatarNumeroOrcamento(orcamento.id)
+                                        formatarNumeroOrcamento(
+                                            orcamento.id
+                                        )
                                     }",
                                     color = corTexto,
                                     fontSize = 18.sp,
@@ -591,7 +610,7 @@ fun DetalhesServicoScreen(
                                     }
                                 )
 
-                                Spacer(Modifier.height(9.dp))
+                                Spacer(Modifier.height(10.dp))
 
                                 Surface(
                                     color = cores.secondaryContainer,
@@ -677,21 +696,21 @@ fun DetalhesServicoScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = corCard
-                        ),
                         border = BorderStroke(
                             1.dp,
-                            corBorda.copy(alpha = 0.6f)
+                            cores.outlineVariant
+                        ),
+                        colors = CardDefaults.cardColors(
+                            containerColor = cores.surface
                         )
                     ) {
                         Column(
                             modifier = Modifier.padding(18.dp),
                             verticalArrangement =
-                                Arrangement.spacedBy(15.dp)
+                                Arrangement.spacedBy(18.dp)
                         ) {
                             TituloSecaoServico(
-                                titulo = "Informações gerais"
+                                "Informações gerais"
                             )
 
                             CampoInfoServico(
@@ -699,14 +718,17 @@ fun DetalhesServicoScreen(
                                 valor = servico.clienteNome,
                                 icone = {
                                     Icon(
-                                        Icons.Outlined.PersonOutline,
+                                        imageVector =
+                                            Icons.Outlined.PersonOutline,
                                         contentDescription = null,
                                         modifier = Modifier.size(21.dp)
                                     )
                                 }
                             )
 
-                            HorizontalDivider(color = corBorda)
+                            HorizontalDivider(
+                                color = cores.outlineVariant
+                            )
 
                             CampoInfoServico(
                                 titulo = "Prazo de entrega",
@@ -715,14 +737,17 @@ fun DetalhesServicoScreen(
                                 },
                                 icone = {
                                     Icon(
-                                        Icons.Outlined.Event,
+                                        imageVector =
+                                            Icons.Outlined.Event,
                                         contentDescription = null,
                                         modifier = Modifier.size(21.dp)
                                     )
                                 }
                             )
 
-                            HorizontalDivider(color = corBorda)
+                            HorizontalDivider(
+                                color = cores.outlineVariant
+                            )
 
                             CampoInfoServico(
                                 titulo = "Descrição",
@@ -731,7 +756,8 @@ fun DetalhesServicoScreen(
                                 },
                                 icone = {
                                     Icon(
-                                        Icons.Outlined.Description,
+                                        imageVector =
+                                            Icons.Outlined.Description,
                                         contentDescription = null,
                                         modifier = Modifier.size(21.dp)
                                     )
@@ -742,28 +768,28 @@ fun DetalhesServicoScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // RESUMO FINANCEIRO
+                    // RESUMO FINANCEIRO REFINADO
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = corCard
-                        ),
                         border = BorderStroke(
                             1.dp,
-                            corBorda.copy(alpha = 0.6f)
+                            cores.outlineVariant
+                        ),
+                        colors = CardDefaults.cardColors(
+                            containerColor = cores.surface
                         )
                     ) {
                         Column(
                             modifier = Modifier.padding(18.dp),
                             verticalArrangement =
-                                Arrangement.spacedBy(15.dp)
+                                Arrangement.spacedBy(16.dp)
                         ) {
                             Row(
                                 verticalAlignment =
                                     Alignment.CenterVertically,
                                 horizontalArrangement =
-                                    Arrangement.spacedBy(10.dp)
+                                    Arrangement.spacedBy(11.dp)
                             ) {
                                 Surface(
                                     color = fundoIcone,
@@ -792,73 +818,100 @@ fun DetalhesServicoScreen(
                                 )
                             )
 
-                            HorizontalDivider(color = corBorda)
+                            HorizontalDivider(
+                                color = cores.outlineVariant
+                            )
 
                             ValorLinhaServico(
                                 titulo = "Total recebido",
                                 valor = moedaServico(
                                     servico.valorRecebido
-                                )
+                                ),
+                                corValor = if (escuro) {
+                                    Color(0xFFA2DDBB)
+                                } else {
+                                    VerdeServico
+                                }
                             )
 
-                            HorizontalDivider(color = corBorda)
-
+                            // SALDO SEM A COR DE ERRO
                             Surface(
-                                color = if (saldo > 0.0) {
-                                    if (escuro) {
-                                        Color(0xFF553D43)
-                                    } else {
-                                        Color(0xFFFBE4E2)
-                                    }
-                                } else {
-                                    cores.tertiaryContainer
-                                },
-                                shape = RoundedCornerShape(12.dp)
+                                color = fundoSaldo,
+                                shape = RoundedCornerShape(13.dp),
+                                border = BorderStroke(
+                                    1.dp,
+                                    cores.outlineVariant.copy(
+                                        alpha = 0.5f
+                                    )
+                                )
                             ) {
-                                Row(
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(14.dp),
-                                    verticalAlignment =
-                                        Alignment.CenterVertically,
-                                    horizontalArrangement =
-                                        Arrangement.SpaceBetween
+                                        .padding(15.dp),
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(7.dp)
                                 ) {
                                     Text(
                                         text = "Saldo a receber",
-                                        color = if (saldo > 0.0) {
-                                            if (escuro) {
-                                                Color(0xFFFFD5D0)
-                                            } else {
-                                                VermelhoServico
-                                            }
-                                        } else {
-                                            cores.onTertiaryContainer
-                                        },
+                                        color = corSecundaria,
                                         fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.weight(1f)
+                                        fontWeight = FontWeight.Medium
                                     )
-
-                                    Spacer(Modifier.width(8.dp))
 
                                     Text(
                                         text = moedaServico(saldo),
-                                        color = if (saldo > 0.0) {
-                                            if (escuro) {
-                                                Color(0xFFFFD5D0)
-                                            } else {
-                                                VermelhoServico
-                                            }
-                                        } else {
-                                            cores.onTertiaryContainer
-                                        },
-                                        fontSize = 18.sp,
+                                        color = corSaldo,
+                                        fontSize = 25.sp,
+                                        lineHeight = 30.sp,
                                         fontWeight = FontWeight.Bold
                                     )
+
+                                    Row(
+                                        verticalAlignment =
+                                            Alignment.CenterVertically,
+                                        horizontalArrangement =
+                                            Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (saldo > 0.0) {
+                                                Icons.Outlined.Event
+                                            } else {
+                                                Icons.Outlined.CheckCircleOutline
+                                            },
+                                            contentDescription = null,
+                                            tint = if (saldo > 0.0) {
+                                                corIcone
+                                            } else {
+                                                VerdeServico
+                                            },
+                                            modifier = Modifier.size(16.dp)
+                                        )
+
+                                        Text(
+                                            text = if (saldo > 0.0) {
+                                                "Pagamento pendente"
+                                            } else {
+                                                "Pagamento concluído"
+                                            },
+                                            color = if (saldo > 0.0) {
+                                                corIcone
+                                            } else {
+                                                if (escuro) {
+                                                    Color(0xFFA2DDBB)
+                                                } else {
+                                                    VerdeServico
+                                                }
+                                            },
+                                            fontSize = 12.sp,
+                                            fontWeight =
+                                                FontWeight.SemiBold
+                                        )
+                                    }
                                 }
                             }
 
+                            // REGISTRAR RECEBIMENTO
                             if (saldo > 0.0) {
                                 Button(
                                     onClick = {
@@ -887,14 +940,16 @@ fun DetalhesServicoScreen(
                                         imageVector =
                                             Icons.Outlined.Payments,
                                         contentDescription = null,
-                                        modifier = Modifier.size(19.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
 
                                     Spacer(Modifier.width(9.dp))
 
                                     Text(
                                         text = "Registrar recebimento",
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight =
+                                            FontWeight.SemiBold,
+                                        fontSize = 14.sp
                                     )
                                 }
                             } else {
@@ -908,8 +963,12 @@ fun DetalhesServicoScreen(
                                         imageVector =
                                             Icons.Outlined.CheckCircleOutline,
                                         contentDescription = null,
-                                        tint = VerdeServico,
-                                        modifier = Modifier.size(19.dp)
+                                        tint = if (escuro) {
+                                            Color(0xFFA2DDBB)
+                                        } else {
+                                            VerdeServico
+                                        },
+                                        modifier = Modifier.size(18.dp)
                                     )
 
                                     Text(
@@ -935,10 +994,10 @@ fun DetalhesServicoScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 52.dp),
-                shape = RoundedCornerShape(13.dp),
+                shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(
                     1.dp,
-                    cores.error
+                    cores.error.copy(alpha = 0.65f)
                 ),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = cores.error
@@ -948,15 +1007,14 @@ fun DetalhesServicoScreen(
                     imageVector =
                         Icons.Outlined.DeleteOutline,
                     contentDescription = null,
-                    modifier = Modifier.size(19.dp)
+                    modifier = Modifier.size(18.dp)
                 )
 
-                Spacer(Modifier.width(9.dp))
+                Spacer(Modifier.width(8.dp))
 
                 Text(
                     text = "Excluir serviço",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 
@@ -964,7 +1022,7 @@ fun DetalhesServicoScreen(
         }
     }
 
-    // CONFIRMAR EXCLUSÃO
+    // CONFIRMAÇÃO DE EXCLUSÃO
     if (confirmarExclusao) {
         AlertDialog(
             onDismissRequest = {
@@ -1016,7 +1074,7 @@ fun DetalhesServicoScreen(
         )
     }
 
-    // REGISTRAR RECEBIMENTO
+    // INFORMAR VALOR RECEBIDO
     if (mostrarRecebimento) {
         AlertDialog(
             onDismissRequest = {
@@ -1036,7 +1094,9 @@ fun DetalhesServicoScreen(
                         .imePadding()
                 ) {
                     Text(
-                        text = "Saldo disponível: ${moedaServico(saldo)}",
+                        text = "Saldo disponível: ${
+                            moedaServico(saldo)
+                        }",
                         color = cores.onSurfaceVariant,
                         fontSize = 13.sp
                     )
@@ -1085,6 +1145,7 @@ fun DetalhesServicoScreen(
 
                     if (erroRecebimento.isNotBlank()) {
                         Spacer(Modifier.height(8.dp))
+
                         Text(
                             text = erroRecebimento,
                             color = cores.error,
@@ -1122,7 +1183,7 @@ fun DetalhesServicoScreen(
         )
     }
 
-    // CONFIRMAR RECEBIMENTO
+    // CONFIRMAÇÃO DO RECEBIMENTO
     if (confirmarRecebimento) {
         AlertDialog(
             onDismissRequest = {
@@ -1205,6 +1266,7 @@ fun DetalhesServicoScreen(
     }
 }
 
+// TÍTULOS DAS SEÇÕES
 @Composable
 private fun TituloSecaoServico(titulo: String) {
     Text(
@@ -1218,6 +1280,7 @@ private fun TituloSecaoServico(titulo: String) {
     )
 }
 
+// CAMPOS DE INFORMAÇÕES GERAIS
 @Composable
 private fun CampoInfoServico(
     titulo: String,
@@ -1227,7 +1290,7 @@ private fun CampoInfoServico(
     val cores = MaterialTheme.colorScheme
     val escuro = cores.background.luminance() < 0.5f
 
-    val corFundoIcone = if (escuro) {
+    val fundoIcone = if (escuro) {
         Color(0xFF354A57)
     } else {
         Color(0xFFF4EBE0)
@@ -1246,11 +1309,12 @@ private fun CampoInfoServico(
                 contentDescription = "$titulo: $valor"
             },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement =
+            Arrangement.spacedBy(12.dp)
     ) {
         if (icone != null) {
             Surface(
-                color = corFundoIcone,
+                color = fundoIcone,
                 shape = RoundedCornerShape(11.dp)
             ) {
                 Box(
@@ -1268,7 +1332,8 @@ private fun CampoInfoServico(
 
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = titulo,
@@ -1288,10 +1353,12 @@ private fun CampoInfoServico(
     }
 }
 
+// LINHAS DO RESUMO FINANCEIRO
 @Composable
 private fun ValorLinhaServico(
     titulo: String,
-    valor: String
+    valor: String,
+    corValor: Color? = null
 ) {
     val cores = MaterialTheme.colorScheme
 
@@ -1301,7 +1368,8 @@ private fun ValorLinhaServico(
             .semantics(mergeDescendants = true) {
                 contentDescription = "$titulo: $valor"
             },
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement =
+            Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -1315,7 +1383,7 @@ private fun ValorLinhaServico(
 
         Text(
             text = valor,
-            color = cores.onSurface,
+            color = corValor ?: cores.onSurface,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold
         )
