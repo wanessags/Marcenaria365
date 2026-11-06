@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.PeopleOutline
 import androidx.compose.material.icons.outlined.PersonOutline
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,17 +29,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.nexo.marcenaria365.data.repository.AuthRepository
 import com.nexo.marcenaria365.data.repository.ClienteRepository
 import com.nexo.marcenaria365.data.repository.ServicoRepository
@@ -51,12 +49,10 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-// Cores que identificam as categorias do gráfico.
-// As categorias também são identificadas por texto.
 private val VerdeHome = Color(0xFF239B7A)
 private val LaranjaHome = Color(0xFFF6A823)
 private val VermelhoHome = Color(0xFFE47779)
-private val CinzaGraficoHome = Color(0xFFC8C8C6)
+private val CinzaHome = Color(0xFFC8C8C6)
 
 data class StatusServico(
     val nome: String,
@@ -80,16 +76,11 @@ data class ResumoDashboard(
     val entregas: List<EntregaResumo>
 )
 
-// FORMATAÇÃO DOS VALORES
-private fun formatarMoeda(valor: Double): String {
-    return NumberFormat
-        .getCurrencyInstance(
-            Locale.forLanguageTag("pt-BR")
-        )
-        .format(valor)
-}
+private fun formatarMoeda(valor: Double): String =
+    NumberFormat.getCurrencyInstance(
+        Locale.forLanguageTag("pt-BR")
+    ).format(valor)
 
-// CLASSIFICAÇÃO DOS SERVIÇOS
 private fun classificarServico(status: String): String {
     val texto = status.trim().lowercase(Locale.ROOT)
 
@@ -112,30 +103,28 @@ private fun classificarServico(status: String): String {
     }
 }
 
-// ORDENAÇÃO DAS ENTREGAS
-private fun ordenarData(prazo: String): Long {
-    return try {
-        val formato = SimpleDateFormat(
+private fun ordenarData(prazo: String): Long =
+    try {
+        SimpleDateFormat(
             "dd/MM/yyyy",
             Locale.forLanguageTag("pt-BR")
-        )
-
-        formato.isLenient = false
-
-        formato.parse(prazo.trim())?.time
-            ?: Long.MAX_VALUE
+        ).apply {
+            isLenient = false
+        }.parse(prazo.trim())?.time ?: Long.MAX_VALUE
     } catch (_: Exception) {
         Long.MAX_VALUE
     }
-}
 
-// DASHBOARD COM DADOS REAIS
 private fun montarResumoDashboard(
     quantidadeClientes: Int,
     servicos: List<ServicoUi>
 ): ResumoDashboard {
 
-    val emAndamento = servicos.count {
+    val aguardando = servicos.count {
+        classificarServico(it.status) == "aguardando"
+    }
+
+    val producao = servicos.count {
         classificarServico(it.status) == "producao"
     }
 
@@ -143,32 +132,24 @@ private fun montarResumoDashboard(
         classificarServico(it.status) == "concluidos"
     }
 
-    val aguardando = servicos.count {
-        classificarServico(it.status) == "aguardando"
-    }
-
     val cancelados = servicos.count {
         classificarServico(it.status) == "cancelados"
     }
 
-    val pendentes = servicos.count {
+    val outros = servicos.count {
         classificarServico(it.status) == "pendentes"
     }
 
-    val totalRecebido = servicos.sumOf {
-        it.valorRecebido
-    }
+    val recebido = servicos.sumOf { it.valorRecebido }
 
-    val proximasEntregas = servicos
+    val entregas = servicos
         .filter {
             val situacao = classificarServico(it.status)
             situacao != "concluidos" &&
                     situacao != "cancelados" &&
                     it.entrega.isNotBlank()
         }
-        .sortedBy {
-            ordenarData(it.entrega)
-        }
+        .sortedBy { ordenarData(it.entrega) }
         .take(3)
         .map {
             EntregaResumo(
@@ -179,55 +160,30 @@ private fun montarResumoDashboard(
             )
         }
 
+    val status = mutableListOf(
+        StatusServico("Aguardando", aguardando, LaranjaHome),
+        StatusServico("Produção", producao, CinzaHome),
+        StatusServico("Concluídos", concluidos, VerdeHome),
+        StatusServico("Cancelados", cancelados, VermelhoHome)
+    )
+
+    if (outros > 0) {
+        status.add(
+            StatusServico(
+                "Outros status",
+                outros,
+                Color(0xFF9174AE)
+            )
+        )
+    }
+
     return ResumoDashboard(
-        saldo = formatarMoeda(totalRecebido),
+        saldo = formatarMoeda(recebido),
         clientes = quantidadeClientes,
-        emAndamento = emAndamento,
+        emAndamento = producao,
         concluidos = concluidos,
-        status = buildList {
-            add(
-                StatusServico(
-                    nome = "Aguardando",
-                    quantidade = aguardando,
-                    cor = LaranjaHome
-                )
-            )
-
-            add(
-                StatusServico(
-                    nome = "Produção",
-                    quantidade = emAndamento,
-                    cor = CinzaGraficoHome
-                )
-            )
-
-            add(
-                StatusServico(
-                    nome = "Concluídos",
-                    quantidade = concluidos,
-                    cor = VerdeHome
-                )
-            )
-
-            add(
-                StatusServico(
-                    nome = "Cancelados",
-                    quantidade = cancelados,
-                    cor = VermelhoHome
-                )
-            )
-
-            if (pendentes > 0) {
-                add(
-                    StatusServico(
-                        nome = "Outros status",
-                        quantidade = pendentes,
-                        cor = Color(0xFF9174AE)
-                    )
-                )
-            }
-        },
-        entregas = proximasEntregas
+        status = status,
+        entregas = entregas
     )
 }
 
@@ -241,47 +197,61 @@ fun HomeScreen(
     onMaisClick: () -> Unit,
     quantidadeClientes: Int = 0
 ) {
-    // CORES DINÂMICAS
     val cores = MaterialTheme.colorScheme
-    val corFundo = cores.background
-    val corCartao = cores.surface
-    val corTexto = cores.onSurface
-    val corSecundario = cores.onSurfaceVariant
-    val corDestaque = cores.secondary
+    val destaque = cores.secondary
+    val texto = cores.onSurface
+    val secundario = cores.onSurfaceVariant
 
     val primeiroNome = nomeUsuario
         .trim()
         .substringBefore(" ")
         .ifBlank { "Usuário" }
 
-    var totalClientes by remember {
-        mutableIntStateOf(0)
-    }
+    var clientes by remember { mutableIntStateOf(0) }
 
-    var listaServicos by remember {
+    var servicos by remember {
         mutableStateOf<List<ServicoUi>>(emptyList())
     }
 
-    var carregando by remember {
-        mutableStateOf(true)
-    }
+    var carregando by remember { mutableStateOf(true) }
 
     var mensagemErro by remember {
         mutableStateOf<String?>(null)
     }
 
-    val tokenAtual = AuthRepository.sessaoAtual?.token
+    var revisaoDados by remember {
+        mutableIntStateOf(0)
+    }
 
-    // INTEGRAÇÃO COM API
-    LaunchedEffect(tokenAtual) {
+    val tokenAtual = AuthRepository.sessaoAtual?.token
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Atualiza ao voltar para a Activity.
+    DisposableEffect(lifecycleOwner) {
+        val observador = LifecycleEventObserver { _, evento ->
+            if (evento == Lifecycle.Event.ON_RESUME) {
+                revisaoDados++
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observador)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observador)
+        }
+    }
+
+    // Busca dados reais, evitando indicadores antigos.
+    LaunchedEffect(tokenAtual, revisaoDados) {
         carregando = true
         mensagemErro = null
-        totalClientes = 0
-        listaServicos = emptyList()
+
+        clientes = 0
+        servicos = emptyList()
 
         if (tokenAtual == null) {
-            carregando = false
             mensagemErro = "Faça login para acessar seus dados."
+            carregando = false
             return@LaunchedEffect
         }
 
@@ -291,23 +261,20 @@ fun HomeScreen(
                     ClienteRepository.listar().getOrThrow()
 
                 val servicosApi =
-                    ServicoRepository.listar(
-                        clientesApi
-                    ).getOrThrow()
+                    ServicoRepository.listar(clientesApi)
+                        .getOrThrow()
 
                 val recebimentosApi =
                     RecebimentoRepository.listar().getOrThrow()
 
-                val totaisRecebidos = recebimentosApi
+                val recebidosPorServico = recebimentosApi
                     .filter {
                         it.status.equals(
                             "RECEBIDO",
                             ignoreCase = true
                         )
                     }
-                    .groupBy {
-                        it.servicoId
-                    }
+                    .groupBy { it.servicoId }
                     .mapValues { (_, pagamentos) ->
                         RecebimentoRepository.totalRecebido(
                             pagamentos
@@ -318,14 +285,11 @@ fun HomeScreen(
                         servico ->
                     servico.copy(
                         valorRecebido =
-                            totaisRecebidos[servico.id] ?: 0.0
+                            recebidosPorServico[servico.id] ?: 0.0
                     )
                 }
 
-                Pair(
-                    clientesApi.size,
-                    servicosAtualizados
-                )
+                Pair(clientesApi.size, servicosAtualizados)
             }
         }
 
@@ -335,13 +299,13 @@ fun HomeScreen(
 
         resultado.fold(
             onSuccess = { dados ->
-                totalClientes = dados.first
-                listaServicos = dados.second
+                clientes = dados.first
+                servicos = dados.second
                 mensagemErro = null
             },
             onFailure = { erro ->
                 mensagemErro = erro.message
-                    ?: "Não foi possível carregar os dados."
+                    ?: "Não foi possível atualizar o resumo."
             }
         )
 
@@ -349,14 +313,14 @@ fun HomeScreen(
     }
 
     val resumo = montarResumoDashboard(
-        quantidadeClientes = totalClientes,
-        servicos = listaServicos
+        quantidadeClientes = clientes,
+        servicos = servicos
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(corFundo)
+            .background(cores.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         Column(
@@ -365,9 +329,8 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
         ) {
-            Spacer(Modifier.height(15.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // SAUDAÇÃO
             Text(
                 text = "Olá, $primeiroNome!",
                 color = cores.onBackground,
@@ -382,71 +345,90 @@ fun HomeScreen(
 
             Text(
                 text = "Confira o resumo da sua marcenaria hoje.",
-                color = corSecundario,
+                color = secundario,
                 fontSize = 13.sp,
                 lineHeight = 19.sp
             )
 
-            Spacer(Modifier.height(13.dp))
+            Spacer(Modifier.height(8.dp))
 
-            // CARREGAMENTO DOS DADOS REAIS
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(
+                    onClick = { revisaoDados++ },
+                    enabled = !carregando
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Spacer(Modifier.width(6.dp))
+                    Text("Atualizar resumo")
+                }
+            }
+
+            Spacer(Modifier.height(5.dp))
+
             if (carregando) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(vertical = 12.dp)
                         .semantics {
                             liveRegion = LiveRegionMode.Polite
-                        }
+                        },
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = corDestaque,
+                        color = destaque,
                         strokeWidth = 2.dp
                     )
 
                     Spacer(Modifier.width(12.dp))
 
                     Text(
-                        text = "Carregando seus dados...",
-                        color = corSecundario,
-                        fontSize = 13.sp
+                        "Carregando seus dados...",
+                        color = secundario
                     )
                 }
             }
 
-            // MENSAGEM DE ERRO
             if (mensagemErro != null) {
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = corCartao
-                    ),
-                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics {
                             liveRegion = LiveRegionMode.Assertive
-                        }
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor = cores.surface
+                    )
                 ) {
                     Text(
                         text = mensagemErro.orEmpty(),
-                        modifier = Modifier.padding(16.dp),
                         color = cores.error,
-                        fontSize = 13.sp,
-                        lineHeight = 19.sp
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
 
                 Spacer(Modifier.height(12.dp))
+
+                TextButton(onClick = { revisaoDados++ }) {
+                    Text("Tentar novamente")
+                }
             }
 
             if (!carregando && mensagemErro == null) {
 
-                // TOTAL RECEBIDO DA API
+                // TOTAL RECEBIDO
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = corCartao
+                        containerColor = cores.surface
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -460,18 +442,17 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector =
-                                    Icons.Outlined.AccountBalanceWallet,
+                                Icons.Outlined.AccountBalanceWallet,
                                 contentDescription = null,
-                                tint = corDestaque,
+                                tint = destaque,
                                 modifier = Modifier.size(22.dp)
                             )
 
                             Spacer(Modifier.width(9.dp))
 
                             Text(
-                                text = "TOTAL RECEBIDO",
-                                color = corSecundario,
+                                "TOTAL RECEBIDO",
+                                color = secundario,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -481,7 +462,7 @@ fun HomeScreen(
 
                         Text(
                             text = resumo.saldo,
-                            color = corTexto,
+                            color = texto,
                             fontSize = 29.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -494,7 +475,6 @@ fun HomeScreen(
 
                         Spacer(Modifier.height(10.dp))
 
-                        // NAVEGAÇÃO PARA CAIXA
                         Row(
                             modifier = Modifier
                                 .clickable(
@@ -509,17 +489,16 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Ver detalhes",
-                                color = corDestaque,
+                                "Ver detalhes",
+                                color = destaque,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
 
                             Icon(
-                                imageVector =
-                                    Icons.Outlined.ChevronRight,
+                                Icons.Outlined.ChevronRight,
                                 contentDescription = null,
-                                tint = corDestaque,
+                                tint = destaque,
                                 modifier = Modifier.size(19.dp)
                             )
                         }
@@ -528,35 +507,32 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(11.dp))
 
-                // INDICADORES CLICÁVEIS
+                // INDICADORES
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(9.dp)
+                    horizontalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
                     IndicadorDashboard(
                         modifier = Modifier.weight(1f),
                         icone = Icons.Outlined.PersonOutline,
                         numero = resumo.clientes,
                         descricao = "Clientes\ncadastrados",
-                        cor = corDestaque,
+                        cor = destaque,
                         onClick = onClientesClick
                     )
 
                     IndicadorDashboard(
                         modifier = Modifier.weight(1f),
-                        icone =
-                            Icons.AutoMirrored.Outlined.Assignment,
+                        icone = Icons.AutoMirrored.Outlined.Assignment,
                         numero = resumo.emAndamento,
                         descricao = "Serviços em\nandamento",
-                        cor = corDestaque,
+                        cor = destaque,
                         onClick = onServicosClick
                     )
 
                     IndicadorDashboard(
                         modifier = Modifier.weight(1f),
-                        icone =
-                            Icons.Outlined.CheckCircleOutline,
+                        icone = Icons.Outlined.CheckCircleOutline,
                         numero = resumo.concluidos,
                         descricao = "Serviços\nconcluídos",
                         cor = VerdeHome,
@@ -566,20 +542,20 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(11.dp))
 
-                // GRÁFICO DE SERVIÇOS
+                // GRÁFICO
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = corCartao
+                        containerColor = cores.surface
                     )
                 ) {
                     Column(
                         modifier = Modifier.padding(14.dp)
                     ) {
                         Text(
-                            text = "Serviços por status",
-                            color = corTexto,
+                            "Serviços por status",
+                            color = texto,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.semantics {
@@ -591,8 +567,7 @@ fun HomeScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment =
-                                Alignment.CenterVertically,
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement =
                                 Arrangement.spacedBy(10.dp)
                         ) {
@@ -607,7 +582,6 @@ fun HomeScreen(
                                     Arrangement.spacedBy(13.dp)
                             ) {
                                 resumo.status.forEach { item ->
-
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -632,7 +606,7 @@ fun HomeScreen(
 
                                         Text(
                                             text = item.nome,
-                                            color = corTexto,
+                                            color = texto,
                                             fontSize = 12.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
@@ -641,7 +615,7 @@ fun HomeScreen(
 
                                         Text(
                                             text = item.quantidade.toString(),
-                                            color = corTexto,
+                                            color = texto,
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -658,7 +632,7 @@ fun HomeScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = corCartao
+                        containerColor = cores.surface
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
@@ -666,8 +640,8 @@ fun HomeScreen(
                         modifier = Modifier.padding(13.dp)
                     ) {
                         Text(
-                            text = "Próximas entregas",
-                            color = corTexto,
+                            "Próximas entregas",
+                            color = texto,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             modifier = Modifier.semantics {
@@ -679,8 +653,8 @@ fun HomeScreen(
 
                         if (resumo.entregas.isEmpty()) {
                             Text(
-                                text = "Nenhuma entrega prevista.",
-                                color = corSecundario,
+                                "Nenhuma entrega prevista.",
+                                color = secundario,
                                 fontSize = 13.sp,
                                 modifier = Modifier.padding(
                                     vertical = 12.dp
@@ -688,7 +662,6 @@ fun HomeScreen(
                             )
                         } else {
                             resumo.entregas.forEach { entrega ->
-
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -699,7 +672,10 @@ fun HomeScreen(
                                                 "Serviço: ${entrega.titulo}. " +
                                                         "Cliente: ${entrega.cliente}. " +
                                                         "Prazo: ${entrega.prazo}. " +
-                                                        "Situação: ${rotuloSituacaoServico(entrega.status)}."
+                                                        "Situação: " +
+                                                        rotuloSituacaoServico(
+                                                            entrega.status
+                                                        )
                                         }
                                         .padding(bottom = 12.dp),
                                     verticalAlignment =
@@ -714,13 +690,10 @@ fun HomeScreen(
                                             .background(
                                                 cores.primaryContainer
                                             ),
-                                        contentAlignment =
-                                            Alignment.Center
+                                        contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            imageVector =
-                                                Icons.AutoMirrored
-                                                    .Outlined.Assignment,
+                                            Icons.AutoMirrored.Outlined.Assignment,
                                             contentDescription = null,
                                             tint = cores.onPrimaryContainer,
                                             modifier = Modifier.size(18.dp)
@@ -733,20 +706,17 @@ fun HomeScreen(
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
-                                            text = entrega.titulo,
-                                            color = corTexto,
+                                            entrega.titulo,
+                                            color = texto,
                                             fontSize = 13.sp,
-                                            fontWeight =
-                                                FontWeight.SemiBold,
+                                            fontWeight = FontWeight.SemiBold,
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis
                                         )
 
                                         Text(
-                                            text =
-                                                "${entrega.cliente} · " +
-                                                        entrega.prazo,
-                                            color = corSecundario,
+                                            "${entrega.cliente} · ${entrega.prazo}",
+                                            color = secundario,
                                             fontSize = 12.sp,
                                             maxLines = 2
                                         )
@@ -755,10 +725,8 @@ fun HomeScreen(
                                     Spacer(Modifier.width(5.dp))
 
                                     Text(
-                                        text = rotuloSituacaoServico(
-                                            entrega.status
-                                        ),
-                                        color = corDestaque,
+                                        rotuloSituacaoServico(entrega.status),
+                                        color = destaque,
                                         fontSize = 11.sp,
                                         maxLines = 2,
                                         modifier = Modifier.widthIn(
@@ -775,9 +743,9 @@ fun HomeScreen(
             }
         }
 
-        // MENU INFERIOR
+        // NAVEGAÇÃO INFERIOR
         NavigationBar(
-            containerColor = corCartao,
+            containerColor = cores.surface,
             tonalElevation = 0.dp,
             modifier = Modifier.heightIn(min = 75.dp)
         ) {
@@ -786,7 +754,7 @@ fun HomeScreen(
                 onClick = {},
                 icon = {
                     Icon(
-                        imageVector = Icons.Outlined.Home,
+                        Icons.Outlined.Home,
                         contentDescription = null
                     )
                 },
@@ -801,8 +769,7 @@ fun HomeScreen(
                 onClick = onClientesClick,
                 icon = {
                     Icon(
-                        imageVector =
-                            Icons.Outlined.PeopleOutline,
+                        Icons.Outlined.PeopleOutline,
                         contentDescription = null
                     )
                 },
@@ -817,8 +784,7 @@ fun HomeScreen(
                 onClick = onServicosClick,
                 icon = {
                     Icon(
-                        imageVector =
-                            Icons.AutoMirrored.Outlined.Assignment,
+                        Icons.AutoMirrored.Outlined.Assignment,
                         contentDescription = null
                     )
                 },
@@ -833,7 +799,7 @@ fun HomeScreen(
                 onClick = onMaisClick,
                 icon = {
                     Icon(
-                        imageVector = Icons.Outlined.Menu,
+                        Icons.Outlined.Menu,
                         contentDescription = null
                     )
                 },
@@ -869,7 +835,7 @@ private fun IndicadorDashboard(
     onClick: () -> Unit
 ) {
     val cores = MaterialTheme.colorScheme
-    val nomeIndicador = descricao.replace("\n", " ")
+    val nome = descricao.replace("\n", " ")
 
     Card(
         onClick = onClick,
@@ -877,7 +843,7 @@ private fun IndicadorDashboard(
             .heightIn(min = 112.dp)
             .semantics(mergeDescendants = true) {
                 contentDescription =
-                    "$nomeIndicador: $numero. Abrir detalhes."
+                    "$nome: $numero. Abrir detalhes."
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -901,7 +867,7 @@ private fun IndicadorDashboard(
             Spacer(Modifier.height(5.dp))
 
             Text(
-                text = numero.toString(),
+                numero.toString(),
                 color = cores.onSurface,
                 fontSize = 21.sp,
                 fontWeight = FontWeight.Bold
@@ -910,7 +876,7 @@ private fun IndicadorDashboard(
             Spacer(Modifier.height(3.dp))
 
             Text(
-                text = nomeIndicador,
+                nome,
                 color = cores.onSurfaceVariant,
                 fontSize = 11.sp,
                 lineHeight = 15.sp
@@ -927,18 +893,18 @@ private fun GraficoDashboard(
     val cores = MaterialTheme.colorScheme
     val total = status.sumOf { it.quantidade }
 
-    val descricaoGrafico = buildString {
+    val descricao = buildString {
         append("Gráfico de serviços por status. ")
         append("Total: $total serviços. ")
 
-        status.forEach { item ->
-            append("${item.nome}: ${item.quantidade}. ")
+        status.forEach {
+            append("${it.nome}: ${it.quantidade}. ")
         }
     }
 
     Box(
         modifier = modifier.clearAndSetSemantics {
-            contentDescription = descricaoGrafico
+            contentDescription = descricao
         },
         contentAlignment = Alignment.Center
     ) {
@@ -953,8 +919,7 @@ private fun GraficoDashboard(
 
             if (total > 0) {
                 status.forEach { item ->
-                    val parte =
-                        360f * item.quantidade / total
+                    val parte = 360f * item.quantidade / total
 
                     drawArc(
                         color = item.cor,
@@ -985,14 +950,14 @@ private fun GraficoDashboard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = total.toString(),
+                total.toString(),
                 color = cores.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize = 23.sp
             )
 
             Text(
-                text = "Total",
+                "Total",
                 color = cores.onSurfaceVariant,
                 fontSize = 12.sp
             )
