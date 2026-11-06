@@ -49,7 +49,7 @@ object RecebimentoRepository {
                 404 -> "Recebimento não encontrado."
 
                 409 -> mensagemServidor
-                    ?: "O recebimento possui registros vinculados e não pode ser excluído."
+                    ?: "O recebimento possui movimentações vinculadas."
 
                 in 500..599 -> "Erro no servidor."
 
@@ -69,9 +69,7 @@ object RecebimentoRepository {
             json.optString(campo).ifBlank { null }
         }
 
-    private fun converter(
-        json: JSONObject
-    ): Recebimento =
+    private fun converter(json: JSONObject): Recebimento =
         Recebimento(
             id = json.getLong("id"),
             servicoId = json.getLong("servicoId"),
@@ -177,8 +175,6 @@ object RecebimentoRepository {
             converter(JSONObject(corpo))
         }
 
-    // Exclui somente um recebimento da conta autenticada.
-    // A API confirma a exclusão antes da atualização da tela.
     fun excluir(
         recebimentoId: Long
     ): Result<Unit> =
