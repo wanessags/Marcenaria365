@@ -2,6 +2,7 @@
 package com.nexo.marcenaria365.ui.screens
 
 import android.util.Patterns
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -24,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -46,7 +46,59 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Mantém os cinco requisitos já existentes.
+// CORES FIXAS DA TELA INICIAL.
+// Não afetam o modo escuro após o login.
+
+private val FundoCadastro = Color(0xFFFAF6F0)
+private val AzulCadastro = Color(0xFF193447)
+private val CobreCadastro = Color(0xFF94613C)
+private val CinzaCadastro = Color(0xFF53616A)
+private val BordaCadastro = Color(0xFF9AA6AD)
+private val VermelhoCadastro = Color(0xFFB3261E)
+private val VerdeCadastro = Color(0xFF237A58)
+
+// Paleta aplicada somente a esta tela.
+// Assim, campos, textos, ícones, botões e indicadores
+// não herdam as cores do modo escuro.
+
+private val CoresClarasCadastro = lightColorScheme(
+    primary = AzulCadastro,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE3EBEF),
+    onPrimaryContainer = AzulCadastro,
+
+    secondary = CobreCadastro,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF4EBE0),
+    onSecondaryContainer = AzulCadastro,
+
+    tertiary = VerdeCadastro,
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFE5F4EC),
+    onTertiaryContainer = VerdeCadastro,
+
+    background = FundoCadastro,
+    onBackground = AzulCadastro,
+
+    surface = Color.White,
+    onSurface = AzulCadastro,
+    surfaceVariant = Color(0xFFF3F2EE),
+    onSurfaceVariant = CinzaCadastro,
+
+    outline = BordaCadastro,
+    outlineVariant = Color(0xFFD9DFE2),
+
+    error = VermelhoCadastro,
+    onError = Color.White,
+    errorContainer = Color(0xFFFCEAE7),
+    onErrorContainer = VermelhoCadastro,
+
+    inverseSurface = AzulCadastro,
+    inverseOnSurface = Color.White
+)
+
+// AS CINCO REGRAS ORIGINAIS DA SENHA.
+
 private data class RegrasCadastro(
     val tamanho: Boolean,
     val maiuscula: Boolean,
@@ -85,29 +137,17 @@ private fun avaliarSenhaCadastro(
     )
 }
 
-@Composable
-private fun CorSucessoCadastro(): Color {
-    val fundo = MaterialTheme.colorScheme.background
-
-    return if (fundo.luminance() < 0.5f) {
-        Color(0xFF83DDB5)
-    } else {
-        Color(0xFF237A58)
-    }
-}
+// REQUISITOS ACESSÍVEIS DA SENHA.
 
 @Composable
 private fun RequisitoCadastro(
     descricao: String,
     atendido: Boolean
 ) {
-    val cores = MaterialTheme.colorScheme
-    val verde = CorSucessoCadastro()
-
     val cor = if (atendido) {
-        verde
+        VerdeCadastro
     } else {
-        cores.onSurfaceVariant
+        CinzaCadastro
     }
 
     Row(
@@ -138,16 +178,15 @@ private fun RequisitoCadastro(
     }
 }
 
+// INDICADOR DE FORÇA DA SENHA.
+// Preservado: aparece quando o campo é acessado,
+// mesmo antes de começar a digitar.
+
 @Composable
 private fun ForcaSenhaCadastro(
     senha: String,
     regras: RegrasCadastro
 ) {
-    val cores = MaterialTheme.colorScheme
-    val verde = CorSucessoCadastro()
-
-    // Nível zero permite mostrar os requisitos
-    // logo ao tocar no campo, antes de digitar.
     val nivel = when {
         senha.isEmpty() -> 0
         regras.valida -> 4
@@ -165,17 +204,21 @@ private fun ForcaSenhaCadastro(
     }
 
     val cor = when (nivel) {
-        0 -> cores.onSurfaceVariant
-        4 -> verde
-        3 -> cores.secondary
-        2 -> cores.secondary
-        else -> cores.error
+        0 -> CinzaCadastro
+        4 -> VerdeCadastro
+        3 -> CobreCadastro
+        2 -> CobreCadastro
+        else -> VermelhoCadastro
     }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = cores.surface
+        color = Color.White,
+        border = BorderStroke(
+            1.dp,
+            Color(0xFFD9DFE2)
+        )
     ) {
         Column(
             modifier = Modifier.padding(14.dp)
@@ -188,7 +231,7 @@ private fun ForcaSenhaCadastro(
             ) {
                 Text(
                     text = "Segurança da senha",
-                    color = cores.onSurface,
+                    color = AzulCadastro,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -206,7 +249,6 @@ private fun ForcaSenhaCadastro(
 
             Spacer(Modifier.height(10.dp))
 
-            // Barra visual acompanhada de descrição textual.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -226,7 +268,9 @@ private fun ForcaSenhaCadastro(
                                 color = if (indice < nivel) {
                                     cor
                                 } else {
-                                    cores.outline.copy(alpha = 0.5f)
+                                    BordaCadastro.copy(
+                                        alpha = 0.5f
+                                    )
                                 },
                                 shape = RoundedCornerShape(5.dp)
                             )
@@ -238,7 +282,7 @@ private fun ForcaSenhaCadastro(
 
             Text(
                 text = "Requisitos da senha",
-                color = cores.onSurface,
+                color = AzulCadastro,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.semantics {
@@ -276,19 +320,39 @@ private fun ForcaSenhaCadastro(
     }
 }
 
+// ENTRADA ORIGINAL DA TELA.
+// O tema claro é aplicado somente neste componente.
+
 @Composable
 fun RegisterScreen(
     onBackClick: () -> Unit,
     onLoginClick: () -> Unit
 ) {
+    MaterialTheme(
+        colorScheme = CoresClarasCadastro
+    ) {
+        ConteudoCadastro(
+            onBackClick = onBackClick,
+            onLoginClick = onLoginClick
+        )
+    }
+}
+
+// CONTEÚDO ORIGINAL DO CADASTRO.
+// Mantém estados, regras, visibilidade da senha,
+// validações, acessibilidade e integração com a API.
+
+@Composable
+private fun ConteudoCadastro(
+    onBackClick: () -> Unit,
+    onLoginClick: () -> Unit
+) {
     val cores = MaterialTheme.colorScheme
-    val verde = CorSucessoCadastro()
 
     val scope = rememberCoroutineScope()
     val foco = LocalFocusManager.current
     val teclado = LocalSoftwareKeyboardController.current
 
-    // Estados originais do formulário.
     var nome by rememberSaveable {
         mutableStateOf("")
     }
@@ -329,8 +393,9 @@ fun RegisterScreen(
         mutableStateOf(false)
     }
 
-    // NOVO: controla quando o indicador aparece.
-    // Começa oculto e aparece ao focar o campo.
+    // Preserva a exibição da força da senha
+    // ao entrar no campo pela primeira vez.
+
     var acessouCampoSenha by rememberSaveable {
         mutableStateOf(false)
     }
@@ -357,24 +422,45 @@ fun RegisterScreen(
                 confirmarSenha != senha) ||
                 (tentouSalvar && confirmarSenha != senha)
 
-    // Cores adaptáveis aos modos claro e escuro.
+    // Cores completas, sem herança do tema escuro.
+
     val coresCampo = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = cores.surface,
-        unfocusedContainerColor = cores.surface,
-        focusedBorderColor = cores.primary,
-        unfocusedBorderColor = cores.outline,
-        focusedTextColor = cores.onSurface,
-        unfocusedTextColor = cores.onSurface,
-        focusedLabelColor = cores.primary,
-        unfocusedLabelColor = cores.onSurfaceVariant,
-        focusedLeadingIconColor = cores.primary,
-        unfocusedLeadingIconColor = cores.onSurfaceVariant,
-        cursorColor = cores.primary,
-        errorBorderColor = cores.error,
-        errorLabelColor = cores.error
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        disabledContainerColor = Color.White,
+
+        focusedBorderColor = CobreCadastro,
+        unfocusedBorderColor = BordaCadastro,
+        disabledBorderColor = BordaCadastro,
+
+        focusedTextColor = AzulCadastro,
+        unfocusedTextColor = AzulCadastro,
+        disabledTextColor = CinzaCadastro,
+
+        focusedLabelColor = AzulCadastro,
+        unfocusedLabelColor = CinzaCadastro,
+        disabledLabelColor = CinzaCadastro,
+
+        focusedLeadingIconColor = AzulCadastro,
+        unfocusedLeadingIconColor = CinzaCadastro,
+        disabledLeadingIconColor = CinzaCadastro,
+
+        focusedTrailingIconColor = AzulCadastro,
+        unfocusedTrailingIconColor = AzulCadastro,
+        disabledTrailingIconColor = CinzaCadastro,
+
+        focusedPlaceholderColor = CinzaCadastro,
+        unfocusedPlaceholderColor = CinzaCadastro,
+
+        cursorColor = AzulCadastro,
+
+        errorBorderColor = VermelhoCadastro,
+        errorLabelColor = VermelhoCadastro,
+        errorCursorColor = VermelhoCadastro
     )
 
-    // Preserva a validação e o envio original para a API.
+    // CADASTRO PELA API — LÓGICA PRESERVADA.
+
     fun cadastrar() {
         tentouSalvar = true
 
@@ -430,6 +516,7 @@ fun RegisterScreen(
                     cadastroConcluido = true
                     senha = ""
                     confirmarSenha = ""
+
                     mensagem =
                         "Conta criada com sucesso! " +
                                 "Agora você pode entrar."
@@ -445,8 +532,10 @@ fun RegisterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(cores.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .background(FundoCadastro)
+            .windowInsetsPadding(
+                WindowInsets.safeDrawing
+            )
             .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 25.dp)
@@ -454,6 +543,7 @@ fun RegisterScreen(
         Spacer(Modifier.height(8.dp))
 
         // VOLTAR
+
         IconButton(
             onClick = onBackClick,
             enabled = !carregando,
@@ -466,16 +556,17 @@ fun RegisterScreen(
                 imageVector =
                     Icons.AutoMirrored.Outlined.ArrowBack,
                 contentDescription = "Voltar",
-                tint = cores.onBackground
+                tint = AzulCadastro
             )
         }
 
         Spacer(Modifier.height(15.dp))
 
         // CABEÇALHO
+
         Text(
             text = "Crie sua conta",
-            color = cores.onBackground,
+            color = AzulCadastro,
             fontWeight = FontWeight.Bold,
             fontSize = 25.sp,
             textAlign = TextAlign.Center,
@@ -490,7 +581,7 @@ fun RegisterScreen(
 
         Text(
             text = "Organize seus serviços em um só lugar.",
-            color = cores.onSurfaceVariant,
+            color = CinzaCadastro,
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
@@ -499,6 +590,7 @@ fun RegisterScreen(
         Spacer(Modifier.height(25.dp))
 
         // NOME COMPLETO
+
         OutlinedTextField(
             value = nome,
             onValueChange = {
@@ -546,6 +638,7 @@ fun RegisterScreen(
         Spacer(Modifier.height(12.dp))
 
         // E-MAIL
+
         OutlinedTextField(
             value = email,
             onValueChange = {
@@ -594,6 +687,7 @@ fun RegisterScreen(
         Spacer(Modifier.height(12.dp))
 
         // CRIAR SENHA
+
         OutlinedTextField(
             value = senha,
             onValueChange = {
@@ -652,7 +746,10 @@ fun RegisterScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { estado ->
-                    if (estado.isFocused && !bloquearEdicao) {
+                    if (
+                        estado.isFocused &&
+                        !bloquearEdicao
+                    ) {
                         acessouCampoSenha = true
                     }
                 }
@@ -677,12 +774,16 @@ fun RegisterScreen(
             )
         }
 
-        // INDICADOR DE FORÇA
-        // Só aparece ao tocar no campo Criar senha,
-        // digitar ou tentar enviar o formulário.
+        // INDICADOR DE FORÇA DA SENHA.
+        // Não foi removido nem simplificado.
+
         if (
             !cadastroConcluido &&
-            (acessouCampoSenha || tentouSalvar || senha.isNotEmpty())
+            (
+                    acessouCampoSenha ||
+                            tentouSalvar ||
+                            senha.isNotEmpty()
+                    )
         ) {
             Spacer(Modifier.height(12.dp))
 
@@ -695,6 +796,7 @@ fun RegisterScreen(
         Spacer(Modifier.height(12.dp))
 
         // CONFIRMAR SENHA
+
         OutlinedTextField(
             value = confirmarSenha,
             onValueChange = {
@@ -786,7 +888,7 @@ fun RegisterScreen(
         ) {
             Text(
                 text = "As senhas coincidem.",
-                color = verde,
+                color = VerdeCadastro,
                 fontSize = 12.sp,
                 modifier = Modifier
                     .padding(top = 6.dp)
@@ -798,7 +900,8 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // CRIAR CONTA: MANTÉM O CADASTRO PELA API
+        // CRIAR CONTA — API ORIGINAL PRESERVADA.
+
         Button(
             onClick = {
                 cadastrar()
@@ -809,18 +912,18 @@ fun RegisterScreen(
                 .heightIn(min = 53.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = cores.primary,
-                contentColor = cores.onPrimary,
+                containerColor = AzulCadastro,
+                contentColor = Color.White,
                 disabledContainerColor =
-                    cores.primary.copy(alpha = 0.6f),
+                    AzulCadastro.copy(alpha = 0.6f),
                 disabledContentColor =
-                    cores.onPrimary.copy(alpha = 0.8f)
+                    Color.White.copy(alpha = 0.85f)
             )
         ) {
             if (carregando) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    color = cores.onPrimary,
+                    color = Color.White,
                     strokeWidth = 2.dp
                 )
 
@@ -844,15 +947,16 @@ fun RegisterScreen(
         }
 
         // MENSAGEM DO CADASTRO
+
         if (mensagem.isNotBlank()) {
             Spacer(Modifier.height(14.dp))
 
             Text(
                 text = mensagem,
                 color = if (cadastroConcluido) {
-                    verde
+                    VerdeCadastro
                 } else {
-                    cores.error
+                    VermelhoCadastro
                 },
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
@@ -867,7 +971,8 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(30.dp))
 
-        // ACESSO AO LOGIN
+        // ACESSO À TELA DE LOGIN
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -879,7 +984,7 @@ fun RegisterScreen(
                 } else {
                     "Já possui uma conta? "
                 },
-                color = cores.onSurfaceVariant,
+                color = CinzaCadastro,
                 fontSize = 12.sp
             )
 
@@ -890,7 +995,7 @@ fun RegisterScreen(
             ) {
                 Text(
                     text = "Entrar",
-                    color = cores.secondary,
+                    color = CobreCadastro,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -901,15 +1006,15 @@ fun RegisterScreen(
     }
 }
 
+// MENSAGENS DE VALIDAÇÃO.
+
 @Composable
 private fun TextoErroCadastro(
     mensagem: String
 ) {
-    val cores = MaterialTheme.colorScheme
-
     Text(
         text = mensagem,
-        color = cores.error,
+        color = VermelhoCadastro,
         fontSize = 12.sp,
         lineHeight = 17.sp,
         modifier = Modifier
