@@ -4,8 +4,20 @@ package com.nexo.marcenaria365.data.remote
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import android.content.Context
+import android.net.ConnectivityManager
+import java.io.IOException
 
 object ApiClient {
+
+    @Volatile
+    private var rede: ConnectivityManager? = null
+
+    fun configurarRede(context: Context) {
+        rede = context.applicationContext.getSystemService(ConnectivityManager::class.java)
+    }
+
+    private fun semRede(): Boolean = rede?.let { it.activeNetwork == null } ?: false
 
     // API hospedada no Render e conectada ao Supabase.
     private const val BASE_URL = "https://marcenaria365-api.onrender.com"
@@ -28,6 +40,8 @@ object ApiClient {
         require(endpoint.startsWith("/") && !endpoint.startsWith("//")) {
             "Endpoint inválido."
         }
+
+        if (semRede()) throw IOException("Sem conexão com a internet. Verifique sua rede.")
 
         val conexao = URL("$BASE_URL$endpoint")
             .openConnection() as HttpURLConnection
@@ -81,6 +95,8 @@ object ApiClient {
                 body = resposta
             )
 
+        } catch (erro: IOException) {
+            throw traduzirErroConexao(erro, semRede())
         } finally {
             conexao.disconnect()
         }

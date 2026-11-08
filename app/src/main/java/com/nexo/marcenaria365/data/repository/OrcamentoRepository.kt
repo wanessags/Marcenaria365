@@ -19,11 +19,13 @@ object OrcamentoRepository {
         throw IOException(
             when (resposta.status) {
                 400 -> "Confira os dados do orçamento."
+                422 -> "Não foi possível validar os dados do orçamento."
                 401 -> "Sessão expirada. Faça login novamente."
                 403 -> "Operação não permitida."
                 404 -> "Orçamento não encontrado."
                 409 -> "O orçamento possui registros vinculados."
-                in 500..599 -> "Erro no servidor."
+                504 -> "A conexão demorou mais que o esperado. Tente novamente."
+                in 500..599 -> "O servidor está temporariamente indisponível. Tente novamente em instantes."
                 else -> "Erro HTTP ${resposta.status}."
             }
         )

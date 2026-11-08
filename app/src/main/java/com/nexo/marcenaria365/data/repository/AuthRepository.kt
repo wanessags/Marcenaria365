@@ -108,7 +108,9 @@ object AuthRepository {
             401 -> "E-mail ou senha incorretos."
             409 -> "Este e-mail já está cadastrado."
             422 -> "Não foi possível validar os dados."
-            in 500..599 -> "O servidor está indisponível."
+            429 -> "Muitas tentativas. Aguarde um pouco e tente novamente."
+            504 -> "A conexão demorou mais que o esperado. Tente novamente."
+            in 500..599 -> "O servidor está temporariamente indisponível. Tente novamente em instantes."
             else -> "Erro na comunicação com a API (HTTP $status)."
         }
     }

@@ -61,11 +61,13 @@ object ClienteRepository {
     private fun verificarErro(status: Int): IOException {
         val mensagem = when (status) {
             400 -> "Confira os dados do cliente."
+            422 -> "Não foi possível validar os dados do cliente."
             401 -> "Sua sessão expirou. Faça login novamente."
             403 -> "Você não tem permissão para esta operação."
             404 -> "Cliente não encontrado."
             409 -> "Este cliente possui registros vinculados e não pode ser excluído."
-            in 500..599 -> "O servidor está indisponível."
+            504 -> "A conexão demorou mais que o esperado. Tente novamente."
+            in 500..599 -> "O servidor está temporariamente indisponível. Tente novamente em instantes."
             else -> "Não foi possível concluir a operação (HTTP $status)."
         }
 
