@@ -40,7 +40,9 @@ BEGIN
         WHERE conrelid = 'pg_temp.m365_m003_modelo'::regclass AND conname = 'm365_original';
     SELECT pg_get_constraintdef(oid) INTO desejada FROM pg_constraint
         WHERE conrelid = 'pg_temp.m365_m003_modelo'::regclass AND conname = 'm365_desejada';
-    IF atual.definicao <> original AND atual.definicao <> desejada THEN
+    IF atual.definicao <> original
+       AND atual.definicao <> desejada
+       AND atual.definicao <> 'CHECK (((status)::text = ANY (ARRAY[(''RASCUNHO''::character varying)::text, (''ENVIADO''::character varying)::text, (''APROVADO''::character varying)::text, (''RECUSADO''::character varying)::text])))' THEN
         RAISE EXCEPTION 'Definição personalizada ou incompatível da constraint de status. Nenhuma regra substituída.';
     END IF;
 
@@ -56,7 +58,7 @@ BEGIN
 
     ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS percentual_entrada INTEGER NOT NULL DEFAULT 50;
     ALTER TABLE orcamento_itens ADD COLUMN IF NOT EXISTS detalhe TEXT;
-    IF atual.definicao = original THEN
+    IF atual.definicao <> desejada THEN
         ALTER TABLE orcamentos DROP CONSTRAINT orcamentos_status_check;
         ALTER TABLE orcamentos ADD CONSTRAINT orcamentos_status_check
             CHECK (status IN ('RASCUNHO','ENVIADO','EM_APROVACAO','APROVADO','RECUSADO'));
