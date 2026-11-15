@@ -1,6 +1,7 @@
 package com.nexo.marcenaria365.data.repository
 
 import com.nexo.marcenaria365.data.remote.ApiClient
+import com.nexo.marcenaria365.data.remote.mensagemHttpInesperada
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -32,8 +33,7 @@ object MovimentacaoCaixaRepository {
                 403 -> "Operação não permitida."
                 404 -> "Movimentação não encontrada."
                 409 -> "Não foi possível concluir a operação."
-                in 500..599 -> "Erro no servidor."
-                else -> "Erro HTTP ${resposta.status}."
+                else -> mensagemHttpInesperada(resposta.status)
             }
         )
     }

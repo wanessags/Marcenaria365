@@ -1,6 +1,8 @@
 package com.nexo.marcenaria365.data.repository
 
 import com.nexo.marcenaria365.data.remote.ApiClient
+import com.nexo.marcenaria365.data.remote.MENSAGEM_SERVIDOR_INDISPONIVEL
+import com.nexo.marcenaria365.data.remote.mensagemHttpInesperada
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.ItemOrcamentoUi
 import com.nexo.marcenaria365.ui.screens.servicos.orcamentos.OrcamentoUi
 import org.json.JSONArray
@@ -25,8 +27,8 @@ object OrcamentoRepository {
                 404 -> "Orçamento não encontrado."
                 409 -> "O orçamento possui registros vinculados."
                 504 -> "A conexão demorou mais que o esperado. Tente novamente."
-                in 500..599 -> "O servidor está temporariamente indisponível. Tente novamente em instantes."
-                else -> "Erro HTTP ${resposta.status}."
+                in 500..599 -> MENSAGEM_SERVIDOR_INDISPONIVEL
+                else -> mensagemHttpInesperada(resposta.status)
             }
         )
     }

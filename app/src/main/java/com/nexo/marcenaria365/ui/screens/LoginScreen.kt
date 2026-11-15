@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.nexo.marcenaria365.R
 import com.nexo.marcenaria365.data.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -77,6 +78,21 @@ fun LoginScreen(
 
     var carregando by remember {
         mutableStateOf(false)
+    }
+
+    // O Render hiberna no plano gratuito; após alguns segundos explicamos a espera
+    // sem trocar a tela nem exibir detalhes técnicos.
+    var servidorIniciando by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(carregando) {
+        if (!carregando) {
+            servidorIniciando = false
+            return@LaunchedEffect
+        }
+        delay(12_000)
+        servidorIniciando = true
     }
 
     var tentouEntrar by rememberSaveable {
@@ -462,9 +478,14 @@ fun LoginScreen(
             Spacer(Modifier.height(15.dp))
 
             Text(
-                text = "Conectando à sua conta...",
+                text = if (servidorIniciando) {
+                    "O servidor está iniciando. Isso pode levar até dois minutos na primeira conexão."
+                } else {
+                    "Conectando ao servidor, aguarde..."
+                },
                 color = AzulLogin,
                 fontSize = 13.sp,
+                lineHeight = 19.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()

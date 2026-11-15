@@ -95,6 +95,7 @@ internal fun RecuperacaoSenhaScreen(
                 Spacer(Modifier.height(20.dp))
                 Button(enabled = !carregando, modifier = Modifier.fillMaxWidth().heightIn(min = 53.dp),
                     onClick = {
+                        if (carregando) return@Button
                         mensagem = when {
                             !solicitado && !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> "Informe um e-mail válido."
                             solicitado && !codigo.trim().matches(Regex("[a-fA-F0-9]{64}")) -> "Confira o código recebido por e-mail."

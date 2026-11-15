@@ -2,6 +2,7 @@
 package com.nexo.marcenaria365.data.repository
 
 import com.nexo.marcenaria365.data.remote.ApiClient
+import com.nexo.marcenaria365.data.remote.mensagemHttpInesperada
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -44,8 +45,7 @@ object MaterialRepository {
                 401 -> "Sessão expirada. Faça login novamente."
                 403 -> "Você não tem permissão para esta operação."
                 404 -> "Material não encontrado."
-                in 500..599 -> "Erro no servidor. Tente novamente."
-                else -> "Erro na API (HTTP $status)."
+                else -> mensagemHttpInesperada(status)
             }
         )
     }

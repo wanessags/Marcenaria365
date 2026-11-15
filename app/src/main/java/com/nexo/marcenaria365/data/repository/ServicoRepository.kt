@@ -1,6 +1,7 @@
 package com.nexo.marcenaria365.data.repository
 
 import com.nexo.marcenaria365.data.remote.ApiClient
+import com.nexo.marcenaria365.data.remote.mensagemHttpInesperada
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import org.json.JSONArray
 import org.json.JSONObject
@@ -143,8 +144,7 @@ object ServicoRepository {
                 403 -> "Operação não permitida."
                 404 -> "Serviço não encontrado."
                 409 -> "O serviço possui registros vinculados."
-                in 500..599 -> "Erro no servidor."
-                else -> "Erro HTTP ${resposta.status}."
+                else -> mensagemHttpInesperada(resposta.status)
             }
         )
     }

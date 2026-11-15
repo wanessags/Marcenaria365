@@ -1,6 +1,8 @@
 package com.nexo.marcenaria365.data.repository
 
 import com.nexo.marcenaria365.data.remote.ApiClient
+import com.nexo.marcenaria365.data.remote.MENSAGEM_SERVIDOR_INDISPONIVEL
+import com.nexo.marcenaria365.data.remote.mensagemHttpInesperada
 import org.json.JSONObject
 import java.io.IOException
 
@@ -110,8 +112,8 @@ object AuthRepository {
             422 -> "Não foi possível validar os dados."
             429 -> "Muitas tentativas. Aguarde um pouco e tente novamente."
             504 -> "A conexão demorou mais que o esperado. Tente novamente."
-            in 500..599 -> "O servidor está temporariamente indisponível. Tente novamente em instantes."
-            else -> "Erro na comunicação com a API (HTTP $status)."
+            in 500..599 -> MENSAGEM_SERVIDOR_INDISPONIVEL
+            else -> mensagemHttpInesperada(status)
         }
     }
 

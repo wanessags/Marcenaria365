@@ -2,6 +2,7 @@
 package com.nexo.marcenaria365.data.repository
 
 import com.nexo.marcenaria365.data.remote.ApiClient
+import com.nexo.marcenaria365.data.remote.mensagemHttpInesperada
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -51,10 +52,10 @@ object RecebimentoRepository {
                 409 -> mensagemServidor
                     ?: "O recebimento possui movimentações vinculadas."
 
-                in 500..599 -> "Erro no servidor."
+                in 500..599 -> mensagemHttpInesperada(resposta.status)
 
                 else -> mensagemServidor
-                    ?: "Erro HTTP ${resposta.status}."
+                    ?: mensagemHttpInesperada(resposta.status)
             }
         )
     }

@@ -1,6 +1,7 @@
 package com.nexo.marcenaria365.data.repository
 
 import com.nexo.marcenaria365.data.remote.ApiClient
+import com.nexo.marcenaria365.data.remote.mensagemHttpInesperada
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -71,8 +72,7 @@ object ClienteRepository {
             404 -> "Cliente não encontrado."
             409 -> "Este cliente possui registros vinculados e não pode ser excluído."
             504 -> "A conexão demorou mais que o esperado. Tente novamente."
-            in 500..599 -> "O servidor está temporariamente indisponível. Tente novamente em instantes."
-            else -> "Não foi possível concluir a operação (HTTP $status)."
+            else -> mensagemHttpInesperada(status)
         }
 
         return IOException(mensagem)

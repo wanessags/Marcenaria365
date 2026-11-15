@@ -1,12 +1,11 @@
-
 package com.nexo.marcenaria365.data.remote
 
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import android.content.Context
 import android.net.ConnectivityManager
+import org.json.JSONObject
 import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
 
 object ApiClient {
 
@@ -21,6 +20,37 @@ object ApiClient {
 
     // API hospedada no Render e conectada ao Supabase.
     private const val BASE_URL = "https://marcenaria365-api.onrender.com"
+
+    // O Render gratuito hiberna e pode levar ~100 s para iniciar. O tempo de
+    // leitura precisa cobrir essa primeira conexão sem espera indefinida.
+    internal const val TEMPO_CONEXAO_PADRAO_MS = 15_000
+    internal const val TEMPO_LEITURA_PADRAO_MS = 120_000
+
+    @Volatile
+    private var urlBase: String = BASE_URL
+
+    @Volatile
+    private var tempoConexaoMs: Int = TEMPO_CONEXAO_PADRAO_MS
+
+    @Volatile
+    private var tempoLeituraMs: Int = TEMPO_LEITURA_PADRAO_MS
+
+    /** Usado apenas por testes locais; não altera o comportamento do aplicativo. */
+    internal fun configurarParaTeste(
+        url: String,
+        tempoConexao: Int = TEMPO_CONEXAO_PADRAO_MS,
+        tempoLeitura: Int = TEMPO_LEITURA_PADRAO_MS
+    ) {
+        urlBase = url
+        tempoConexaoMs = tempoConexao
+        tempoLeituraMs = tempoLeitura
+    }
+
+    internal fun restaurarConfiguracaoPadrao() {
+        urlBase = BASE_URL
+        tempoConexaoMs = TEMPO_CONEXAO_PADRAO_MS
+        tempoLeituraMs = TEMPO_LEITURA_PADRAO_MS
+    }
 
     data class ApiResponse(
         val status: Int,
@@ -43,13 +73,13 @@ object ApiClient {
 
         if (semRede()) throw IOException("Sem conexão com a internet. Verifique sua rede.")
 
-        val conexao = URL("$BASE_URL$endpoint")
+        val conexao = URL("$urlBase$endpoint")
             .openConnection() as HttpURLConnection
 
         try {
             conexao.requestMethod = metodo
-            conexao.connectTimeout = 30000
-            conexao.readTimeout = 30000
+            conexao.connectTimeout = tempoConexaoMs
+            conexao.readTimeout = tempoLeituraMs
 
             conexao.setRequestProperty(
                 "Accept",
