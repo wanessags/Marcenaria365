@@ -13,6 +13,10 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
+# Extrai o jar antes de iniciar: evita ler classes de dentro de um jar aninhado
+# de ~59 MB a cada inicialização. Medição local: ~20% menos tempo até a API responder.
+RUN java -Djarmode=tools -jar app.jar extract --destination extracted
+
 EXPOSE 10000
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/extracted/app.jar"]
