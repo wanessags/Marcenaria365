@@ -30,7 +30,8 @@ import static org.mockito.Mockito.*;
     "spring.datasource.url=jdbc:h2:mem:recuperacao;DB_CLOSE_DELAY=-1",
     "spring.datasource.username=sa", "spring.datasource.password=",
     "spring.jpa.hibernate.ddl-auto=create-drop", "app.recovery.worker-enabled=false",
-    "spring.mail.host=smtp.example.test", "app.recovery.from=app@example.test"
+    "spring.mail.host=smtp.example.test", "spring.mail.username=usuario",
+    "spring.mail.password=senha", "app.recovery.from=app@example.test"
 })
 class RecuperacaoSenhaPersistenciaTest {
     @DynamicPropertySource

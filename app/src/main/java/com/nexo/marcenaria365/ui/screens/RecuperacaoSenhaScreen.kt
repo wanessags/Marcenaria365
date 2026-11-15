@@ -61,7 +61,7 @@ internal fun RecuperacaoSenhaScreen(
                 modifier = Modifier.semantics { heading() })
             Spacer(Modifier.height(20.dp))
             if (!concluido) {
-                Text(if (solicitado) "Informe o código recebido por e-mail e sua nova senha."
+                Text(if (solicitado) "Se o código chegou por e-mail, informe-o e defina sua nova senha."
                     else "Informe seu e-mail para solicitar um código temporário.")
                 Spacer(Modifier.height(12.dp))
                 if (!solicitado) {
@@ -98,7 +98,7 @@ internal fun RecuperacaoSenhaScreen(
                         if (carregando) return@Button
                         mensagem = when {
                             !solicitado && !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> "Informe um e-mail válido."
-                            solicitado && !codigo.trim().matches(Regex("[a-fA-F0-9]{64}")) -> "Confira o código recebido por e-mail."
+                            solicitado && !codigo.trim().matches(Regex("[a-fA-F0-9]{64}")) -> "Confira o código informado."
                             solicitado && !regras.valida -> "Confira os cinco requisitos da senha."
                             solicitado && senha.toByteArray(Charsets.UTF_8).size > 72 -> "A senha deve ter no máximo 72 bytes. Use uma senha mais curta."
                             solicitado && senha != confirmacao -> "A confirmação deve ser igual à senha."

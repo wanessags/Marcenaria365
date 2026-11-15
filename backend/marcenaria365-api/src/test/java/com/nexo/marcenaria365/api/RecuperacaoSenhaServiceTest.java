@@ -30,7 +30,7 @@ class RecuperacaoSenhaServiceTest {
     private final CifraCodigoRecuperacao cifra = new CifraCodigoRecuperacao(chaveAleatoria());
     private final RecuperacaoSenhaService service = new RecuperacaoSenhaService(
             usuarios, tokens, encoder, mail, pedidos, cifra, transactions, jdbc,
-            "smtp.example.test", "app@example.test");
+            "smtp.example.test", "usuario", "senha", true, "app@example.test");
 
     private static String chaveAleatoria() {
         byte[] bytes = new byte[32];
@@ -145,8 +145,31 @@ class RecuperacaoSenhaServiceTest {
 
     @Test void semSmtpRetornaIndisponibilidade() {
         var semSmtp = new RecuperacaoSenhaService(usuarios, tokens, encoder, mail,
-                pedidos, cifra, transactions, jdbc, "", "");
+                pedidos, cifra, transactions, jdbc, "", "", "", true, "");
         assertThrows(ResponseStatusException.class, semSmtp::verificarConfiguracao);
+        verifyNoInteractions(usuarios, tokens, mail);
+    }
+
+    @Test void exigeCredenciaisQuandoAutenticacaoSmtpEstaHabilitada() {
+        var semUsuario = new RecuperacaoSenhaService(usuarios, tokens, encoder, mail,
+                pedidos, cifra, transactions, jdbc,
+                "smtp.example.test", "", "senha", true, "app@example.test");
+        var semSenha = new RecuperacaoSenhaService(usuarios, tokens, encoder, mail,
+                pedidos, cifra, transactions, jdbc,
+                "smtp.example.test", "usuario", "", true, "app@example.test");
+
+        assertThrows(ResponseStatusException.class, semUsuario::verificarConfiguracao);
+        assertThrows(ResponseStatusException.class, semSenha::verificarConfiguracao);
+        verifyNoInteractions(usuarios, tokens, mail);
+    }
+
+    @Test void naoExigeCredenciaisQuandoAutenticacaoSmtpEstaDesabilitada() {
+        var semAutenticacao = new RecuperacaoSenhaService(usuarios, tokens, encoder, mail,
+                pedidos, cifra, transactions, jdbc,
+                "smtp.example.test", "", "", false, "app@example.test");
+
+        assertTrue(semAutenticacao.configuracaoDisponivel());
+        assertDoesNotThrow(semAutenticacao::verificarConfiguracao);
         verifyNoInteractions(usuarios, tokens, mail);
     }
 }

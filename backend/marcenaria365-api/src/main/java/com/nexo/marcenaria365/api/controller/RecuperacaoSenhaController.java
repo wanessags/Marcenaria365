@@ -36,8 +36,9 @@ public class RecuperacaoSenhaController {
         service.verificarConfiguracao();
         service.solicitar(dados.email());
         return ResponseEntity.accepted().body(Map.of("mensagem",
-                "Solicitação recebida. Se o e-mail estiver cadastrado, você receberá um código."
-                + " Verifique também a pasta de spam. Se não chegar, tente novamente mais tarde."));
+                "Solicitação recebida. Se o e-mail estiver cadastrado, o envio do código será tentado."
+                + " O envio depende do serviço de e-mail e pode levar alguns minutos."
+                + " Se o código não chegar, verifique a pasta de spam e tente novamente mais tarde."));
     }
 
     @PostMapping("/redefinicao")

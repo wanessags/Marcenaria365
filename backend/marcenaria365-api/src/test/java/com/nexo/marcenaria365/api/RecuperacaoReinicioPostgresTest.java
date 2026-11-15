@@ -52,7 +52,9 @@ class RecuperacaoReinicioPostgresTest {
                 "--spring.datasource.url=" + url, "--spring.datasource.username=m365_test", "--spring.datasource.password=",
                 "--spring.datasource.driver-class-name=org.postgresql.Driver", "--spring.jpa.hibernate.ddl-auto=" + ddl,
                 "--app.jwt.secret=" + jwt, "--app.recovery.encryption-key=" + cifra,
-                "--app.recovery.worker-enabled=false", "--spring.mail.host=smtp.example.test", "--app.recovery.from=app@example.test");
+                "--app.recovery.worker-enabled=false", "--spring.mail.host=smtp.example.test",
+                "--spring.mail.username=usuario", "--spring.mail.password=senha",
+                "--app.recovery.from=app@example.test");
     }
 
     private HttpResponse<String> post(ConfigurableApplicationContext app, String endpoint, String json) throws Exception {

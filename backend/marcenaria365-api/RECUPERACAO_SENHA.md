@@ -25,16 +25,19 @@
    e pasta de spam durante a homologação.
 4. Publicar a API antes de distribuir o APK que usa os novos endpoints.
 
-Sem host/remetente/chave de cifra válida, a recuperação retorna 503, sem alterar
-cadastro e login. Isso pressupõe o esquema obrigatório já aplicado: `validate`
-impede iniciar toda a API se faltarem tabelas/colunas exigidas pelas entidades.
+Sem host/remetente/chave de cifra válida, ou, com autenticação SMTP habilitada,
+sem usuário/senha, a recuperação retorna 503, sem alterar cadastro e login.
+Isso pressupõe o esquema obrigatório já aplicado: `validate` impede iniciar toda
+a API se faltarem tabelas/colunas exigidas pelas entidades.
 
 ## Contratos novos
 
 - `POST /api/auth/recuperacao`: `{ "email": "..." }`.
   HTTP 202 com mensagem genérica para e-mails cadastrados e desconhecidos.
   Confirma o recebimento **persistido por commit**, não a entrega do e-mail.
-  Pedidos de contas conhecidas e desconhecidas seguem a mesma admissão durável.
+  O texto não afirma que o e-mail já foi enviado ou recebido; o envio continua
+  pendente até o SMTP aceitar a mensagem. Pedidos de contas conhecidas e
+  desconhecidas seguem a mesma admissão durável.
 - `POST /api/auth/redefinicao`: `{ "codigo": "...", "senha": "..." }`.
   HTTP 200 somente depois do commit da nova senha e do consumo do código.
   Código inválido, usado ou expirado: 400. Não altera sessões/JWT existentes.

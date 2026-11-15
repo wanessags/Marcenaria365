@@ -37,6 +37,9 @@ public class RecuperacaoSenhaService {
     private final TransactionTemplate transacao;
     private final JdbcTemplate jdbc;
     private final String host;
+    private final String usuario;
+    private final String senha;
+    private final boolean autenticacao;
     private final String remetente;
     private final SecureRandom random = new SecureRandom();
 
@@ -45,6 +48,9 @@ public class RecuperacaoSenhaService {
             PedidoRecuperacaoSenhaRepository pedidos, CifraCodigoRecuperacao cifra,
             PlatformTransactionManager transactions, JdbcTemplate jdbc,
             @Value("${spring.mail.host:}") String host,
+            @Value("${spring.mail.username:}") String usuario,
+            @Value("${spring.mail.password:}") String senha,
+            @Value("${spring.mail.properties.mail.smtp.auth:true}") boolean autenticacao,
             @Value("${app.recovery.from:}") String remetente) {
         this.usuarios = usuarios;
         this.recuperacoes = recuperacoes;
@@ -56,6 +62,9 @@ public class RecuperacaoSenhaService {
         this.transacao.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.jdbc = jdbc;
         this.host = host;
+        this.usuario = usuario;
+        this.senha = senha;
+        this.autenticacao = autenticacao;
         this.remetente = remetente;
     }
 
@@ -67,7 +76,9 @@ public class RecuperacaoSenhaService {
     }
 
     public boolean configuracaoDisponivel() {
-        return !host.isBlank() && !remetente.isBlank() && cifra.configurada();
+        if (host.isBlank() || remetente.isBlank() || !cifra.configurada()) return false;
+        if (!autenticacao) return true;
+        return !usuario.isBlank() && !senha.isBlank();
     }
 
     // O retorno só ocorre após commit. Persistimos pedidos de contas conhecidas ou não.

@@ -32,6 +32,11 @@ class RecuperacaoSenhaControllerTest {
         var ausente = controller.solicitar(new RecuperacaoSenhaController.Solicitacao("ausente@example.test"), request);
         assertEquals(202, existente.getStatusCode().value());
         assertEquals(existente, ausente);
+        String mensagem = String.valueOf(existente.getBody());
+        assertFalse(mensagem.toLowerCase().contains("enviado"));
+        assertFalse(mensagem.contains("receberá"));
+        assertTrue(mensagem.contains("envio do código será tentado"));
+        assertTrue(mensagem.contains("depende do serviço de e-mail"));
         for (int i = 0; i < 3; i++) controller.solicitar(new RecuperacaoSenhaController.Solicitacao("outro@example.test"), request);
         assertEquals(429, assertThrows(ResponseStatusException.class, () -> controller.solicitar(
                 new RecuperacaoSenhaController.Solicitacao("outro@example.test"), request)).getStatusCode().value());

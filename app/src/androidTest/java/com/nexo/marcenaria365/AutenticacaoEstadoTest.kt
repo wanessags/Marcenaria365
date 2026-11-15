@@ -42,6 +42,7 @@ class AutenticacaoEstadoTest {
         compose.onNodeWithText("Solicitar código").performScrollTo().performClick()
         compose.waitUntil { solicitacoes.get() == 1 }
         compose.waitForIdle()
+        compose.onNodeWithText("Se o código chegou por e-mail, informe-o e defina sua nova senha.").assertExists()
         compose.onNodeWithText("Código de recuperação").performScrollTo().performTextInput("a".repeat(64))
         compose.onNodeWithText("Nova senha").performScrollTo().performTextInput("NovaSegura123!")
         compose.onNodeWithText("Confirmar nova senha").performScrollTo().performTextInput("NovaSegura123!")
