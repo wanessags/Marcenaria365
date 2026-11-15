@@ -99,7 +99,7 @@ private val CoresClarasCadastro = lightColorScheme(
 
 // AS CINCO REGRAS ORIGINAIS DA SENHA.
 
-private data class RegrasCadastro(
+internal data class RegrasCadastro(
     val tamanho: Boolean,
     val maiuscula: Boolean,
     val minuscula: Boolean,
@@ -123,7 +123,7 @@ private data class RegrasCadastro(
                 especial
 }
 
-private fun avaliarSenhaCadastro(
+internal fun avaliarSenhaCadastro(
     senha: String
 ): RegrasCadastro {
     return RegrasCadastro(
@@ -183,7 +183,7 @@ private fun RequisitoCadastro(
 // mesmo antes de começar a digitar.
 
 @Composable
-private fun ForcaSenhaCadastro(
+internal fun ForcaSenhaCadastro(
     senha: String,
     regras: RegrasCadastro
 ) {

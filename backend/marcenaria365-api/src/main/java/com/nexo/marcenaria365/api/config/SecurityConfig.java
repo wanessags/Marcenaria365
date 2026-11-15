@@ -27,6 +27,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/auth/cadastro").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/recuperacao", "/api/auth/redefinicao").permitAll()
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )

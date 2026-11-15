@@ -57,6 +57,8 @@ fun LoginScreen(
     onRegisterClick: () -> Unit,
     onDemoLogin: (String) -> Unit
 ) {
+    var recuperandoSenha by rememberSaveable { mutableStateOf(false) }
+
     var email by rememberSaveable {
         mutableStateOf("")
     }
@@ -79,6 +81,12 @@ fun LoginScreen(
 
     var tentouEntrar by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    // Manter os estados do login na composição durante a recuperação.
+    if (recuperandoSenha) {
+        RecuperacaoSenhaScreen(onVoltar = { recuperandoSenha = false })
+        return
     }
 
     val scope = rememberCoroutineScope()
@@ -389,8 +397,7 @@ fun LoginScreen(
         ) {
             TextButton(
                 onClick = {
-                    mensagem =
-                        "A recuperação de senha ainda não está disponível."
+                    recuperandoSenha = true
                 },
                 enabled = !carregando,
                 modifier = Modifier.heightIn(

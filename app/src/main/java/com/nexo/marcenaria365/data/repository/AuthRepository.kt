@@ -114,4 +114,27 @@ object AuthRepository {
             else -> "Erro na comunicação com a API (HTTP $status)."
         }
     }
+
+    fun solicitarRecuperacao(email: String): Result<String> = recuperacao(
+        "/api/auth/recuperacao", JSONObject().put("email", email.trim())
+    )
+
+    fun redefinirSenha(codigo: String, senha: String): Result<String> = recuperacao(
+        "/api/auth/redefinicao", JSONObject().put("codigo", codigo.trim()).put("senha", senha)
+    )
+
+    private fun recuperacao(endpoint: String, dados: JSONObject): Result<String> = runCatching {
+        val resposta = ApiClient.post(endpoint, dados)
+        if (!resposta.sucesso) {
+            throw IOException(when (resposta.status) {
+                400, 422 -> if (endpoint.endsWith("redefinicao")) {
+                    "Confira os requisitos da senha e o código. Ele pode estar inválido ou expirado."
+                } else "Informe um e-mail válido."
+                429 -> "Muitas tentativas. Aguarde um minuto e tente novamente."
+                in 500..599 -> "Recuperação temporariamente indisponível. Tente novamente mais tarde."
+                else -> "Não foi possível concluir a recuperação. Tente novamente."
+            })
+        }
+        JSONObject(resposta.body).getString("mensagem")
+    }
 }
