@@ -601,7 +601,8 @@ fun OnboardingScreen() {
                                         telefone = atualizado.telefone,
                                         email = atualizado.email,
                                         endereco = existente.endereco,
-                                        observacoes = existente.observacoes
+                                        observacoes = existente.observacoes,
+                                        ativo = atualizado.ativo
                                     )
                                 }.fold(
                                     onSuccess = { dados ->

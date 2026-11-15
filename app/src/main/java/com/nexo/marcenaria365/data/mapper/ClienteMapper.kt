@@ -9,7 +9,7 @@ fun ClienteRepository.Cliente.paraUi(): ClienteUi {
         nome = nome,
         telefone = telefone,
         email = email,
-        ativo = true
+        ativo = ativo
     )
 }
 
@@ -22,6 +22,7 @@ fun ClienteUi.paraRequest(
         telefone = telefone,
         email = email,
         endereco = endereco,
-        observacoes = observacoes
+        observacoes = observacoes,
+        ativo = ativo
     )
 }

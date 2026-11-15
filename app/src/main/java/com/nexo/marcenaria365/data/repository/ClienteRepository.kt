@@ -13,7 +13,8 @@ object ClienteRepository {
         val telefone: String,
         val email: String,
         val endereco: String,
-        val observacoes: String
+        val observacoes: String,
+        val ativo: Boolean = true
     )
 
     data class ClienteRequest(
@@ -21,7 +22,8 @@ object ClienteRepository {
         val telefone: String,
         val email: String,
         val endereco: String,
-        val observacoes: String
+        val observacoes: String,
+        val ativo: Boolean = true
     )
 
     private fun token(): String {
@@ -44,7 +46,8 @@ object ClienteRepository {
             telefone = json.texto("telefone"),
             email = json.texto("email"),
             endereco = json.texto("endereco"),
-            observacoes = json.texto("observacoes")
+            observacoes = json.texto("observacoes"),
+            ativo = json.optBoolean("ativo", true)
         )
     }
 
@@ -55,6 +58,7 @@ object ClienteRepository {
             put("email", dados.email)
             put("endereco", dados.endereco)
             put("observacoes", dados.observacoes)
+            put("ativo", dados.ativo)
         }
     }
 

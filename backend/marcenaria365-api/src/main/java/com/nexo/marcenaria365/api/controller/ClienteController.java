@@ -31,7 +31,8 @@ public class ClienteController {
             @Size(max = 20) String telefone,
             @Email @Size(max = 160) String email,
             String endereco,
-            String observacoes
+            String observacoes,
+            Boolean ativo
     ) {}
 
     public record ClienteResponse(
@@ -40,7 +41,8 @@ public class ClienteController {
             String telefone,
             String email,
             String endereco,
-            String observacoes
+            String observacoes,
+            boolean ativo
     ) {}
 
     private Long usuarioId(Jwt jwt) {
@@ -54,7 +56,8 @@ public class ClienteController {
                 cliente.getTelefone(),
                 cliente.getEmail(),
                 cliente.getEndereco(),
-                cliente.getObservacoes()
+                cliente.getObservacoes(),
+                cliente.isAtivo()
         );
     }
 
@@ -64,6 +67,8 @@ public class ClienteController {
         cliente.setEmail(dados.email());
         cliente.setEndereco(dados.endereco());
         cliente.setObservacoes(dados.observacoes());
+        // Clientes antigos da API podem omitir o campo sem reativar um cliente.
+        if (dados.ativo() != null) cliente.setAtivo(dados.ativo());
     }
 
     @GetMapping
