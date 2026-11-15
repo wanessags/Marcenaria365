@@ -34,6 +34,7 @@ public class OrcamentoController {
 
     private static final Set<String> STATUS_PERMITIDOS = Set.of(
         "RASCUNHO",
+        "ENVIADO",
         "EM_APROVACAO",
         "APROVADO",
         "RECUSADO"

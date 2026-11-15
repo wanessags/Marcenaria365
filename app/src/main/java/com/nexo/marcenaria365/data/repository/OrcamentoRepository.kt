@@ -41,7 +41,7 @@ object OrcamentoRepository {
 
     private fun statusParaTela(status: String): String =
         when (status) {
-            "RASCUNHO", "EM_APROVACAO" -> "Em aprovação"
+            "RASCUNHO", "ENVIADO", "EM_APROVACAO" -> "Em aprovação"
             "APROVADO" -> "Aprovado"
             "RECUSADO" -> "Recusado"
             else -> status
