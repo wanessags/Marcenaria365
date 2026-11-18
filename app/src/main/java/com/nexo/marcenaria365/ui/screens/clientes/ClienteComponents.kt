@@ -13,12 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// Mantemos as cores originais para preservar a compatibilidade
+// com outras telas que já utilizam ClienteCores.
 object ClienteCores {
     val Fundo = Color(0xFFFAF6F0)
     val Azul = Color(0xFF193447)
@@ -36,6 +39,8 @@ fun ClienteCabecalho(
     subtitulo: String,
     onVoltar: () -> Unit
 ) {
+    val cores = MaterialTheme.colorScheme
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -50,7 +55,7 @@ fun ClienteCabecalho(
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Voltar",
-                    tint = ClienteCores.Azul,
+                    tint = cores.onBackground,
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -62,7 +67,7 @@ fun ClienteCabecalho(
                 fontSize = 23.sp,
                 lineHeight = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = ClienteCores.Azul,
+                color = cores.onBackground,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
@@ -73,7 +78,7 @@ fun ClienteCabecalho(
             text = subtitulo,
             fontSize = 12.sp,
             lineHeight = 17.sp,
-            color = ClienteCores.Cinza,
+            color = cores.onSurfaceVariant,
             modifier = Modifier.padding(
                 start = 52.dp,
                 top = 3.dp
@@ -104,7 +109,7 @@ fun ClienteAvatar(
     ) {
         Text(
             text = iniciais,
-            color = Color.White,
+            color = Color(0xFF193447),
             fontSize = if (tamanho >= 70.dp) 24.sp else 15.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -115,9 +120,11 @@ fun ClienteAvatar(
 fun ClienteTituloSecao(
     titulo: String
 ) {
+    val cores = MaterialTheme.colorScheme
+
     Text(
         text = titulo.uppercase(),
-        color = ClienteCores.Cobre,
+        color = cores.secondary,
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.sp
@@ -129,41 +136,55 @@ fun ClienteInformacao(
     titulo: String,
     valor: String
 ) {
+    val cores = MaterialTheme.colorScheme
+
     Column(
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Text(
             text = titulo,
             fontSize = 12.sp,
-            color = ClienteCores.Cinza
+            color = cores.onSurfaceVariant
         )
 
         Text(
             text = valor.ifBlank { "Não informado" },
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = ClienteCores.Azul
+            color = cores.onSurface
         )
     }
 }
 
 @Composable
 fun ClienteStatus(ativo: Boolean) {
+    val cores = MaterialTheme.colorScheme
+
+    // Consulta o tema aplicado pelo aplicativo, não a
+    // configuração automática do Android.
+    val temaEscuro = cores.background.luminance() < 0.5f
+
+    val fundoStatus = when {
+        ativo && temaEscuro -> Color(0xFF173E30)
+        ativo -> Color(0xFFE5F4EC)
+        temaEscuro -> cores.surfaceVariant
+        else -> Color(0xFFF1EEEE)
+    }
+
+    val textoStatus = when {
+        ativo && temaEscuro -> Color(0xFF9BE5B6)
+        ativo -> ClienteCores.Verde
+        temaEscuro -> cores.onSurfaceVariant
+        else -> Color(0xFF555F66)
+    }
+
     Surface(
-        color = if (ativo) {
-            Color(0xFFE5F4EC)
-        } else {
-            Color(0xFFF1EEEE)
-        },
+        color = fundoStatus,
         shape = RoundedCornerShape(20.dp)
     ) {
         Text(
             text = if (ativo) "Cliente ativo" else "Cliente inativo",
-            color = if (ativo) {
-                ClienteCores.Verde
-            } else {
-                ClienteCores.Cinza
-            },
+            color = textoStatus,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(
