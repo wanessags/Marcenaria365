@@ -58,7 +58,12 @@ fun LoginScreen(
     onRegisterClick: () -> Unit,
     onDemoLogin: (String) -> Unit
 ) {
-    var recuperandoSenha by rememberSaveable { mutableStateOf(false) }
+    // MVP: a recuperação exibirá um aviso informativo.
+    // A implementação original de recuperação permanece
+    // preservada em RecuperacaoSenhaScreen.kt.
+    var mostrarAvisoRecuperacao by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     var email by rememberSaveable {
         mutableStateOf("")
@@ -80,8 +85,8 @@ fun LoginScreen(
         mutableStateOf(false)
     }
 
-    // O Render hiberna no plano gratuito; após alguns segundos explicamos a espera
-    // sem trocar a tela nem exibir detalhes técnicos.
+    // O Render hiberna no plano gratuito; após alguns
+    // segundos explicamos a espera.
     var servidorIniciando by remember {
         mutableStateOf(false)
     }
@@ -91,18 +96,13 @@ fun LoginScreen(
             servidorIniciando = false
             return@LaunchedEffect
         }
+
         delay(12_000)
         servidorIniciando = true
     }
 
     var tentouEntrar by rememberSaveable {
         mutableStateOf(false)
-    }
-
-    // Manter os estados do login na composição durante a recuperação.
-    if (recuperandoSenha) {
-        RecuperacaoSenhaScreen(onVoltar = { recuperandoSenha = false })
-        return
     }
 
     val scope = rememberCoroutineScope()
@@ -406,14 +406,14 @@ fun LoginScreen(
 
         Spacer(Modifier.height(10.dp))
 
-        // RECUPERACAO DE SENHA
+        // RECUPERACAO DE SENHA - MVP
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
             TextButton(
                 onClick = {
-                    recuperandoSenha = true
+                    mostrarAvisoRecuperacao = true
                 },
                 enabled = !carregando,
                 modifier = Modifier.heightIn(
@@ -547,5 +547,35 @@ fun LoginScreen(
                 )
             }
         }
+    }
+
+    // AVISO INFORMATIVO SOBRE RECUPERACAO DE SENHA
+    if (mostrarAvisoRecuperacao) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarAvisoRecuperacao = false
+            },
+            title = {
+                Text("Recuperação de senha")
+            },
+            text = {
+                Text(
+                    "A recuperação de senha estará disponível em uma versão futura do Marcenaria 365."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarAvisoRecuperacao = false
+                    },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text("Entendi")
+                }
+            },
+            containerColor = Color.White,
+            titleContentColor = AzulLogin,
+            textContentColor = CinzaLogin
+        )
     }
 }
