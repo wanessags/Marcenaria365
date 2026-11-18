@@ -36,11 +36,24 @@ object PreferenciasAparencia {
             ModoAparencia.CLARO.name
         )
 
-        modo = runCatching {
+        val modoSalvo = runCatching {
             ModoAparencia.valueOf(
                 valor ?: ModoAparencia.CLARO.name
             )
         }.getOrDefault(ModoAparencia.CLARO)
+
+        // Compatibilidade com a preferência antiga.
+        // Quem utilizava Automático passa a usar Claro.
+        // Quem utilizava Escuro mantém sua escolha.
+        modo = if (modoSalvo == ModoAparencia.AUTOMATICO) {
+            preferencias.edit()
+                .putString(CHAVE, ModoAparencia.CLARO.name)
+                .apply()
+
+            ModoAparencia.CLARO
+        } else {
+            modoSalvo
+        }
     }
 
     fun alterar(

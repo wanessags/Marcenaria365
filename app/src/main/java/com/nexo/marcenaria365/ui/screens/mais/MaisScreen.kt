@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Description
@@ -228,21 +227,6 @@ fun MaisScreen(
                             )
                         }
                     )
-
-                    OpcaoAparencia(
-                        titulo = "Automático",
-                        descricao =
-                            "Segue a configuração do celular",
-                        icone = Icons.Outlined.BrightnessAuto,
-                        selecionado =
-                            modoAtual == ModoAparencia.AUTOMATICO,
-                        onClick = {
-                            PreferenciasAparencia.alterar(
-                                context,
-                                ModoAparencia.AUTOMATICO
-                            )
-                        }
-                    )
                 }
 
                 Spacer(Modifier.height(24.dp))
@@ -352,7 +336,7 @@ fun MaisScreen(
                     subtitulo = when (modoAtual) {
                         ModoAparencia.CLARO -> "Modo claro"
                         ModoAparencia.ESCURO -> "Modo escuro"
-                        ModoAparencia.AUTOMATICO -> "Automático"
+                        ModoAparencia.AUTOMATICO -> "Modo claro"
                     },
                     icone = Icons.Outlined.Palette,
                     onClick = {
