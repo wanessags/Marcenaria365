@@ -19,7 +19,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -32,9 +31,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private val CinzaAcessivelCliente = Color(0xFF53616A)
-private val BordaAcessivelCliente = Color(0xFF89969E)
 
 @Composable
 fun ClienteCadastroScreen(
@@ -61,6 +57,7 @@ fun ClienteCadastroScreen(
         mutableStateOf("")
     }
 
+    val cores = MaterialTheme.colorScheme
     val foco = LocalFocusManager.current
     val teclado = LocalSoftwareKeyboardController.current
 
@@ -120,25 +117,25 @@ fun ClienteCadastroScreen(
     BackHandler(onBack = onVoltar)
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = ClienteCores.Azul,
-        unfocusedTextColor = ClienteCores.Azul,
-        focusedContainerColor = Color.White,
-        unfocusedContainerColor = Color.White,
-        focusedBorderColor = ClienteCores.Cobre,
-        unfocusedBorderColor = BordaAcessivelCliente,
-        focusedLabelColor = ClienteCores.Azul,
-        unfocusedLabelColor = CinzaAcessivelCliente,
-        focusedLeadingIconColor = ClienteCores.Azul,
-        unfocusedLeadingIconColor = CinzaAcessivelCliente,
-        cursorColor = ClienteCores.Cobre,
-        errorBorderColor = ClienteCores.Vermelho,
-        errorLabelColor = ClienteCores.Vermelho
+        focusedTextColor = cores.onSurface,
+        unfocusedTextColor = cores.onSurface,
+        focusedContainerColor = cores.surface,
+        unfocusedContainerColor = cores.surface,
+        focusedBorderColor = cores.primary,
+        unfocusedBorderColor = cores.outline,
+        focusedLabelColor = cores.onSurface,
+        unfocusedLabelColor = cores.onSurfaceVariant,
+        focusedLeadingIconColor = cores.secondary,
+        unfocusedLeadingIconColor = cores.onSurfaceVariant,
+        cursorColor = cores.primary,
+        errorBorderColor = cores.error,
+        errorLabelColor = cores.error
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(ClienteCores.Fundo)
+            .background(cores.background)
             .windowInsetsPadding(
                 WindowInsets.safeDrawing
             )
@@ -169,7 +166,7 @@ fun ClienteCadastroScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = cores.surface
             ),
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 0.dp
@@ -204,7 +201,7 @@ fun ClienteCadastroScreen(
                                 imageVector =
                                     Icons.Outlined.PersonOutline,
                                 contentDescription = null,
-                                tint = ClienteCores.Cobre,
+                                tint = cores.secondary,
                                 modifier = Modifier.size(
                                     20.dp
                                 )
@@ -232,7 +229,7 @@ fun ClienteCadastroScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = coresCampo,
                         textStyle = TextStyle(
-                            color = ClienteCores.Azul,
+                            color = cores.onSurface,
                             fontSize = 14.sp
                         )
                     )
@@ -263,7 +260,7 @@ fun ClienteCadastroScreen(
                                 imageVector =
                                     Icons.Outlined.Phone,
                                 contentDescription = null,
-                                tint = ClienteCores.Cobre,
+                                tint = cores.secondary,
                                 modifier = Modifier.size(
                                     20.dp
                                 )
@@ -273,7 +270,7 @@ fun ClienteCadastroScreen(
                             Text(
                                 text = "Ex.: 11987654321",
                                 fontSize = 12.sp,
-                                color = CinzaAcessivelCliente
+                                color = cores.onSurfaceVariant
                             )
                         },
                         modifier = Modifier
@@ -298,7 +295,7 @@ fun ClienteCadastroScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = coresCampo,
                         textStyle = TextStyle(
-                            color = ClienteCores.Azul,
+                            color = cores.onSurface,
                             fontSize = 14.sp
                         )
                     )
@@ -329,7 +326,7 @@ fun ClienteCadastroScreen(
                                 imageVector =
                                     Icons.Outlined.Email,
                                 contentDescription = null,
-                                tint = ClienteCores.Cobre,
+                                tint = cores.secondary,
                                 modifier = Modifier.size(
                                     20.dp
                                 )
@@ -363,7 +360,7 @@ fun ClienteCadastroScreen(
                         shape = RoundedCornerShape(10.dp),
                         colors = coresCampo,
                         textStyle = TextStyle(
-                            color = ClienteCores.Azul,
+                            color = cores.onSurface,
                             fontSize = 14.sp
                         )
                     )
@@ -381,7 +378,7 @@ fun ClienteCadastroScreen(
 
         Text(
             text = "* Campos obrigatórios",
-            color = CinzaAcessivelCliente,
+            color = cores.onSurfaceVariant,
             fontSize = 12.sp,
             modifier = Modifier.padding(start = 4.dp)
         )
@@ -392,7 +389,7 @@ fun ClienteCadastroScreen(
 
             Text(
                 text = erroGeral,
-                color = ClienteCores.Vermelho,
+                color = cores.error,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
                 modifier = Modifier
@@ -415,15 +412,15 @@ fun ClienteCadastroScreen(
                 .heightIn(min = 50.dp),
             shape = RoundedCornerShape(11.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = ClienteCores.Azul,
-                contentColor = Color.White
+                containerColor = cores.primary,
+                contentColor = cores.onPrimary
             )
         ) {
             Text(
                 text = "Salvar cliente",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White
+                color = cores.onPrimary
             )
         }
 
@@ -438,16 +435,16 @@ fun ClienteCadastroScreen(
             shape = RoundedCornerShape(11.dp),
             border = BorderStroke(
                 width = 1.dp,
-                color = BordaAcessivelCliente
+                color = cores.outline
             ),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.Transparent,
-                contentColor = ClienteCores.Azul
+                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                contentColor = cores.primary
             )
         ) {
             Text(
                 text = "Cancelar",
-                color = ClienteCores.Azul,
+                color = cores.primary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -461,9 +458,11 @@ fun ClienteCadastroScreen(
 private fun ErroCampoCliente(
     mensagem: String
 ) {
+    val cores = MaterialTheme.colorScheme
+
     Text(
         text = mensagem,
-        color = ClienteCores.Vermelho,
+        color = cores.error,
         fontSize = 12.sp,
         lineHeight = 17.sp,
         modifier = Modifier
