@@ -56,6 +56,12 @@ private val LaranjaHome = Color(0xFFF6A823)
 private val VermelhoHome = Color(0xFFE47779)
 private val CinzaHome = Color(0xFFC8C8C6)
 
+// Cores legíveis dos rótulos de próximas entregas.
+private val TextoAguardandoHome = Color(0xFF895500)
+private val TextoProducaoHome = Color(0xFF48545C)
+private val TextoConcluidoHome = Color(0xFF176B54)
+private val TextoCanceladoHome = Color(0xFF9E3339)
+
 data class StatusServico(
     val nome: String,
     val quantidade: Int,
@@ -105,6 +111,28 @@ private fun classificarServico(status: String): String {
     }
 }
 
+// Apenas os nomes apresentados no cartão de entregas.
+// Não altera os status internos dos serviços.
+private fun rotuloEntregaHome(status: String): String {
+    return when (classificarServico(status)) {
+        "aguardando" -> "Aguardando"
+        "producao" -> "Produção"
+        "concluidos" -> "Concluído"
+        "cancelados" -> "Cancelado"
+        else -> rotuloSituacaoServico(status)
+    }
+}
+
+private fun corEntregaHome(status: String): Color {
+    return when (classificarServico(status)) {
+        "aguardando" -> TextoAguardandoHome
+        "producao" -> TextoProducaoHome
+        "concluidos" -> TextoConcluidoHome
+        "cancelados" -> TextoCanceladoHome
+        else -> Color(0xFF53616A)
+    }
+}
+
 private fun ordenarData(prazo: String): Long =
     try {
         SimpleDateFormat(
@@ -118,7 +146,7 @@ private fun ordenarData(prazo: String): Long =
     }
 
 /*
- * NOVA REGRA FINANCEIRA
+ * REGRA FINANCEIRA PRESERVADA
  *
  * A tela Início utiliza a mesma origem de dados
  * da tela Caixa:
@@ -273,7 +301,7 @@ fun HomeScreen(
         mutableStateOf<List<ServicoUi>>(emptyList())
     }
 
-    // NOVO: saldo líquido acumulado do Caixa.
+    // Saldo líquido acumulado do Caixa.
     var saldoTotal by remember {
         mutableDoubleStateOf(0.0)
     }
@@ -311,12 +339,11 @@ fun HomeScreen(
     /*
      * CARREGAMENTO DOS DADOS REAIS
      *
-     * A Home e o Caixa passam a consultar
-     * os mesmos repositórios financeiros.
+     * A Home e o Caixa consultam os mesmos
+     * repositórios financeiros.
      *
      * O cálculo financeiro é independente
-     * do status operacional dos serviços,
-     * evitando divergências com o Caixa.
+     * do status operacional dos serviços.
      */
 
     LaunchedEffect(tokenAtual, revisaoDados) {
@@ -353,9 +380,8 @@ fun HomeScreen(
 
                 /*
                  * Recebimentos efetivamente pagos.
-                 *
                  * A data precisa ser válida, assim
-                 * como já ocorre na tela Caixa.
+                 * como na tela Caixa.
                  */
 
                 val recebimentosValidos =
@@ -378,10 +404,8 @@ fun HomeScreen(
 
                 /*
                  * Movimentações avulsas.
-                 *
-                 * Se o lançamento estiver vinculado
-                 * a um recebimento, o valor não deve
-                 * ser contado duas vezes.
+                 * Lançamentos vinculados a recebimentos
+                 * não são contados duas vezes.
                  */
 
                 val movimentacoesAvulsas =
@@ -428,10 +452,6 @@ fun HomeScreen(
                 /*
                  * Preserva a associação dos
                  * recebimentos aos serviços.
-                 *
-                 * Essa informação continua
-                 * disponível para os indicadores
-                 * e demais usos existentes.
                  */
 
                 val recebidosPorServico =
@@ -618,7 +638,7 @@ fun HomeScreen(
             if (!carregando && mensagemErro == null) {
 
                 // CARTÃO FINANCEIRO
-                // Agora exibe saldo total: entradas - saídas.
+                // Saldo total: entradas - saídas.
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -841,6 +861,8 @@ fun HomeScreen(
                 Spacer(Modifier.height(11.dp))
 
                 // PRÓXIMAS ENTREGAS
+                // Status visual padronizado:
+                // Aguardando, Produção, Concluído, Cancelado.
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -875,6 +897,11 @@ fun HomeScreen(
                             )
                         } else {
                             resumo.entregas.forEach { entrega ->
+
+                                // Somente o texto exibido é alterado.
+                                val situacaoVisivel =
+                                    rotuloEntregaHome(entrega.status)
+
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -885,10 +912,7 @@ fun HomeScreen(
                                                 "Serviço: ${entrega.titulo}. " +
                                                         "Cliente: ${entrega.cliente}. " +
                                                         "Prazo: ${entrega.prazo}. " +
-                                                        "Situação: " +
-                                                        rotuloSituacaoServico(
-                                                            entrega.status
-                                                        )
+                                                        "Situação: $situacaoVisivel"
                                         }
                                         .padding(bottom = 12.dp),
                                     verticalAlignment =
@@ -940,14 +964,22 @@ fun HomeScreen(
 
                                     Spacer(Modifier.width(5.dp))
 
+                                    // NOVO RÓTULO VISUAL.
+                                    // Evita "Em produção" e a quebra
+                                    // indesejada do texto.
+
                                     Text(
-                                        text = rotuloSituacaoServico(
+                                        text = situacaoVisivel,
+                                        color = corEntregaHome(
                                             entrega.status
                                         ),
-                                        color = destaque,
                                         fontSize = 11.sp,
-                                        maxLines = 2,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.widthIn(
+                                            min = 65.dp,
                                             max = 88.dp
                                         )
                                     )
