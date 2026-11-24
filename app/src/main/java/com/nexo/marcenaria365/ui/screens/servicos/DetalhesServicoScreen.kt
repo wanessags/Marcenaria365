@@ -82,25 +82,27 @@ private fun IndicadorSituacaoServico(situacao: String) {
     val cores = MaterialTheme.colorScheme
     val categoria = categoriaSituacaoServico(situacao)
 
+    // ALTERAÇÃO 1: CORES IGUAIS À HOME
+
     val corIndicador = when (categoria) {
-        "cancelado" -> cores.error
-        "concluido" -> VerdeServico
-        "producao" -> cores.primary
-        else -> CobreServico
+        "cancelado" -> Color(0xFFE47779)
+        "concluido" -> Color(0xFF239B7A)
+        "producao" -> Color(0xFFC8C8C6)
+        else -> Color(0xFFF6A823)
     }
 
     val fundo = when (categoria) {
-        "cancelado" -> cores.errorContainer
-        "concluido" -> cores.tertiaryContainer
-        "producao" -> cores.primaryContainer
-        else -> cores.secondaryContainer
+        "cancelado" -> Color(0xFFFBE6E7)
+        "concluido" -> Color(0xFFDDF3E7)
+        "producao" -> Color(0xFFECECEB)
+        else -> Color(0xFFFFF0D6)
     }
 
     val corTexto = when (categoria) {
-        "cancelado" -> cores.onErrorContainer
-        "concluido" -> cores.onTertiaryContainer
-        "producao" -> cores.onPrimaryContainer
-        else -> cores.onSecondaryContainer
+        "cancelado" -> Color(0xFF9E3339)
+        "concluido" -> Color(0xFF176B54)
+        "producao" -> Color(0xFF48545C)
+        else -> Color(0xFF895500)
     }
 
     Surface(
@@ -610,23 +612,10 @@ fun DetalhesServicoScreen(
                                     }
                                 )
 
-                                Spacer(Modifier.height(10.dp))
-
-                                Surface(
-                                    color = cores.secondaryContainer,
-                                    shape = RoundedCornerShape(50.dp)
-                                ) {
-                                    Text(
-                                        text = orcamento.status,
-                                        color = cores.onSecondaryContainer,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.padding(
-                                            horizontal = 13.dp,
-                                            vertical = 8.dp
-                                        )
-                                    )
-                                }
+                                // ALTERAÇÃO 2:
+                                // Removida somente a etiqueta visual
+                                // do status do orçamento neste cartão.
+                                // O status real permanece inalterado.
 
                                 Spacer(Modifier.height(20.dp))
 

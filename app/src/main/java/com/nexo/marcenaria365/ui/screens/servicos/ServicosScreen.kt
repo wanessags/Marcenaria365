@@ -41,6 +41,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// Cores padronizadas com o gráfico da Home.
+// Alteração exclusivamente visual.
+private val CorAguardando = Color(0xFFF6A823)
+private val CorProducao = Color(0xFFC8C8C6)
+private val CorConcluido = Color(0xFF239B7A)
+private val CorCancelado = Color(0xFFE47779)
+
+private val FundoAguardando = Color(0xFFFFF0D6)
+private val FundoProducao = Color(0xFFECECEB)
+private val FundoConcluido = Color(0xFFDDF3E7)
+private val FundoCancelado = Color(0xFFFBE6E7)
+
+private val TextoAguardando = Color(0xFF895500)
+private val TextoProducao = Color(0xFF48545C)
+private val TextoConcluido = Color(0xFF176B54)
+private val TextoCancelado = Color(0xFF9E3339)
+
 @Composable
 fun ServicosScreen(
     servicos: List<ServicoUi>,
@@ -65,13 +82,22 @@ fun ServicosScreen(
 
     BackHandler(onBack = onInicioClick)
 
-    // O status interno continua sendo "Orçamento".
-    // Apenas o nome apresentado ao usuário muda.
+    // Compatibilidade com a preferência salva anteriormente.
+    // Apenas troca o rótulo antigo do filtro.
+    LaunchedEffect(filtro) {
+        if (filtro == "Em andamento") {
+            filtro = "Produção"
+        }
+    }
+
+    // O status interno dos serviços permanece igual.
+    // "Produção" é somente o novo nome do filtro.
+
     val servicosFiltrados = servicos.filter { servico ->
 
         val correspondeFiltro = when (filtro) {
 
-            "Em andamento" ->
+            "Produção", "Em andamento" ->
                 servico.status == "Em produção"
 
             "Aguardando" ->
@@ -100,11 +126,13 @@ fun ServicosScreen(
         correspondeFiltro && correspondePesquisa
     }
 
-    // CONTADORES COM DADOS REAIS
+    // CONTADORES COM DADOS REAIS.
+    // Apenas o texto "Em andamento" mudou para "Produção".
+
     val filtros = listOf(
         "Todos" to servicos.size,
 
-        "Em andamento" to servicos.count {
+        "Produção" to servicos.count {
             it.status == "Em produção"
         },
 
@@ -234,7 +262,8 @@ fun ServicosScreen(
                 .padding(paddingValues)
         ) {
 
-            // CABEÇALHO
+            // CABEÇALHO ORIGINAL
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -287,7 +316,8 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(17.dp))
 
-            // PESQUISA
+            // PESQUISA ORIGINAL
+
             OutlinedTextField(
                 value = pesquisa,
 
@@ -355,7 +385,9 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(15.dp))
 
-            // FILTROS
+            // FILTROS ORIGINAIS
+            // Somente "Em andamento" virou "Produção".
+
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(
@@ -441,7 +473,8 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // QUANTIDADE DE RESULTADOS
+            // QUANTIDADE DE RESULTADOS ORIGINAL
+
             Text(
                 text = if (servicosFiltrados.size == 1) {
                     "1 serviço encontrado"
@@ -459,7 +492,8 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // LISTA
+            // LISTA DE SERVIÇOS ORIGINAL
+
             if (servicosFiltrados.isEmpty()) {
 
                 Box(
@@ -537,8 +571,9 @@ private fun LinhaServico(
         mutableStateOf(false)
     }
 
-    // Apenas muda o texto apresentado.
-    // O status original permanece intacto.
+    // Mantém a conversão visual já usada na listagem.
+    // O status real não é alterado.
+
     val situacaoVisivel = rotuloSituacaoServico(
         servico.status
     )
@@ -549,18 +584,21 @@ private fun LinhaServico(
                 "Entrega: ${servico.entrega}. " +
                 "Situação: $situacaoVisivel."
 
+    // ALTERAÇÃO: CORES DAS ETIQUETAS
+    // Iguais às cores do gráfico da tela inicial.
+
     val corSituacaoFundo = when (servico.status) {
         "Concluído" ->
-            cores.tertiaryContainer
+            FundoConcluido
 
         "Em produção" ->
-            cores.primaryContainer
+            FundoProducao
 
         "Orçamento", "AGUARDANDO" ->
-            cores.secondaryContainer
+            FundoAguardando
 
         "Cancelado" ->
-            cores.errorContainer
+            FundoCancelado
 
         else ->
             cores.surfaceVariant
@@ -568,20 +606,23 @@ private fun LinhaServico(
 
     val corSituacaoTexto = when (servico.status) {
         "Concluído" ->
-            cores.onTertiaryContainer
+            TextoConcluido
 
         "Em produção" ->
-            cores.onPrimaryContainer
+            TextoProducao
 
         "Orçamento", "AGUARDANDO" ->
-            cores.onSecondaryContainer
+            TextoAguardando
 
         "Cancelado" ->
-            cores.onErrorContainer
+            TextoCancelado
 
         else ->
             cores.onSurfaceVariant
     }
+
+    // Conserva as cores exatas da legenda da Home.
+    // O texto garante acessibilidade além das cores.
 
     Row(
         modifier = Modifier
@@ -617,6 +658,7 @@ private fun LinhaServico(
     ) {
 
         // FOTO ORIGINAL DO SERVIÇO
+
         FotoServico(
             fotoUri = servico.fotoUri,
             modifier = Modifier.size(52.dp)
@@ -655,7 +697,8 @@ private fun LinhaServico(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // SITUAÇÃO COM NOVO RÓTULO
+            // ETIQUETA COM CORES PADRONIZADAS
+
             Surface(
                 modifier = Modifier.align(
                     Alignment.Start

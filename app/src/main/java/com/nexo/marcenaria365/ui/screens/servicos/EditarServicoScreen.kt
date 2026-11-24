@@ -62,6 +62,24 @@ private fun converterValorEdicao(texto: String): Double? {
     return normalizado.toDoubleOrNull()
 }
 
+// NOMES EXIBIDOS NA TELA.
+// Os valores internos são preservados para manter
+// compatibilidade com os registros e o backend.
+
+private fun rotuloStatusEdicao(status: String): String {
+    return when {
+        status.equals("Orçamento", ignoreCase = true) ||
+                status.equals("AGUARDANDO", ignoreCase = true) ->
+            "Aguardando"
+
+        status.equals("Em produção", ignoreCase = true) ||
+                status.equals("EM_ANDAMENTO", ignoreCase = true) ->
+            "Produção"
+
+        else -> status
+    }
+}
+
 @Composable
 fun EditarServicoScreen(
     servico: ServicoUi,
@@ -83,6 +101,8 @@ fun EditarServicoScreen(
     var entrega by rememberSaveable(servico.id) {
         mutableStateOf(servico.entrega)
     }
+
+    // O status continua armazenado no formato original.
 
     var status by rememberSaveable(servico.id) {
         mutableStateOf(servico.status)
@@ -114,7 +134,8 @@ fun EditarServicoScreen(
         mutableStateOf(false)
     }
 
-    // Mantém o acesso persistente à foto selecionada.
+    // FOTO — FUNCIONALIDADE PRESERVADA
+
     val seletorFoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -135,6 +156,8 @@ fun EditarServicoScreen(
             }
         }
     }
+
+    // DATA — COMPORTAMENTO EXISTENTE PRESERVADO
 
     val hoje = remember {
         Calendar.getInstance()
@@ -219,6 +242,15 @@ fun EditarServicoScreen(
         teclado?.hide()
         foco.clearFocus()
 
+        // O STATUS INTERNO CONTINUA SENDO SALVO.
+        //
+        // Exemplo:
+        // O usuário vê "Aguardando".
+        // O sistema preserva "Orçamento" se esse era
+        // o valor original ou se essa opção foi selecionada.
+        //
+        // Isso evita modificar o backend nesta etapa.
+
         onSalvar(
             servico.copy(
                 titulo = tipo,
@@ -255,6 +287,7 @@ fun EditarServicoScreen(
             .imePadding()
     ) {
         // CABEÇALHO
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -300,7 +333,8 @@ fun EditarServicoScreen(
         ) {
             Spacer(Modifier.height(22.dp))
 
-            // FOTO
+            // FOTO DO SERVIÇO
+
             Text(
                 text = "Foto do serviço (opcional)",
                 fontSize = 13.sp,
@@ -445,6 +479,7 @@ fun EditarServicoScreen(
             Spacer(Modifier.height(20.dp))
 
             // CLIENTE VINCULADO
+
             OutlinedTextField(
                 value = servico.clienteNome,
                 onValueChange = {},
@@ -468,6 +503,7 @@ fun EditarServicoScreen(
             Spacer(Modifier.height(17.dp))
 
             // TIPO DE SERVIÇO
+
             Text(
                 text = "Tipo de serviço *",
                 color = AzulEdicao,
@@ -557,6 +593,7 @@ fun EditarServicoScreen(
             Spacer(Modifier.height(20.dp))
 
             // DESCRIÇÃO
+
             OutlinedTextField(
                 value = descricao,
                 onValueChange = {
@@ -598,7 +635,8 @@ fun EditarServicoScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // DATA DE ENTREGA
+            // DATA DE ENTREGA — SEM ALTERAÇÃO NESTA ETAPA
+
             Text(
                 text = "Data prevista de entrega *",
                 color = AzulEdicao,
@@ -680,7 +718,14 @@ fun EditarServicoScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // SITUAÇÃO
+            // SITUAÇÃO DO SERVIÇO
+            //
+            // A partir de agora, o usuário verá:
+            // Aguardando, Produção, Concluído ou Cancelado.
+            //
+            // O status "Orçamento" não aparece mais
+            // como opção visual de situação.
+
             Text(
                 text = "Situação do serviço",
                 color = AzulEdicao,
@@ -711,7 +756,7 @@ fun EditarServicoScreen(
                     )
                 ) {
                     Text(
-                        text = "Situação: $status",
+                        text = "Situação: ${rotuloStatusEdicao(status)}",
                         modifier = Modifier.weight(1f),
                         color = AzulEdicao
                     )
@@ -737,13 +782,19 @@ fun EditarServicoScreen(
                             ) + status
                             )
                         .filter { it.isNotBlank() }
-                        .distinct()
+                        .distinctBy {
+                            rotuloStatusEdicao(it)
+                        }
                         .forEach { situacao ->
                             DropdownMenuItem(
                                 text = {
-                                    Text(situacao)
+                                    Text(
+                                        rotuloStatusEdicao(situacao)
+                                    )
                                 },
                                 onClick = {
+                                    // O usuário escolhe o nome visual,
+                                    // e o sistema recebe o status interno.
                                     status = situacao
                                     menuStatus = false
                                     erroGeral = ""
@@ -756,6 +807,7 @@ fun EditarServicoScreen(
             Spacer(Modifier.height(20.dp))
 
             // VALOR ESTIMADO
+
             OutlinedTextField(
                 value = valor,
                 onValueChange = {
@@ -824,7 +876,8 @@ fun EditarServicoScreen(
                 fontSize = 12.sp
             )
 
-            // MENSAGEM GERAL PARA LEITORES DE TELA
+            // MENSAGEM GERAL
+
             if (erroGeral.isNotBlank()) {
                 Spacer(Modifier.height(13.dp))
 
@@ -844,7 +897,8 @@ fun EditarServicoScreen(
             Spacer(Modifier.height(26.dp))
         }
 
-        // AÇÕES INFERIORES
+        // BOTÕES INFERIORES
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
