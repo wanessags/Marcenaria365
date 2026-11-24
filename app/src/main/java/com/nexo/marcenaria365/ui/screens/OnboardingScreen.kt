@@ -300,18 +300,41 @@ fun OnboardingScreen() {
         }
     }
 
+    // AVISO DE EXCLUSÃO
+    // Exibe uma mensagem clara quando o serviço
+    // não pode ser excluído por possuir registros vinculados.
+    // Outros erros continuam mostrando sua mensagem original.
+
     if (erroServicos != null) {
+
+        val exclusaoBloqueada = erroServicos?.contains(
+            "registros vinculados",
+            ignoreCase = true
+        ) == true
+
         AlertDialog(
             onDismissRequest = {
                 erroServicos = null
             },
             title = {
-                Text("Servicos")
+                Text(
+                    if (exclusaoBloqueada) {
+                        "Não é possível excluir"
+                    } else {
+                        "Serviços"
+                    }
+                )
             },
             text = {
                 Text(
-                    erroServicos
-                        ?: "Ocorreu um erro ao acessar a API."
+                    if (exclusaoBloqueada) {
+                        "Este serviço possui registros vinculados " +
+                                "e não pode ser excluído.\n\n" +
+                                "Você pode alterar a situação para Cancelado."
+                    } else {
+                        erroServicos
+                            ?: "Ocorreu um erro ao acessar a API."
+                    }
                 )
             },
             confirmButton = {
