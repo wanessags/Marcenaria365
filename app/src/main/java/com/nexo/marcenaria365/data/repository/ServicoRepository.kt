@@ -37,8 +37,8 @@ object ServicoRepository {
 
     private fun statusParaApi(status: String): String {
         return when (status.trim()) {
-            "Orçamento" -> "AGUARDANDO"
-            "Em produção" -> "EM_ANDAMENTO"
+            "Orçamento", "Aguardando" -> "AGUARDANDO"
+            "Em produção", "Produção" -> "EM_ANDAMENTO"
             "Concluído" -> "CONCLUIDO"
             "Cancelado" -> "CANCELADO"
             else -> status
@@ -47,7 +47,7 @@ object ServicoRepository {
 
     private fun statusParaTela(status: String): String {
         return when (status) {
-            "AGUARDANDO" -> "Orçamento"
+            "AGUARDANDO" -> "Aguardando"
             "EM_ANDAMENTO" -> "Em produção"
             "CONCLUIDO" -> "Concluído"
             "CANCELADO" -> "Cancelado"

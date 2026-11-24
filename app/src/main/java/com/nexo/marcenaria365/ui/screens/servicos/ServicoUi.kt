@@ -10,7 +10,7 @@ data class ServicoUi(
     val entrega: String,
     val valorEstimado: Double,
     val valorRecebido: Double = 0.0,
-    val status: String = "Orçamento",
+    val status: String = "Aguardando",
     val fotoUri: String? = null
 )
 
@@ -45,7 +45,7 @@ fun servicosIniciais(): List<ServicoUi> = listOf(
         descricao = "Rack de madeira para sala, com nichos e espaço para televisão.",
         entrega = "18/10/2026",
         valorEstimado = 1800.0,
-        status = "Orçamento"
+        status = "Aguardando"
     ),
     ServicoUi(
         id = 3L,
@@ -96,7 +96,7 @@ fun servicosIniciais(): List<ServicoUi> = listOf(
         descricao = "Estante com prateleiras em MDF.",
         entrega = "05/11/2026",
         valorEstimado = 1200.0,
-        status = "Orçamento"
+        status = "Aguardando"
     ),
     ServicoUi(
         id = 8L,

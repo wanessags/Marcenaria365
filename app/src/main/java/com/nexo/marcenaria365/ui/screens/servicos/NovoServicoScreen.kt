@@ -330,7 +330,7 @@ fun NovoServicoScreen(
                 descricao = descricao.trim(),
                 entrega = dataEntrega,
                 valorEstimado = numeroValido,
-                status = "Orçamento",
+                status = "Aguardando",
                 fotoUri = fotoUri
             )
         )

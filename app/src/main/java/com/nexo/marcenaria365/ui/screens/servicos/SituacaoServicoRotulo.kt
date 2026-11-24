@@ -21,7 +21,7 @@ fun rotuloSituacaoServico(status: String): String {
 
     return when (texto.uppercase(Locale.ROOT)) {
         "ORÇAMENTO",
-        "ORCAMENTO" -> "Orçamento"
+        "ORCAMENTO" -> "Aguardando"
 
         "AGUARDANDO" -> "Aguardando"
 

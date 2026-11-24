@@ -68,7 +68,7 @@ private fun converterValorEdicao(texto: String): Double? {
 
 private fun rotuloStatusEdicao(status: String): String {
     return when {
-        status.equals("Orçamento", ignoreCase = true) ||
+        status.equals("Aguardando", ignoreCase = true) ||
                 status.equals("AGUARDANDO", ignoreCase = true) ->
             "Aguardando"
 
@@ -105,7 +105,7 @@ fun EditarServicoScreen(
     // O status continua armazenado no formato original.
 
     var status by rememberSaveable(servico.id) {
-        mutableStateOf(servico.status)
+        mutableStateOf(if (servico.status.equals("Aguardando", ignoreCase = true)) "Aguardando" else servico.status)
     }
 
     var valor by rememberSaveable(servico.id) {
@@ -775,7 +775,7 @@ fun EditarServicoScreen(
                 ) {
                     (
                             listOf(
-                                "Orçamento",
+                                "Aguardando",
                                 "Em produção",
                                 "Concluído",
                                 "Cancelado"
