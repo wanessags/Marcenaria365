@@ -51,7 +51,9 @@ import androidx.compose.ui.unit.sp
 import com.nexo.marcenaria365.ui.screens.clientes.ClienteUi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 
 private val Fundo = Color(0xFFFAF6F0)
 private val Azul = Color(0xFF193447)
@@ -60,6 +62,32 @@ private val Cinza = Color(0xFF53616A)
 private val Borda = Color(0xFF89969E)
 private val Verde = Color(0xFF237A58)
 private val Vermelho = Color(0xFFB3261E)
+
+// NOVA VALIDAÇÃO:
+// Datas anteriores a hoje são inválidas para novos serviços.
+// A data atual é calculada pelo relógio local do aparelho.
+
+private fun entregaAnteriorAHoje(data: String): Boolean {
+    val formato = SimpleDateFormat(
+        "dd/MM/yyyy",
+        Locale.forLanguageTag("pt-BR")
+    ).apply {
+        isLenient = false
+    }
+
+    val dataInformada = runCatching {
+        formato.parse(data)
+    }.getOrNull() ?: return true
+
+    val hoje = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+
+    return dataInformada.before(hoje.time)
+}
 
 @Composable
 fun NovoServicoScreen(
@@ -111,7 +139,8 @@ fun NovoServicoScreen(
     val foco = LocalFocusManager.current
     val teclado = LocalSoftwareKeyboardController.current
 
-    // SELETOR DE FOTO
+    // SELETOR DE FOTO ORIGINAL
+
     val seletorFoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -120,7 +149,8 @@ fun NovoServicoScreen(
         }
     }
 
-    // PREVIA DA FOTO REAL
+    // PRÉVIA DA FOTO REAL
+
     val imagemSelecionada by produceState<ImageBitmap?>(
         initialValue = null,
         key1 = fotoUri
@@ -170,23 +200,37 @@ fun NovoServicoScreen(
         }
     }
 
-    // SELETOR DE DATA
+    // SELETOR DE DATA COM TRAVA
+
     val calendario = Calendar.getInstance()
 
     val seletorData = DatePickerDialog(
         context,
         { _, ano, mes, dia ->
-            dataEntrega = "%02d/%02d/%04d".format(
+            val dataSelecionada = "%02d/%02d/%04d".format(
                 dia,
                 mes + 1,
                 ano
             )
-            erro = ""
+
+            if (entregaAnteriorAHoje(dataSelecionada)) {
+                erro = "A data de entrega não pode ser anterior a hoje."
+            } else {
+                dataEntrega = dataSelecionada
+                erro = ""
+            }
         },
         calendario.get(Calendar.YEAR),
         calendario.get(Calendar.MONTH),
         calendario.get(Calendar.DAY_OF_MONTH)
-    )
+    ).apply {
+        datePicker.minDate = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
 
     val clienteSelecionado = clientes.find {
         it.id == clienteId
@@ -196,7 +240,8 @@ fun NovoServicoScreen(
         it.ativo
     }
 
-    // VALIDACAO
+    // VALIDAÇÃO ORIGINAL DO VALOR
+
     val valorNumero = valor
         .replace("R$", "")
         .trim()
@@ -220,8 +265,13 @@ fun NovoServicoScreen(
     val descricaoInvalida =
         tentouSalvar && descricao.isBlank()
 
+    // NOVA VERIFICAÇÃO DA DATA
+
     val dataInvalida =
-        tentouSalvar && dataEntrega.isBlank()
+        tentouSalvar && (
+                dataEntrega.isBlank() ||
+                        entregaAnteriorAHoje(dataEntrega)
+                )
 
     val valorInvalido =
         tentouSalvar && (
@@ -246,6 +296,9 @@ fun NovoServicoScreen(
             dataEntrega.isBlank() ->
                 "Selecione a data prevista de entrega."
 
+            entregaAnteriorAHoje(dataEntrega) ->
+                "A data de entrega não pode ser anterior a hoje."
+
             valorNumero == null ||
                     !valorNumero.isFinite() ||
                     valorNumero <= 0.0 ->
@@ -260,14 +313,13 @@ fun NovoServicoScreen(
             return
         }
 
-        val clienteValido = clienteSelecionado
-            ?: return
-
-        val numeroValido = valorNumero
-            ?: return
+        val clienteValido = clienteSelecionado ?: return
+        val numeroValido = valorNumero ?: return
 
         teclado?.hide()
         foco.clearFocus()
+
+        // SALVAMENTO ORIGINAL PRESERVADO
 
         onSalvar(
             ServicoUi(
@@ -307,8 +359,8 @@ fun NovoServicoScreen(
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .imePadding()
     ) {
+        // CABEÇALHO
 
-        // CABECALHO
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -352,7 +404,8 @@ fun NovoServicoScreen(
         ) {
             Spacer(Modifier.height(22.dp))
 
-            // FOTO DO SERVICO
+            // FOTO DO SERVIÇO
+
             Text(
                 text = "Foto do serviço (opcional)",
                 color = Azul,
@@ -560,6 +613,7 @@ fun NovoServicoScreen(
             Spacer(Modifier.height(19.dp))
 
             // CLIENTE
+
             Text(
                 text = "Cliente *",
                 color = Azul,
@@ -652,7 +706,8 @@ fun NovoServicoScreen(
 
             Spacer(Modifier.height(19.dp))
 
-            // TIPO DE SERVICO
+            // TIPO DE SERVIÇO
+
             Text(
                 text = "Tipo de serviço *",
                 color = Azul,
@@ -740,7 +795,8 @@ fun NovoServicoScreen(
 
             Spacer(Modifier.height(19.dp))
 
-            // DESCRICAO
+            // DESCRIÇÃO
+
             OutlinedTextField(
                 value = descricao,
                 onValueChange = {
@@ -790,6 +846,7 @@ fun NovoServicoScreen(
             Spacer(Modifier.height(19.dp))
 
             // DATA PREVISTA DE ENTREGA
+
             Text(
                 text = "Data prevista de entrega *",
                 color = Azul,
@@ -803,6 +860,18 @@ fun NovoServicoScreen(
                 onClick = {
                     teclado?.hide()
                     foco.clearFocus()
+
+                    // ATUALIZA A DATA MÍNIMA SEMPRE
+                    // QUE O CALENDÁRIO FOR ABERTO
+
+                    seletorData.datePicker.minDate =
+                        Calendar.getInstance().apply {
+                            set(Calendar.HOUR_OF_DAY, 0)
+                            set(Calendar.MINUTE, 0)
+                            set(Calendar.SECOND, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }.timeInMillis
+
                     seletorData.show()
                 },
                 modifier = Modifier
@@ -812,7 +881,11 @@ fun NovoServicoScreen(
                         if (dataInvalida) {
                             Modifier.semantics {
                                 error(
-                                    "Selecione a data prevista de entrega."
+                                    if (dataEntrega.isBlank()) {
+                                        "Selecione a data prevista de entrega."
+                                    } else {
+                                        "A data de entrega não pode ser anterior a hoje."
+                                    }
                                 )
                             }
                         } else {
@@ -850,13 +923,18 @@ fun NovoServicoScreen(
 
             if (dataInvalida) {
                 ErroNovoServico(
-                    "Selecione a data prevista de entrega."
+                    if (dataEntrega.isBlank()) {
+                        "Selecione a data prevista de entrega."
+                    } else {
+                        "A data de entrega não pode ser anterior a hoje."
+                    }
                 )
             }
 
             Spacer(Modifier.height(19.dp))
 
             // VALOR ESTIMADO
+
             OutlinedTextField(
                 value = valor,
                 onValueChange = {
@@ -934,7 +1012,8 @@ fun NovoServicoScreen(
             Spacer(Modifier.height(26.dp))
         }
 
-        // BOTOES INFERIORES
+        // BOTÕES INFERIORES
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
