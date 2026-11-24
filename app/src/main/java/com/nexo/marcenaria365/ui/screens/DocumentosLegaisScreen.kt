@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.sp
 
 private val FundoLegal = Color(0xFFFAF6F0)
 private val AzulLegal = Color(0xFF193447)
-private val CobreLegal = Color(0xFF94613C)
 private val CinzaLegal = Color(0xFF53616A)
+private val DivisorLegal = Color(0xFFDDD8D0)
 
 enum class TipoDocumentoLegal {
     PRIVACIDADE,
@@ -51,6 +51,7 @@ fun DocumentosLegaisScreen(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeDrawing),
         containerColor = FundoLegal,
+
         topBar = {
             Row(
                 modifier = Modifier
@@ -79,13 +80,16 @@ fun DocumentosLegaisScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .weight(1f)
-                        .semantics { heading() },
+                        .semantics {
+                            heading()
+                        },
                     textAlign = TextAlign.Center
                 )
 
                 Spacer(Modifier.width(48.dp))
             }
         },
+
         bottomBar = {
             Button(
                 onClick = onVoltar,
@@ -109,6 +113,7 @@ fun DocumentosLegaisScreen(
             }
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -117,6 +122,8 @@ fun DocumentosLegaisScreen(
                 .padding(horizontal = 24.dp)
         ) {
             Spacer(Modifier.height(22.dp))
+
+            // TÍTULO PRINCIPAL
 
             Text(
                 text = titulo,
@@ -128,11 +135,9 @@ fun DocumentosLegaisScreen(
                 }
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(22.dp))
 
-            InformacoesLegais()
-
-            Spacer(Modifier.height(24.dp))
+            // CONTEÚDO ORIGINAL DOS DOCUMENTOS
 
             when (tipo) {
                 TipoDocumentoLegal.PRIVACIDADE ->
@@ -142,66 +147,18 @@ fun DocumentosLegaisScreen(
                     ConteudoTermos()
             }
 
+            // INFORMAÇÕES FINAIS
+            // Sem tabela, sem card e sem fundo marrom.
+
+            InformacoesFinaisLegais()
+
             Spacer(Modifier.height(28.dp))
         }
     }
 }
 
-@Composable
-private fun InformacoesLegais() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(17.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "Informações do documento",
-                color = AzulLegal,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            LinhaLegal("Versão", "1.0")
-            LinhaLegal("Vigência", "24/11/2026")
-            LinhaLegal(
-                "Última atualização",
-                "24/11/2026"
-            )
-        }
-    }
-}
-
-@Composable
-private fun LinhaLegal(
-    rotulo: String,
-    valor: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = rotulo,
-            color = CinzaLegal,
-            fontSize = 12.sp,
-            modifier = Modifier.weight(1f)
-        )
-
-        Text(
-            text = valor,
-            color = AzulLegal,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
+// COMPONENTE DAS SEÇÕES
+// Mantém os títulos e textos originais.
 
 @Composable
 private fun SecaoLegal(
@@ -234,29 +191,46 @@ private fun SecaoLegal(
     }
 }
 
+// INFORMAÇÕES DISCRETAS NO FINAL
+// Utilizadas igualmente nos dois documentos.
+
 @Composable
-private fun AvisoLegal(
-    texto: String
-) {
-    Surface(
-        color = Color(0xFFF3E7DA),
-        shape = RoundedCornerShape(12.dp)
+private fun InformacoesFinaisLegais() {
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(15.dp)
-        ) {
-            Text(
-                text = texto,
-                color = AzulLegal,
-                fontSize = 12.sp,
-                lineHeight = 19.sp
-            )
-        }
+        HorizontalDivider(
+            color = DivisorLegal,
+            thickness = 1.dp
+        )
+
+        Spacer(Modifier.height(15.dp))
+
+        Text(
+            text = "Versão 1.0 · Vigência: 24/11/2026",
+            color = CinzaLegal,
+            fontSize = 11.sp,
+            lineHeight = 17.sp
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        Text(
+            text = "Última atualização: 24/11/2026",
+            color = CinzaLegal,
+            fontSize = 11.sp,
+            lineHeight = 17.sp
+        )
     }
 }
 
+// =====================================================
+// POLÍTICA DE PRIVACIDADE
+// =====================================================
+
 @Composable
 private fun ConteudoPrivacidade() {
+
     SecaoLegal(
         titulo = "1. Coleta de informações",
         descricao =
@@ -335,18 +309,15 @@ private fun ConteudoPrivacidade() {
                     "versão e data de atualização. Mudanças " +
                     "relevantes deverão ser comunicadas aos usuários."
     )
-
-    AvisoLegal(
-        "Documento preliminar do projeto acadêmico " +
-                "Marcenaria 365. O conteúdo não representa " +
-                "certificação de conformidade integral com a LGPD " +
-                "e deve ser revisado antes do tratamento " +
-                "de dados pessoais reais em produção."
-    )
 }
+
+// =====================================================
+// TERMOS DE USO
+// =====================================================
 
 @Composable
 private fun ConteudoTermos() {
+
     SecaoLegal(
         titulo = "1. Apresentação",
         descricao =
@@ -432,12 +403,5 @@ private fun ConteudoTermos() {
         descricao =
             "Estes Termos de Uso, versão 1.0, " +
                     "entram em vigor em 24/11/2026."
-    )
-
-    AvisoLegal(
-        "Estes Termos de Uso foram preparados " +
-                "para a versão acadêmica do Marcenaria 365. " +
-                "O conteúdo deverá passar por revisão jurídica " +
-                "antes de eventual disponibilização comercial."
     )
 }
