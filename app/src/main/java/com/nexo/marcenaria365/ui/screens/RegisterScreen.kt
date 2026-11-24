@@ -1,4 +1,3 @@
-
 package com.nexo.marcenaria365.ui.screens
 
 import android.util.Patterns
@@ -46,8 +45,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// CORES FIXAS DA TELA INICIAL.
-// Não afetam o modo escuro após o login.
+// CORES ORIGINAIS DO CADASTRO
 
 private val FundoCadastro = Color(0xFFFAF6F0)
 private val AzulCadastro = Color(0xFF193447)
@@ -57,47 +55,36 @@ private val BordaCadastro = Color(0xFF9AA6AD)
 private val VermelhoCadastro = Color(0xFFB3261E)
 private val VerdeCadastro = Color(0xFF237A58)
 
-// Paleta aplicada somente a esta tela.
-// Assim, campos, textos, ícones, botões e indicadores
-// não herdam as cores do modo escuro.
-
 private val CoresClarasCadastro = lightColorScheme(
     primary = AzulCadastro,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFE3EBEF),
     onPrimaryContainer = AzulCadastro,
-
     secondary = CobreCadastro,
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFF4EBE0),
     onSecondaryContainer = AzulCadastro,
-
     tertiary = VerdeCadastro,
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFE5F4EC),
     onTertiaryContainer = VerdeCadastro,
-
     background = FundoCadastro,
     onBackground = AzulCadastro,
-
     surface = Color.White,
     onSurface = AzulCadastro,
     surfaceVariant = Color(0xFFF3F2EE),
     onSurfaceVariant = CinzaCadastro,
-
     outline = BordaCadastro,
     outlineVariant = Color(0xFFD9DFE2),
-
     error = VermelhoCadastro,
     onError = Color.White,
     errorContainer = Color(0xFFFCEAE7),
     onErrorContainer = VermelhoCadastro,
-
     inverseSurface = AzulCadastro,
     inverseOnSurface = Color.White
 )
 
-// AS CINCO REGRAS ORIGINAIS DA SENHA.
+// REGRAS ORIGINAIS DA SENHA
 
 internal data class RegrasCadastro(
     val tamanho: Boolean,
@@ -137,7 +124,7 @@ internal fun avaliarSenhaCadastro(
     )
 }
 
-// REQUISITOS ACESSÍVEIS DA SENHA.
+// REQUISITOS DA SENHA
 
 @Composable
 private fun RequisitoCadastro(
@@ -178,9 +165,8 @@ private fun RequisitoCadastro(
     }
 }
 
-// INDICADOR DE FORÇA DA SENHA.
-// Preservado: aparece quando o campo é acessado,
-// mesmo antes de começar a digitar.
+// INDICADOR DE FORÇA DA SENHA
+// Funcionalidade original preservada.
 
 @Composable
 internal fun ForcaSenhaCadastro(
@@ -225,8 +211,7 @@ internal fun ForcaSenhaCadastro(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -256,8 +241,7 @@ internal fun ForcaSenhaCadastro(
                         contentDescription =
                             "Força da senha: $descricao"
                     },
-                horizontalArrangement =
-                    Arrangement.spacedBy(5.dp)
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 repeat(4) { indice ->
                     Box(
@@ -268,9 +252,7 @@ internal fun ForcaSenhaCadastro(
                                 color = if (indice < nivel) {
                                     cor
                                 } else {
-                                    BordaCadastro.copy(
-                                        alpha = 0.5f
-                                    )
+                                    BordaCadastro.copy(alpha = 0.5f)
                                 },
                                 shape = RoundedCornerShape(5.dp)
                             )
@@ -320,8 +302,7 @@ internal fun ForcaSenhaCadastro(
     }
 }
 
-// ENTRADA ORIGINAL DA TELA.
-// O tema claro é aplicado somente neste componente.
+// ENTRADA DA TELA DE CADASTRO
 
 @Composable
 fun RegisterScreen(
@@ -338,17 +319,13 @@ fun RegisterScreen(
     }
 }
 
-// CONTEÚDO ORIGINAL DO CADASTRO.
-// Mantém estados, regras, visibilidade da senha,
-// validações, acessibilidade e integração com a API.
+// CONTEÚDO COMPLETO DA TELA
 
 @Composable
 private fun ConteudoCadastro(
     onBackClick: () -> Unit,
     onLoginClick: () -> Unit
 ) {
-    val cores = MaterialTheme.colorScheme
-
     val scope = rememberCoroutineScope()
     val foco = LocalFocusManager.current
     val teclado = LocalSoftwareKeyboardController.current
@@ -393,10 +370,16 @@ private fun ConteudoCadastro(
         mutableStateOf(false)
     }
 
-    // Preserva a exibição da força da senha
-    // ao entrar no campo pela primeira vez.
-
     var acessouCampoSenha by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    // NOVA MELHORIA:
+    // O painel desaparece quando o usuário entra em
+    // "Confirmar senha" com uma senha válida.
+    // Se voltar a editar a senha, o painel reaparece.
+
+    var ocultarIndicadorSenha by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -405,24 +388,36 @@ private fun ConteudoCadastro(
     val bloquearEdicao =
         carregando || cadastroConcluido
 
+    // CORREÇÃO ANTERIOR PRESERVADA:
+    // Após o sucesso, os campos de senha são apagados.
+    // Isso não deve gerar novos erros visuais.
+
     val nomeInvalido =
-        tentouSalvar && nome.isBlank()
+        !cadastroConcluido &&
+                tentouSalvar &&
+                nome.isBlank()
 
     val emailInvalido =
-        tentouSalvar &&
+        !cadastroConcluido &&
+                tentouSalvar &&
                 !Patterns.EMAIL_ADDRESS.matcher(
                     email.trim()
                 ).matches()
 
     val senhaInvalida =
-        tentouSalvar && !regras.valida
+        !cadastroConcluido &&
+                tentouSalvar &&
+                !regras.valida
 
     val confirmacaoInvalida =
-        (confirmarSenha.isNotEmpty() &&
-                confirmarSenha != senha) ||
-                (tentouSalvar && confirmarSenha != senha)
+        !cadastroConcluido &&
+                (
+                        (confirmarSenha.isNotEmpty() &&
+                                confirmarSenha != senha) ||
+                                (tentouSalvar && confirmarSenha != senha)
+                        )
 
-    // Cores completas, sem herança do tema escuro.
+    // CORES ORIGINAIS DOS CAMPOS
 
     val coresCampo = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.White,
@@ -459,9 +454,14 @@ private fun ConteudoCadastro(
         errorCursorColor = VermelhoCadastro
     )
 
-    // CADASTRO PELA API — LÓGICA PRESERVADA.
+    // CADASTRO PELA API
+    // A validação permanece obrigatória antes do envio.
 
     fun cadastrar() {
+        if (carregando || cadastroConcluido) {
+            return
+        }
+
         tentouSalvar = true
 
         mensagem = when {
@@ -488,11 +488,7 @@ private fun ConteudoCadastro(
             else -> ""
         }
 
-        if (
-            mensagem.isNotBlank() ||
-            carregando ||
-            cadastroConcluido
-        ) {
+        if (mensagem.isNotBlank()) {
             return
         }
 
@@ -500,12 +496,16 @@ private fun ConteudoCadastro(
         foco.clearFocus()
         carregando = true
 
+        val nomeCadastro = nome.trim()
+        val emailCadastro = email.trim()
+        val senhaCadastro = senha
+
         scope.launch {
             val resultado = withContext(Dispatchers.IO) {
                 AuthRepository.cadastrar(
-                    nome = nome.trim(),
-                    email = email.trim(),
-                    senha = senha
+                    nome = nomeCadastro,
+                    email = emailCadastro,
+                    senha = senhaCadastro
                 )
             }
 
@@ -514,13 +514,22 @@ private fun ConteudoCadastro(
             resultado.fold(
                 onSuccess = {
                     cadastroConcluido = true
+
+                    // Apaga os dados sensíveis após o sucesso.
                     senha = ""
                     confirmarSenha = ""
+
+                    // Evita que erros de validação reapareçam.
+                    tentouSalvar = false
+                    acessouCampoSenha = false
+                    senhaVisivel = false
+                    confirmarVisivel = false
 
                     mensagem =
                         "Conta criada com sucesso! " +
                                 "Agora você pode entrar."
                 },
+
                 onFailure = { erro ->
                     mensagem = erro.message
                         ?: "Não foi possível criar a conta."
@@ -533,9 +542,7 @@ private fun ConteudoCadastro(
         modifier = Modifier
             .fillMaxSize()
             .background(FundoCadastro)
-            .windowInsetsPadding(
-                WindowInsets.safeDrawing
-            )
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 25.dp)
@@ -695,6 +702,9 @@ private fun ConteudoCadastro(
                     senha = it
                     mensagem = ""
                     acessouCampoSenha = true
+
+                    // Reabre o painel se editar a senha.
+                    ocultarIndicadorSenha = false
                 }
             },
             label = {
@@ -751,6 +761,7 @@ private fun ConteudoCadastro(
                         !bloquearEdicao
                     ) {
                         acessouCampoSenha = true
+                        ocultarIndicadorSenha = false
                     }
                 }
                 .then(
@@ -774,11 +785,13 @@ private fun ConteudoCadastro(
             )
         }
 
-        // INDICADOR DE FORÇA DA SENHA.
-        // Não foi removido nem simplificado.
+        // INDICADOR DE FORÇA DA SENHA
+        // Só desaparece na confirmação se a senha for válida.
+        // Uma senha inválida mantém as orientações visíveis.
 
         if (
             !cadastroConcluido &&
+            (!ocultarIndicadorSenha || !regras.valida) &&
             (
                     acessouCampoSenha ||
                             tentouSalvar ||
@@ -859,6 +872,16 @@ private fun ConteudoCadastro(
             isError = confirmacaoInvalida,
             modifier = Modifier
                 .fillMaxWidth()
+                .onFocusChanged { estado ->
+                    if (
+                        estado.isFocused &&
+                        !bloquearEdicao &&
+                        regras.valida
+                    ) {
+                        // Fecha o painel ao entrar na confirmação.
+                        ocultarIndicadorSenha = true
+                    }
+                }
                 .then(
                     if (confirmacaoInvalida) {
                         Modifier.semantics {
@@ -874,10 +897,7 @@ private fun ConteudoCadastro(
             colors = coresCampo
         )
 
-        if (
-            confirmacaoInvalida &&
-            !cadastroConcluido
-        ) {
+        if (confirmacaoInvalida) {
             TextoErroCadastro(
                 "A confirmação deve ser igual à senha."
             )
@@ -900,7 +920,7 @@ private fun ConteudoCadastro(
 
         Spacer(Modifier.height(24.dp))
 
-        // CRIAR CONTA — API ORIGINAL PRESERVADA.
+        // CRIAR CONTA
 
         Button(
             onClick = {
@@ -946,7 +966,7 @@ private fun ConteudoCadastro(
             }
         }
 
-        // MENSAGEM DO CADASTRO
+        // MENSAGEM DE RETORNO
 
         if (mensagem.isNotBlank()) {
             Spacer(Modifier.height(14.dp))
@@ -971,7 +991,7 @@ private fun ConteudoCadastro(
 
         Spacer(Modifier.height(30.dp))
 
-        // ACESSO À TELA DE LOGIN
+        // ACESSO AO LOGIN
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1006,7 +1026,7 @@ private fun ConteudoCadastro(
     }
 }
 
-// MENSAGENS DE VALIDAÇÃO.
+// MENSAGENS DE ERRO ACESSÍVEIS
 
 @Composable
 private fun TextoErroCadastro(
