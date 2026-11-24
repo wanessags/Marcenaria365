@@ -41,12 +41,14 @@ import com.nexo.marcenaria365.data.repository.AuthRepository
 import com.nexo.marcenaria365.data.repository.ClienteRepository
 import com.nexo.marcenaria365.data.repository.ServicoRepository
 import com.nexo.marcenaria365.data.repository.RecebimentoRepository
+import com.nexo.marcenaria365.data.repository.MovimentacaoCaixaRepository
 import com.nexo.marcenaria365.ui.screens.servicos.ServicoUi
 import com.nexo.marcenaria365.ui.screens.servicos.rotuloSituacaoServico
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Locale
 
 private val VerdeHome = Color(0xFF239B7A)
@@ -116,22 +118,49 @@ private fun ordenarData(prazo: String): Long =
     }
 
 /*
- * Calcula os indicadores do painel.
+ * NOVA REGRA FINANCEIRA
  *
- * REGRA DO PAINEL:
- * - Serviços cancelados permanecem no gráfico.
- * - Valores de serviços cancelados não entram no
- *   indicador financeiro da Home.
- * - Serviços excluídos não aparecem quando a API
- *   deixa de retorná-los.
+ * A tela Início utiliza a mesma origem de dados
+ * da tela Caixa:
  *
- * Esta função não modifica o banco de dados.
+ * 1. Recebimentos com status RECEBIDO.
+ * 2. Movimentações avulsas de entrada.
+ * 3. Movimentações avulsas de saída.
+ * 4. Movimentações vinculadas a recebimentos
+ *    não são somadas novamente.
+ *
+ * O saldo total considera todas as datas
+ * registradas, sem o filtro mensal do Caixa.
+ *
+ * Nenhuma movimentação é criada, editada
+ * ou excluída por esta função.
  */
+
+private fun calcularSaldoTotal(
+    totalRecebimentos: Double,
+    entradasAvulsas: Double,
+    saidasAvulsas: Double
+): Double {
+    val totalEntradas =
+        totalRecebimentos + entradasAvulsas
+
+    return totalEntradas - saidasAvulsas
+}
+
+/*
+ * Os indicadores operacionais continuam
+ * independentes do saldo financeiro.
+ *
+ * Serviços cancelados permanecem no gráfico.
+ * As próximas entregas ignoram serviços
+ * concluídos e cancelados.
+ */
+
 private fun montarResumoDashboard(
     quantidadeClientes: Int,
-    servicos: List<ServicoUi>
+    servicos: List<ServicoUi>,
+    saldoTotal: Double
 ): ResumoDashboard {
-
     val aguardando = servicos.count {
         classificarServico(it.status) == "aguardando"
     }
@@ -152,25 +181,17 @@ private fun montarResumoDashboard(
         classificarServico(it.status) == "pendentes"
     }
 
-    // CORREÇÃO:
-    // Não contabilizar recebimentos associados
-    // a serviços cancelados no indicador da Home.
-    val recebido = servicos
-        .filter { servico ->
-            classificarServico(servico.status) != "cancelados"
-        }
-        .sumOf { servico ->
-            servico.valorRecebido
-        }
-
     val entregas = servicos
         .filter {
             val situacao = classificarServico(it.status)
+
             situacao != "concluidos" &&
                     situacao != "cancelados" &&
                     it.entrega.isNotBlank()
         }
-        .sortedBy { ordenarData(it.entrega) }
+        .sortedBy {
+            ordenarData(it.entrega)
+        }
         .take(3)
         .map {
             EntregaResumo(
@@ -183,39 +204,39 @@ private fun montarResumoDashboard(
 
     val status = mutableListOf(
         StatusServico(
-            "Aguardando",
-            aguardando,
-            LaranjaHome
+            nome = "Aguardando",
+            quantidade = aguardando,
+            cor = LaranjaHome
         ),
         StatusServico(
-            "Produção",
-            producao,
-            CinzaHome
+            nome = "Produção",
+            quantidade = producao,
+            cor = CinzaHome
         ),
         StatusServico(
-            "Concluídos",
-            concluidos,
-            VerdeHome
+            nome = "Concluídos",
+            quantidade = concluidos,
+            cor = VerdeHome
         ),
         StatusServico(
-            "Cancelados",
-            cancelados,
-            VermelhoHome
+            nome = "Cancelados",
+            quantidade = cancelados,
+            cor = VermelhoHome
         )
     )
 
     if (outros > 0) {
         status.add(
             StatusServico(
-                "Outros status",
-                outros,
-                Color(0xFF9174AE)
+                nome = "Outros status",
+                quantidade = outros,
+                cor = Color(0xFF9174AE)
             )
         )
     }
 
     return ResumoDashboard(
-        saldo = formatarMoeda(recebido),
+        saldo = formatarMoeda(saldoTotal),
         clientes = quantidadeClientes,
         emAndamento = producao,
         concluidos = concluidos,
@@ -252,6 +273,11 @@ fun HomeScreen(
         mutableStateOf<List<ServicoUi>>(emptyList())
     }
 
+    // NOVO: saldo líquido acumulado do Caixa.
+    var saldoTotal by remember {
+        mutableDoubleStateOf(0.0)
+    }
+
     var carregando by remember {
         mutableStateOf(true)
     }
@@ -282,18 +308,29 @@ fun HomeScreen(
         }
     }
 
-    // Busca novamente os dados reais na API.
+    /*
+     * CARREGAMENTO DOS DADOS REAIS
+     *
+     * A Home e o Caixa passam a consultar
+     * os mesmos repositórios financeiros.
+     *
+     * O cálculo financeiro é independente
+     * do status operacional dos serviços,
+     * evitando divergências com o Caixa.
+     */
+
     LaunchedEffect(tokenAtual, revisaoDados) {
         carregando = true
         mensagemErro = null
 
-        // Remove os valores anteriores da interface.
         clientes = 0
         servicos = emptyList()
+        saldoTotal = 0.0
 
         if (tokenAtual == null) {
             mensagemErro =
                 "Faça login para acessar seus dados."
+
             carregando = false
             return@LaunchedEffect
         }
@@ -310,39 +347,128 @@ fun HomeScreen(
                 val recebimentosApi =
                     RecebimentoRepository.listar().getOrThrow()
 
-                // Considera somente recebimentos
-                // efetivamente registrados.
-                val recebidosPorServico = recebimentosApi
-                    .filter {
-                        it.status.equals(
+                val movimentacoesApi =
+                    MovimentacaoCaixaRepository.listar()
+                        .getOrThrow()
+
+                /*
+                 * Recebimentos efetivamente pagos.
+                 *
+                 * A data precisa ser válida, assim
+                 * como já ocorre na tela Caixa.
+                 */
+
+                val recebimentosValidos =
+                    recebimentosApi.filter { recebimento ->
+                        recebimento.status.equals(
                             "RECEBIDO",
                             ignoreCase = true
-                        )
-                    }
-                    .groupBy { it.servicoId }
-                    .mapValues { (_, pagamentos) ->
-                        RecebimentoRepository.totalRecebido(
-                            pagamentos
-                        )
+                        ) &&
+                                recebimento.dataRecebimento?.let {
+                                    runCatching {
+                                        LocalDate.parse(it)
+                                    }.isSuccess
+                                } == true
                     }
 
-                // Associa cada recebimento ao serviço real.
-                val servicosAtualizados = servicosApi.map {
-                        servico ->
-                    servico.copy(
-                        valorRecebido =
-                            recebidosPorServico[servico.id] ?: 0.0
+                val totalRecebimentos =
+                    recebimentosValidos.sumOf {
+                        it.valor
+                    }
+
+                /*
+                 * Movimentações avulsas.
+                 *
+                 * Se o lançamento estiver vinculado
+                 * a um recebimento, o valor não deve
+                 * ser contado duas vezes.
+                 */
+
+                val movimentacoesAvulsas =
+                    movimentacoesApi.filter { movimento ->
+                        movimento.recebimentoId == null &&
+                                runCatching {
+                                    LocalDate.parse(
+                                        movimento.dataMovimentacao
+                                    )
+                                }.isSuccess
+                    }
+
+                val entradasAvulsas =
+                    movimentacoesAvulsas
+                        .filter {
+                            it.tipo.equals(
+                                "ENTRADA",
+                                ignoreCase = true
+                            )
+                        }
+                        .sumOf {
+                            it.valor
+                        }
+
+                val saidasAvulsas =
+                    movimentacoesAvulsas
+                        .filter {
+                            it.tipo.equals(
+                                "SAIDA",
+                                ignoreCase = true
+                            )
+                        }
+                        .sumOf {
+                            it.valor
+                        }
+
+                val saldoCalculado =
+                    calcularSaldoTotal(
+                        totalRecebimentos = totalRecebimentos,
+                        entradasAvulsas = entradasAvulsas,
+                        saidasAvulsas = saidasAvulsas
                     )
-                }
 
-                Pair(
+                /*
+                 * Preserva a associação dos
+                 * recebimentos aos serviços.
+                 *
+                 * Essa informação continua
+                 * disponível para os indicadores
+                 * e demais usos existentes.
+                 */
+
+                val recebidosPorServico =
+                    recebimentosApi
+                        .filter {
+                            it.status.equals(
+                                "RECEBIDO",
+                                ignoreCase = true
+                            )
+                        }
+                        .groupBy {
+                            it.servicoId
+                        }
+                        .mapValues { (_, pagamentos) ->
+                            RecebimentoRepository.totalRecebido(
+                                pagamentos
+                            )
+                        }
+
+                val servicosAtualizados =
+                    servicosApi.map { servico ->
+                        servico.copy(
+                            valorRecebido =
+                                recebidosPorServico[servico.id]
+                                    ?: 0.0
+                        )
+                    }
+
+                Triple(
                     clientesApi.size,
-                    servicosAtualizados
+                    servicosAtualizados,
+                    saldoCalculado
                 )
             }
         }
 
-        // Não utiliza dados de uma sessão encerrada.
+        // Não utiliza dados de outra sessão.
         if (AuthRepository.sessaoAtual?.token != tokenAtual) {
             return@LaunchedEffect
         }
@@ -351,6 +477,7 @@ fun HomeScreen(
             onSuccess = { dados ->
                 clientes = dados.first
                 servicos = dados.second
+                saldoTotal = dados.third
                 mensagemErro = null
             },
             onFailure = { erro ->
@@ -364,7 +491,8 @@ fun HomeScreen(
 
     val resumo = montarResumoDashboard(
         quantidadeClientes = clientes,
-        servicos = servicos
+        servicos = servicos,
+        saldoTotal = saldoTotal
     )
 
     Column(
@@ -382,6 +510,7 @@ fun HomeScreen(
             Spacer(Modifier.height(16.dp))
 
             // SAUDAÇÃO
+
             Text(
                 text = "Olá, $primeiroNome!",
                 color = cores.onBackground,
@@ -404,6 +533,7 @@ fun HomeScreen(
             Spacer(Modifier.height(8.dp))
 
             // ATUALIZAÇÃO MANUAL
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -429,6 +559,7 @@ fun HomeScreen(
             Spacer(Modifier.height(5.dp))
 
             // CARREGAMENTO
+
             if (carregando) {
                 Row(
                     modifier = Modifier
@@ -454,6 +585,7 @@ fun HomeScreen(
             }
 
             // MENSAGEM DE ERRO
+
             if (mensagemErro != null) {
                 Card(
                     modifier = Modifier
@@ -486,6 +618,8 @@ fun HomeScreen(
             if (!carregando && mensagemErro == null) {
 
                 // CARTÃO FINANCEIRO
+                // Agora exibe saldo total: entradas - saídas.
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -513,7 +647,7 @@ fun HomeScreen(
                             Spacer(Modifier.width(9.dp))
 
                             Text(
-                                text = "TOTAL RECEBIDO",
+                                text = "SALDO TOTAL",
                                 color = secundario,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -531,8 +665,17 @@ fun HomeScreen(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.semantics {
                                 contentDescription =
-                                    "Total recebido: ${resumo.saldo}"
+                                    "Saldo total acumulado: ${resumo.saldo}"
                             }
+                        )
+
+                        Spacer(Modifier.height(6.dp))
+
+                        Text(
+                            text = "Entradas menos saídas registradas",
+                            color = secundario,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
                         )
 
                         Spacer(Modifier.height(10.dp))
@@ -558,7 +701,8 @@ fun HomeScreen(
                             )
 
                             Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
+                                imageVector =
+                                    Icons.Outlined.ChevronRight,
                                 contentDescription = null,
                                 tint = destaque,
                                 modifier = Modifier.size(19.dp)
@@ -569,7 +713,8 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(11.dp))
 
-                // INDICADORES
+                // INDICADORES OPERACIONAIS
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement =
@@ -608,6 +753,7 @@ fun HomeScreen(
                 Spacer(Modifier.height(11.dp))
 
                 // GRÁFICO DE SERVIÇOS
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
@@ -695,6 +841,7 @@ fun HomeScreen(
                 Spacer(Modifier.height(11.dp))
 
                 // PRÓXIMAS ENTREGAS
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -814,7 +961,8 @@ fun HomeScreen(
             }
         }
 
-        // NAVEGAÇÃO INFERIOR
+        // NAVEGAÇÃO INFERIOR ORIGINAL
+
         NavigationBar(
             containerColor = cores.surface,
             tonalElevation = 0.dp,
