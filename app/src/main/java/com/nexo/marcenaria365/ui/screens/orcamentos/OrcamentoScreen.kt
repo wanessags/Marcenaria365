@@ -12,6 +12,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -562,100 +564,227 @@ fun OrcamentoScreen(
 
     // CONFIRMAÇÃO DE EXCLUSÃO
     if (confirmarExclusao) {
-        AlertDialog(
+        val cores = MaterialTheme.colorScheme
+
+        androidx.compose.ui.window.Dialog(
             onDismissRequest = {
                 confirmarExclusao = false
-            },
-            title = {
-                Text(
-                    text = "Excluir orçamento?",
-                    color = AzulOrcamento,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
+            }
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp),
+                color = cores.surface,
+                tonalElevation = 0.dp
+            ) {
                 Column(
-                    verticalArrangement =
-                        Arrangement.spacedBy(10.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    // ÍCONE DE EXCLUSÃO
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .background(
+                                cores.errorContainer,
+                                RoundedCornerShape(50)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.DeleteOutline,
+                            contentDescription = null,
+                            tint = cores.onErrorContainer,
+                            modifier = Modifier.size(27.dp)
+                        )
+                    }
+
+                    // TÍTULO
                     Text(
-                        text = "Deseja excluir o orçamento " +
-                                "#${
-                                    formatarNumeroOrcamento(
-                                        orcamento.id
-                                    )
-                                }?",
-                        color = CinzaOrcamento,
+                        text = "Excluir orçamento?",
+                        color = cores.onSurface,
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.semantics {
+                            heading()
+                        }
+                    )
+
+                    Text(
+                        text = "Tem certeza de que deseja excluir este orçamento?",
+                        color = cores.onSurfaceVariant,
                         fontSize = 14.sp,
-                        lineHeight = 20.sp
+                        lineHeight = 20.sp,
+                        textAlign = TextAlign.Center
                     )
 
-                    Text(
-                        text = "Cliente: ${
-                            orcamento.clienteNome
-                        }",
-                        color = AzulOrcamento,
-                        fontSize = 13.sp
-                    )
-
-                    Text(
-                        text = "Total: ${
-                            formatarMoedaOrcamento(
-                                orcamento.total
+                    // RESUMO DO ORÇAMENTO
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(13.dp),
+                        color = cores.surfaceVariant.copy(
+                            alpha = 0.55f
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            LinhaResumoExclusaoOrcamento(
+                                titulo = "Orçamento",
+                                valor = "#${formatarNumeroOrcamento(orcamento.id)}"
                             )
-                        }",
-                        color = AzulOrcamento,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
 
-                    Text(
-                        text = "Essa ação não poderá ser desfeita.",
-                        color = VermelhoOrcamento,
-                        fontSize = 13.sp,
-                        lineHeight = 19.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                            LinhaResumoExclusaoOrcamento(
+                                titulo = "Cliente",
+                                valor = orcamento.clienteNome
+                            )
+
+                            HorizontalDivider(
+                                color = cores.outlineVariant
+                            )
+
+                            LinhaResumoExclusaoOrcamento(
+                                titulo = "Valor total",
+                                valor = formatarMoedaOrcamento(
+                                    orcamento.total
+                                )
+                            )
+                        }
+                    }
+
+                    // AVISO
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Warning,
+                            contentDescription = null,
+                            tint = cores.error,
+                            modifier = Modifier.size(18.dp)
+                        )
+
+                        Text(
+                            text = "Essa ação não poderá ser desfeita.",
+                            color = cores.error,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(Modifier.height(2.dp))
+
+                    // BOTÕES DE CONFIRMAÇÃO
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                confirmarExclusao = false
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 48.dp),
+                            shape = RoundedCornerShape(11.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                cores.outline
+                            ),
+                            contentPadding = PaddingValues(
+                                horizontal = 8.dp,
+                                vertical = 12.dp
+                            ),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = cores.onSurface
+                            )
+                        ) {
+                            Text(
+                                text = "Cancelar",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                confirmarExclusao = false
+                                onExcluir(orcamento.id)
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 48.dp)
+                                .semantics {
+                                    contentDescription =
+                                        "Excluir definitivamente o orçamento"
+                                },
+                            shape = RoundedCornerShape(11.dp),
+                            contentPadding = PaddingValues(
+                                horizontal = 8.dp,
+                                vertical = 12.dp
+                            ),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = cores.error,
+                                contentColor = cores.onError
+                            )
+                        ) {
+                            Text(
+                                text = "Excluir",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LinhaResumoExclusaoOrcamento(
+    titulo: String,
+    valor: String
+) {
+    val cores = MaterialTheme.colorScheme
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$titulo: $valor"
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmarExclusao = false
-                        onExcluir(orcamento.id)
-                    },
-                    modifier = Modifier.heightIn(
-                        min = 48.dp
-                    )
-                ) {
-                    Text(
-                        text = "Excluir definitivamente",
-                        color = VermelhoOrcamento,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        confirmarExclusao = false
-                    },
-                    modifier = Modifier.heightIn(
-                        min = 48.dp
-                    )
-                ) {
-                    Text(
-                        text = "Cancelar",
-                        color = AzulOrcamento,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(18.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = titulo,
+            color = cores.onSurfaceVariant,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f)
+        )
+
+        Text(
+            text = valor,
+            color = cores.onSurface,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f)
         )
     }
 }
+
 
 @Composable
 private fun TituloSecaoOrcamento(
