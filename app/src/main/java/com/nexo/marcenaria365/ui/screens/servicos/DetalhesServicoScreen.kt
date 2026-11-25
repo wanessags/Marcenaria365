@@ -379,7 +379,7 @@ fun DetalhesServicoScreen(
                             }
 
                             IndicadorSituacaoServico(
-                                situacao = servico.status
+                                situacao = rotuloSituacaoServico(servico.status)
                             )
                         }
                     }

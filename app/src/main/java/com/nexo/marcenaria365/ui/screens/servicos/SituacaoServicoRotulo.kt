@@ -1,4 +1,3 @@
-
 package com.nexo.marcenaria365.ui.screens.servicos
 
 import java.util.Locale
@@ -20,13 +19,18 @@ fun rotuloSituacaoServico(status: String): String {
     }
 
     return when (texto.uppercase(Locale.ROOT)) {
-        "ORÇAMENTO",
-        "ORCAMENTO" -> "Aguardando"
 
+        "ORÇAMENTO",
+        "ORCAMENTO",
         "AGUARDANDO" -> "Aguardando"
 
         "EM PRODUÇÃO",
-        "EM PRODUCAO" -> "Em produção"
+        "EM PRODUCAO",
+        "PRODUÇÃO",
+        "PRODUCAO",
+        "EM ANDAMENTO",
+        "EM_ANDAMENTO",
+        "EM_PRODUCAO" -> "Produção"
 
         "CONCLUÍDO",
         "CONCLUIDO" -> "Concluído"
