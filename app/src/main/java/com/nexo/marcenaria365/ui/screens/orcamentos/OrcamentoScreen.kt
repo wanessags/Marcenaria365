@@ -32,7 +32,7 @@ private val CobreOrcamento = Color(0xFF94613C)
 private val CinzaOrcamento = Color(0xFF53616A)
 private val BordaOrcamento = Color(0xFF89969E)
 private val VermelhoOrcamento = Color(0xFFB3261E)
-private val VerdeOrcamento = Color(0xFF237A58)
+
 
 @Composable
 fun OrcamentoScreen(
@@ -105,7 +105,7 @@ fun OrcamentoScreen(
         ) {
             Spacer(Modifier.height(24.dp))
 
-            // IDENTIFICAÇÃO E SITUAÇÃO
+            // IDENTIFICAÇÃO
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -130,45 +130,9 @@ fun OrcamentoScreen(
                     lineHeight = 20.sp
                 )
 
-                Spacer(Modifier.height(12.dp))
-
-                Surface(
-                    color = when (orcamento.status) {
-                        StatusOrcamento.APROVADO ->
-                            Color(0xFFE5F4EC)
-
-                        StatusOrcamento.RECUSADO ->
-                            Color(0xFFF9E6E4)
-
-                        else ->
-                            Color(0xFFFFEFD8)
-                    },
-                    shape = RoundedCornerShape(9.dp)
-                ) {
-                    Text(
-                        text = "Situação: ${orcamento.status}",
-                        color = when (orcamento.status) {
-                            StatusOrcamento.APROVADO ->
-                                VerdeOrcamento
-
-                            StatusOrcamento.RECUSADO ->
-                                VermelhoOrcamento
-
-                            else ->
-                                Color(0xFF825B12)
-                        },
-                        fontSize = 13.sp,
-                        lineHeight = 19.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(
-                            horizontal = 12.dp,
-                            vertical = 8.dp
-                        )
-                    )
-                }
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(24.dp))
 
             // ITENS DO ORÇAMENTO
             TituloSecaoOrcamento(
