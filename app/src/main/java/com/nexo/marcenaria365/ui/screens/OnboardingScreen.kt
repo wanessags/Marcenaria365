@@ -330,7 +330,7 @@ fun OnboardingScreen() {
                     if (exclusaoBloqueada) {
                         "Este serviço possui registros vinculados " +
                                 "e não pode ser excluído.\n\n" +
-                                "Você pode alterar a situação para Cancelado."
+                                "Você pode alterar a situação para cancelado."
                     } else {
                         erroServicos
                             ?: "Ocorreu um erro ao acessar a API."

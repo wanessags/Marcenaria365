@@ -56,7 +56,14 @@ private val LaranjaHome = Color(0xFFF6A823)
 private val VermelhoHome = Color(0xFFE47779)
 private val CinzaHome = Color(0xFFC8C8C6)
 
-// Cores legíveis dos rótulos de próximas entregas.
+// Cores das etiquetas de status.
+// Correspondem às cores utilizadas no gráfico.
+
+private val FundoAguardandoHome = Color(0xFFFFF0D6)
+private val FundoProducaoHome = Color(0xFFECECEB)
+private val FundoConcluidoHome = Color(0xFFDDF3E7)
+private val FundoCanceladoHome = Color(0xFFFBE6E7)
+
 private val TextoAguardandoHome = Color(0xFF895500)
 private val TextoProducaoHome = Color(0xFF48545C)
 private val TextoConcluidoHome = Color(0xFF176B54)
@@ -89,6 +96,10 @@ private fun formatarMoeda(valor: Double): String =
         Locale.forLanguageTag("pt-BR")
     ).format(valor)
 
+// CLASSIFICAÇÃO DOS STATUS
+// Preserva a compatibilidade com os valores
+// que já existem no backend e no aplicativo.
+
 private fun classificarServico(status: String): String {
     val texto = status.trim().lowercase(Locale.ROOT)
 
@@ -111,8 +122,10 @@ private fun classificarServico(status: String): String {
     }
 }
 
-// Apenas os nomes apresentados no cartão de entregas.
-// Não altera os status internos dos serviços.
+// RÓTULO VISUAL DAS PRÓXIMAS ENTREGAS
+// Altera somente o texto mostrado ao usuário.
+// Não modifica os status salvos.
+
 private fun rotuloEntregaHome(status: String): String {
     return when (classificarServico(status)) {
         "aguardando" -> "Aguardando"
@@ -123,13 +136,33 @@ private fun rotuloEntregaHome(status: String): String {
     }
 }
 
-private fun corEntregaHome(status: String): Color {
+// FUNDO COLORIDO DA ETIQUETA
+
+private fun fundoEntregaHome(
+    status: String,
+    corPadrao: Color
+): Color {
+    return when (classificarServico(status)) {
+        "aguardando" -> FundoAguardandoHome
+        "producao" -> FundoProducaoHome
+        "concluidos" -> FundoConcluidoHome
+        "cancelados" -> FundoCanceladoHome
+        else -> corPadrao
+    }
+}
+
+// COR DO TEXTO DA ETIQUETA
+
+private fun corEntregaHome(
+    status: String,
+    corPadrao: Color
+): Color {
     return when (classificarServico(status)) {
         "aguardando" -> TextoAguardandoHome
         "producao" -> TextoProducaoHome
         "concluidos" -> TextoConcluidoHome
         "cancelados" -> TextoCanceladoHome
-        else -> Color(0xFF53616A)
+        else -> corPadrao
     }
 }
 
@@ -189,6 +222,7 @@ private fun montarResumoDashboard(
     servicos: List<ServicoUi>,
     saldoTotal: Double
 ): ResumoDashboard {
+
     val aguardando = servicos.count {
         classificarServico(it.status) == "aguardando"
     }
@@ -301,7 +335,6 @@ fun HomeScreen(
         mutableStateOf<List<ServicoUi>>(emptyList())
     }
 
-    // Saldo líquido acumulado do Caixa.
     var saldoTotal by remember {
         mutableDoubleStateOf(0.0)
     }
@@ -322,6 +355,7 @@ fun HomeScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Atualiza os indicadores ao voltar para o aplicativo.
+
     DisposableEffect(lifecycleOwner) {
         val observador = LifecycleEventObserver { _, evento ->
             if (evento == Lifecycle.Event.ON_RESUME) {
@@ -380,8 +414,9 @@ fun HomeScreen(
 
                 /*
                  * Recebimentos efetivamente pagos.
+                 *
                  * A data precisa ser válida, assim
-                 * como na tela Caixa.
+                 * como já ocorre na tela Caixa.
                  */
 
                 val recebimentosValidos =
@@ -404,8 +439,10 @@ fun HomeScreen(
 
                 /*
                  * Movimentações avulsas.
-                 * Lançamentos vinculados a recebimentos
-                 * não são contados duas vezes.
+                 *
+                 * Se o lançamento estiver vinculado
+                 * a um recebimento, o valor não deve
+                 * ser contado duas vezes.
                  */
 
                 val movimentacoesAvulsas =
@@ -489,6 +526,7 @@ fun HomeScreen(
         }
 
         // Não utiliza dados de outra sessão.
+
         if (AuthRepository.sessaoAtual?.token != tokenAtual) {
             return@LaunchedEffect
         }
@@ -861,8 +899,8 @@ fun HomeScreen(
                 Spacer(Modifier.height(11.dp))
 
                 // PRÓXIMAS ENTREGAS
-                // Status visual padronizado:
-                // Aguardando, Produção, Concluído, Cancelado.
+                // Etiquetas coloridas com o mesmo padrão
+                // visual do gráfico e da lista de serviços.
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -898,7 +936,6 @@ fun HomeScreen(
                         } else {
                             resumo.entregas.forEach { entrega ->
 
-                                // Somente o texto exibido é alterado.
                                 val situacaoVisivel =
                                     rotuloEntregaHome(entrega.status)
 
@@ -962,27 +999,39 @@ fun HomeScreen(
                                         )
                                     }
 
-                                    Spacer(Modifier.width(5.dp))
+                                    Spacer(Modifier.width(6.dp))
 
-                                    // NOVO RÓTULO VISUAL.
-                                    // Evita "Em produção" e a quebra
-                                    // indesejada do texto.
+                                    // ETIQUETA COLORIDA
+                                    // Exibe "Produção" em vez de
+                                    // "Em produção", sem modificar
+                                    // o valor interno do serviço.
 
-                                    Text(
-                                        text = situacaoVisivel,
-                                        color = corEntregaHome(
-                                            entrega.status
+                                    Surface(
+                                        color = fundoEntregaHome(
+                                            entrega.status,
+                                            cores.surfaceVariant
                                         ),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.widthIn(
-                                            min = 65.dp,
-                                            max = 88.dp
+                                        shape = RoundedCornerShape(50)
+                                    ) {
+                                        Text(
+                                            text = situacaoVisivel,
+                                            color = corEntregaHome(
+                                                entrega.status,
+                                                cores.onSurfaceVariant
+                                            ),
+                                            fontSize = 11.sp,
+                                            fontWeight =
+                                                FontWeight.SemiBold,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow =
+                                                TextOverflow.Ellipsis,
+                                            modifier = Modifier.padding(
+                                                horizontal = 10.dp,
+                                                vertical = 7.dp
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         }

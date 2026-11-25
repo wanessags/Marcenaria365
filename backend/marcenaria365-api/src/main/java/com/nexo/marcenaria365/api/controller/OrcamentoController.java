@@ -199,6 +199,61 @@ public class OrcamentoController {
         );
     }
 
+    // Sincroniza somente o valor financeiro do servico.
+    // Preserva status, recebimentos e demais informacoes.
+    private void sincronizarValorServico(
+        Long servicoId,
+        Long usuarioId
+    ) {
+        if (servicoId == null) {
+            return;
+        }
+
+        var servicoEncontrado = servicos
+            .buscarDoUsuario(servicoId, usuarioId);
+
+        if (servicoEncontrado.isEmpty()) {
+            return;
+        }
+
+        var servico = servicoEncontrado.get();
+
+        var orcamentoVigente = orcamentos
+            .listarDoUsuario(usuarioId)
+            .stream()
+            .filter(orcamento ->
+                servicoId.equals(orcamento.getServicoId())
+            )
+            .filter(orcamento ->
+                servico.getClienteId().equals(
+                    orcamento.getClienteId()
+                )
+            )
+            .filter(orcamento ->
+                !"RECUSADO".equals(
+                    normalizarStatus(orcamento.getStatus())
+                )
+            )
+            .findFirst();
+
+        // Sem orcamento valido, preserva o valor atual.
+        if (orcamentoVigente.isEmpty()) {
+            return;
+        }
+
+        BigDecimal total = resposta(
+            orcamentoVigente.get()
+        ).total();
+
+        if (
+            servico.getValorCobrado() == null ||
+            servico.getValorCobrado().compareTo(total) != 0
+        ) {
+            servico.setValorCobrado(total);
+            servicos.saveAndFlush(servico);
+        }
+    }
+
     private void salvarItens(
         Long orcamentoId,
         List<ItemRequest> dados
@@ -275,6 +330,12 @@ public class OrcamentoController {
         Orcamento salvo = orcamentos.saveAndFlush(novo);
         salvarItens(salvo.getId(), dados.itens());
 
+        // Atualiza o valor do servico vinculado.
+        sincronizarValorServico(
+            salvo.getServicoId(),
+            usuarioId(jwt)
+        );
+
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(resposta(salvo));
@@ -314,6 +375,9 @@ public class OrcamentoController {
         }
 
         Orcamento orcamento = encontrado.get();
+
+        Long servicoAnteriorId = orcamento.getServicoId();
+
         preencher(orcamento, dados);
 
         orcamentos.saveAndFlush(orcamento);
@@ -322,6 +386,26 @@ public class OrcamentoController {
         itens.flush();
 
         salvarItens(id, dados.itens());
+
+        // Atualiza o valor apos editar o orcamento.
+        sincronizarValorServico(
+            orcamento.getServicoId(),
+            usuarioId(jwt)
+        );
+
+        // Caso o vinculo tenha sido alterado,
+        // verifica tambem o servico anterior.
+        if (
+            servicoAnteriorId != null &&
+            !servicoAnteriorId.equals(
+                orcamento.getServicoId()
+            )
+        ) {
+            sincronizarValorServico(
+                servicoAnteriorId,
+                usuarioId(jwt)
+            );
+        }
 
         return ResponseEntity.ok(resposta(orcamento));
     }
@@ -339,11 +423,20 @@ public class OrcamentoController {
             return ResponseEntity.notFound().build();
         }
 
+        Long servicoId = encontrado.get().getServicoId();
+
         itens.deleteByOrcamentoId(id);
         itens.flush();
 
         orcamentos.delete(encontrado.get());
         orcamentos.flush();
+
+        // Verifica se existe outro orcamento valido.
+        // Nao zera o valor caso nao exista.
+        sincronizarValorServico(
+            servicoId,
+            usuarioId(jwt)
+        );
 
         return ResponseEntity.noContent().build();
     }

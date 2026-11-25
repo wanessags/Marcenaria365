@@ -41,13 +41,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Cores padronizadas com o gráfico da Home.
-// Alteração exclusivamente visual.
-private val CorAguardando = Color(0xFFF6A823)
-private val CorProducao = Color(0xFFC8C8C6)
-private val CorConcluido = Color(0xFF239B7A)
-private val CorCancelado = Color(0xFFE47779)
-
 private val FundoAguardando = Color(0xFFFFF0D6)
 private val FundoProducao = Color(0xFFECECEB)
 private val FundoConcluido = Color(0xFFDDF3E7)
@@ -82,16 +75,15 @@ fun ServicosScreen(
 
     BackHandler(onBack = onInicioClick)
 
-    // Compatibilidade com a preferência salva anteriormente.
-    // Apenas troca o rótulo antigo do filtro.
+    // Mantém compatibilidade com o filtro anteriormente salvo.
     LaunchedEffect(filtro) {
         if (filtro == "Em andamento") {
             filtro = "Produção"
         }
     }
 
-    // O status interno dos serviços permanece igual.
-    // "Produção" é somente o novo nome do filtro.
+    // Os valores internos dos status permanecem intactos.
+    // Somente os nomes exibidos são padronizados.
 
     val servicosFiltrados = servicos.filter { servico ->
 
@@ -125,9 +117,6 @@ fun ServicosScreen(
 
         correspondeFiltro && correspondePesquisa
     }
-
-    // CONTADORES COM DADOS REAIS.
-    // Apenas o texto "Em andamento" mudou para "Produção".
 
     val filtros = listOf(
         "Todos" to servicos.size,
@@ -178,7 +167,6 @@ fun ServicosScreen(
                 tonalElevation = 0.dp,
                 modifier = Modifier.heightIn(min = 75.dp)
             ) {
-
                 NavigationBarItem(
                     selected = false,
                     onClick = onInicioClick,
@@ -262,7 +250,7 @@ fun ServicosScreen(
                 .padding(paddingValues)
         ) {
 
-            // CABEÇALHO ORIGINAL
+            // CABEÇALHO
 
             Row(
                 modifier = Modifier
@@ -274,7 +262,6 @@ fun ServicosScreen(
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 IconButton(
                     onClick = onInicioClick,
                     modifier = Modifier.sizeIn(
@@ -316,7 +303,7 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(17.dp))
 
-            // PESQUISA ORIGINAL
+            // BUSCA — PRESERVADA
 
             OutlinedTextField(
                 value = pesquisa,
@@ -385,8 +372,7 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(15.dp))
 
-            // FILTROS ORIGINAIS
-            // Somente "Em andamento" virou "Produção".
+            // FILTROS — "PRODUÇÃO" PRESERVADO
 
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -473,7 +459,7 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // QUANTIDADE DE RESULTADOS ORIGINAL
+            // CONTAGEM DE RESULTADOS
 
             Text(
                 text = if (servicosFiltrados.size == 1) {
@@ -492,7 +478,7 @@ fun ServicosScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // LISTA DE SERVIÇOS ORIGINAL
+            // LISTAGEM ORIGINAL
 
             if (servicosFiltrados.isEmpty()) {
 
@@ -503,7 +489,6 @@ fun ServicosScreen(
                         .padding(horizontal = 20.dp),
                     contentAlignment = Alignment.Center
                 ) {
-
                     Text(
                         text = if (pesquisa.isNotBlank()) {
                             "Nenhum serviço encontrado para sua pesquisa."
@@ -571,12 +556,23 @@ private fun LinhaServico(
         mutableStateOf(false)
     }
 
-    // Mantém a conversão visual já usada na listagem.
-    // O status real não é alterado.
+    // CORREÇÃO:
+    // "Em produção" permanece no banco, mas será
+    // apresentado na lista como "Produção".
+    // "Orçamento" continua exibido como "Aguardando".
+    //
+    // Não altera rotuloSituacaoServico() de outras telas.
 
-    val situacaoVisivel = rotuloSituacaoServico(
-        servico.status
-    )
+    val situacaoVisivel = when (
+        servico.status.trim().lowercase()
+    ) {
+        "em produção", "em andamento", "em_producao",
+        "em_andamento", "produção" -> "Produção"
+
+        "orçamento", "aguardando" -> "Aguardando"
+
+        else -> rotuloSituacaoServico(servico.status)
+    }
 
     val descricaoAcessivel =
         "Abrir serviço ${servico.titulo}. " +
@@ -584,45 +580,37 @@ private fun LinhaServico(
                 "Entrega: ${servico.entrega}. " +
                 "Situação: $situacaoVisivel."
 
-    // ALTERAÇÃO: CORES DAS ETIQUETAS
-    // Iguais às cores do gráfico da tela inicial.
+    // MESMAS CORES DA HOME E DA TELA DE DETALHES
 
-    val corSituacaoFundo = when (servico.status) {
-        "Concluído" ->
-            FundoConcluido
+    val corSituacaoFundo = when (
+        servico.status.trim().lowercase()
+    ) {
+        "concluído" -> FundoConcluido
 
-        "Em produção" ->
-            FundoProducao
+        "em produção", "em andamento", "em_producao",
+        "em_andamento", "produção" -> FundoProducao
 
-        "Orçamento", "AGUARDANDO" ->
-            FundoAguardando
+        "orçamento", "aguardando" -> FundoAguardando
 
-        "Cancelado" ->
-            FundoCancelado
+        "cancelado" -> FundoCancelado
 
-        else ->
-            cores.surfaceVariant
+        else -> cores.surfaceVariant
     }
 
-    val corSituacaoTexto = when (servico.status) {
-        "Concluído" ->
-            TextoConcluido
+    val corSituacaoTexto = when (
+        servico.status.trim().lowercase()
+    ) {
+        "concluído" -> TextoConcluido
 
-        "Em produção" ->
-            TextoProducao
+        "em produção", "em andamento", "em_producao",
+        "em_andamento", "produção" -> TextoProducao
 
-        "Orçamento", "AGUARDANDO" ->
-            TextoAguardando
+        "orçamento", "aguardando" -> TextoAguardando
 
-        "Cancelado" ->
-            TextoCancelado
+        "cancelado" -> TextoCancelado
 
-        else ->
-            cores.onSurfaceVariant
+        else -> cores.onSurfaceVariant
     }
-
-    // Conserva as cores exatas da legenda da Home.
-    // O texto garante acessibilidade além das cores.
 
     Row(
         modifier = Modifier
@@ -697,7 +685,7 @@ private fun LinhaServico(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // ETIQUETA COM CORES PADRONIZADAS
+            // ETIQUETA: AGORA EXIBE SOMENTE "PRODUÇÃO"
 
             Surface(
                 modifier = Modifier.align(
@@ -706,7 +694,6 @@ private fun LinhaServico(
                 color = corSituacaoFundo,
                 shape = RoundedCornerShape(7.dp)
             ) {
-
                 Text(
                     text = situacaoVisivel,
                     color = corSituacaoTexto,
